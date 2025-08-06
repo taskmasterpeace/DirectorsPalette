@@ -289,6 +289,24 @@ export default function StoryBreakdownPage() {
   const [currentProjectId, setCurrentProjectId] = useState<string>("")
   const [showProjectManager, setShowProjectManager] = useState(false)
 
+  // Music Video Mode State
+  const [isMusicVideoMode, setIsMusicVideoMode] = useState(false)
+  const [musicVideoData, setMusicVideoData] = useState({
+    lyrics: "",
+    songTitle: "",
+    artist: "",
+    genre: ""
+  })
+  const [musicVideoBreakdown, setMusicVideoBreakdown] = useState<any>(null)
+  const [selectedTreatment, setSelectedTreatment] = useState<any>(null)
+  const [selectedMusicVideoSection, setSelectedMusicVideoSection] = useState<string>("")
+
+  // Music Video Genres
+  const MUSIC_VIDEO_GENRES = [
+    "Pop", "Hip-Hop", "R&B", "Rock", "Electronic", "Country", 
+    "Alternative", "Indie", "Rap", "Soul", "Funk", "Jazz", "Blues"
+  ]
+
   // Add this useEffect after the other state declarations
   React.useEffect(() => {
     const loadDefaultPrompts = async () => {
@@ -535,30 +553,50 @@ export default function StoryBreakdownPage() {
   }
 
   const handleLoadProject = (project: SavedProject) => {
-    setStory(project.story)
+    // Set mode first
+    setIsMusicVideoMode(project.isMusicVideoMode || false)
+    
+    // Load story mode data
+    setStory(project.story || "")
     setSelectedDirector(project.selectedDirector)
     setBreakdown(project.breakdown)
-    setAdditionalShots(project.additionalShots)
-    setTitleCardOptions(project.titleCardOptions)
-    setTitleCardApproaches(project.titleCardApproaches)
-    setCustomDirectors(project.customDirectors)
-    setPromptOptions(project.promptOptions)
-    setSelectedChapter(project.selectedChapter)
-    setExpandedChapters(project.expandedChapters)
+    setAdditionalShots(project.additionalShots || {})
+    setTitleCardOptions(project.titleCardOptions || { enabled: false, format: 'full' })
+    setTitleCardApproaches(project.titleCardApproaches || ['character-focus', 'location-focus', 'abstract-thematic'])
+    setSelectedChapter(project.selectedChapter || "")
+    setExpandedChapters(project.expandedChapters || {})
+    
+    // Load music video mode data
+    setMusicVideoData(project.musicVideoData || { lyrics: "", songTitle: "", artist: "", genre: "" })
+    setMusicVideoBreakdown(project.musicVideoBreakdown)
+    setSelectedTreatment(project.selectedTreatment)
+    setSelectedMusicVideoSection(project.selectedMusicVideoSection || "")
+    
+    // Load shared data
+    setCustomDirectors(project.customDirectors || [])
+    setPromptOptions(project.promptOptions || { includeCameraStyle: true, includeColorPalette: true })
+    
     setCurrentProjectId(project.id)
     setShowProjectManager(false)
     
-    // If there's a breakdown, show it
-    if (project.breakdown?.storyStructure) {
+    // Auto-select appropriate section based on mode
+    if (project.isMusicVideoMode && project.musicVideoBreakdown?.musicVideoStructure) {
+      setSelectedMusicVideoSection(project.selectedMusicVideoSection || project.musicVideoBreakdown.musicVideoStructure.sections[0]?.id || "")
+    } else if (!project.isMusicVideoMode && project.breakdown?.storyStructure) {
       setSelectedChapter(project.selectedChapter || project.breakdown.storyStructure.chapters[0]?.id || "")
     }
   }
 
   const handleNewProject = () => {
+    // Clear all data
     setBreakdown(null)
+    setMusicVideoBreakdown(null)
     setStory("")
+    setMusicVideoData({ lyrics: "", songTitle: "", artist: "", genre: "" })
     setAdditionalShots({})
     setSelectedChapter("")
+    setSelectedMusicVideoSection("")
+    setSelectedTreatment(null)
     setExpandedChapters({})
     setActiveChapterForGeneration("")
     setError("")
@@ -566,6 +604,9 @@ export default function StoryBreakdownPage() {
     setTitleCardChapter("")
     setCurrentProjectId("")
     setShowProjectManager(false)
+    
+    // Reset to story mode by default
+    setIsMusicVideoMode(false)
   }
 
   const handleProjectSaved = (projectId: string) => {
@@ -574,17 +615,62 @@ export default function StoryBreakdownPage() {
 
   const getCurrentProjectData = () => ({
     name: currentProjectId ? "Current Project" : `Project ${new Date().toLocaleDateString()}`,
+    isMusicVideoMode,
+    // Story mode data
     story,
     selectedDirector,
     breakdown,
     additionalShots,
     titleCardOptions,
     titleCardApproaches,
-    customDirectors,
-    promptOptions,
     selectedChapter,
-    expandedChapters
+    expandedChapters,
+    // Music video mode data
+    musicVideoData,
+    musicVideoBreakdown,
+    selectedTreatment,
+    selectedMusicVideoSection,
+    // Shared data
+    customDirectors,
+    promptOptions
   })
+
+  const handleGenerateMusicVideo = async () => {
+    if (!musicVideoData.lyrics.trim()) {
+      setError("Please enter song lyrics")
+      return
+    }
+
+    setIsGenerating(true)
+    setError("")
+
+    try {
+      const { generateFullMusicVideoBreakdown } = await import('./actions')
+      const result = await generateFullMusicVideoBreakdown(
+        musicVideoData.lyrics,
+        selectedDirector,
+        musicVideoData.songTitle || undefined,
+        musicVideoData.artist || undefined,
+        musicVideoData.genre || undefined,
+        customDirectors,
+        promptOptions
+      )
+      
+      setMusicVideoBreakdown(result)
+      setSelectedTreatment(result.selectedTreatment)
+      
+      // Auto-select first section
+      if (result.musicVideoStructure?.sections.length > 0) {
+        setSelectedMusicVideoSection(result.musicVideoStructure.sections[0].id)
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate music video breakdown."
+      setError(errorMessage)
+      console.error(err)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   // Auto-save functionality
   React.useEffect(() => {
@@ -608,44 +694,40 @@ export default function StoryBreakdownPage() {
       {/* Header */}
       <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-4">
         <div className="flex items-center justify-between">
+          {/* Mode Toggle */}
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg p-1">
+              <Button
+                size="sm"
+                variant={!isMusicVideoMode ? "default" : "ghost"}
+                onClick={() => {
+                  setIsMusicVideoMode(false)
+                  setBreakdown(null)
+                  setMusicVideoBreakdown(null)
+                }}
+                className={!isMusicVideoMode ? "bg-amber-600 hover:bg-amber-700" : "text-slate-300 hover:bg-slate-700"}
+              >
+                <BookOpen className="h-4 w-4 mr-1" />
+                Story Mode
+              </Button>
+              <Button
+                size="sm"
+                variant={isMusicVideoMode ? "default" : "ghost"}
+                onClick={() => {
+                  setIsMusicVideoMode(true)
+                  setBreakdown(null)
+                  setMusicVideoBreakdown(null)
+                }}
+                className={isMusicVideoMode ? "bg-purple-600 hover:bg-purple-700" : "text-slate-300 hover:bg-slate-700"}
+              >
+                <PlayCircle className="h-4 w-4 mr-1" />
+                Music Video Mode
+              </Button>
+            </div>
             <Film className="h-6 w-6 text-amber-400" />
-            <h1 className="text-2xl font-bold text-white">Visual Story Breakdown</h1>
-            {breakdown?.storyStructure && (
-              <div className="flex gap-2 ml-4">
-                <Button
-                  onClick={() => setShowProjectManager(!showProjectManager)}
-                  variant="outline"
-                  size="sm"
-                  className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
-                >
-                  <FolderOpen className="h-4 w-4 mr-1" />
-                  Projects
-                </Button>
-                <Button
-                  onClick={() => {
-                    // Just hide the breakdown view, don't clear data
-                    setSelectedChapter("")
-                    setSidebarOpen(false)
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="border-blue-500/30 text-blue-300 hover:bg-blue-600/20"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Back to Input
-                </Button>
-                <Button
-                  onClick={handleNewProject}
-                  variant="outline"
-                  size="sm"
-                  className="border-amber-500/30 text-amber-300 hover:bg-amber-600/20"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Story
-                </Button>
-              </div>
-            )}
+            <h1 className="text-2xl font-bold text-white">
+              {isMusicVideoMode ? "Music Video Breakdown" : "Visual Story Breakdown"}
+            </h1>
           </div>
           {breakdown?.storyStructure && (
             <Button
@@ -662,28 +744,52 @@ export default function StoryBreakdownPage() {
 
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar */}
-        {breakdown?.storyStructure && (
+        {((breakdown?.storyStructure && !isMusicVideoMode) || (musicVideoBreakdown?.musicVideoStructure && isMusicVideoMode)) && (
           <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 fixed lg:relative z-30 w-80 bg-slate-800/90 backdrop-blur-sm border-r border-slate-700 h-full overflow-y-auto`}>
             <div className="p-4 space-y-4">
-              {/* Story Overview */}
+              {/* Overview */}
               <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="h-4 w-4 text-amber-400" />
-                  <h3 className="text-white font-semibold">Story Overview</h3>
+                  {isMusicVideoMode ? (
+                    <>
+                      <PlayCircle className="h-4 w-4 text-purple-400" />
+                      <h3 className="text-white font-semibold">Music Video Overview</h3>
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="h-4 w-4 text-amber-400" />
+                      <h3 className="text-white font-semibold">Story Overview</h3>
+                    </>
+                  )}
                 </div>
-                <div className="flex gap-2 mb-3">
-                  <Badge variant="secondary" className="bg-amber-600/20 text-amber-300 text-xs">
-                    {breakdown.storyStructure.totalChapters} chapters
-                  </Badge>
-                  <Badge variant="outline" className="border-slate-500 text-slate-300 text-xs">
-                    {totalShots} total shots
-                  </Badge>
-                </div>
-                <p className="text-slate-400 text-xs">
-                  {breakdown.storyStructure.detectionMethod === 'existing' ? 'Detected existing structure' :
-                   breakdown.storyStructure.detectionMethod === 'hybrid' ? 'Enhanced existing structure' :
-                   'AI-generated structure'}
-                </p>
+                
+                {isMusicVideoMode && musicVideoBreakdown ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2 mb-3">
+                      <Badge variant="secondary" className="bg-purple-600/20 text-purple-300 text-xs">
+                        {musicVideoBreakdown.musicVideoStructure.totalSections} sections
+                      </Badge>
+                      <Badge variant="outline" className="border-slate-500 text-slate-300 text-xs">
+                        {musicVideoBreakdown.sectionBreakdowns?.reduce((sum: number, section: any) => sum + section.shots.length, 0)} shots
+                      </Badge>
+                    </div>
+                    <div className="text-slate-400 text-xs space-y-1">
+                      <div>Song: {musicVideoBreakdown.musicVideoStructure.songTitle}</div>
+                      <div>Artist: {musicVideoBreakdown.musicVideoStructure.artist}</div>
+                      <div>Genre: {musicVideoBreakdown.musicVideoStructure.genre}</div>
+                      <div>Structure: {musicVideoBreakdown.musicVideoStructure.detectionMethod}</div>
+                    </div>
+                  </div>
+                ) : breakdown && (
+                  <div className="flex gap-2 mb-3">
+                    <Badge variant="secondary" className="bg-amber-600/20 text-amber-300 text-xs">
+                      {breakdown.storyStructure.totalChapters} chapters
+                    </Badge>
+                    <Badge variant="outline" className="border-slate-500 text-slate-300 text-xs">
+                      {totalShots} total shots
+                    </Badge>
+                  </div>
+                )}
               </div>
 
               {/* Search */}
@@ -705,6 +811,7 @@ export default function StoryBreakdownPage() {
                       { key: 'all', label: 'All' },
                       { key: 'characters', label: 'Characters' },
                       { key: 'locations', label: 'Locations' },
+                      { key: 'props', label: 'Props' },
                       { key: 'shots', label: 'Shots' }
                     ].map(({ key, label }) => (
                       <Button
@@ -739,50 +846,106 @@ export default function StoryBreakdownPage() {
                 </div>
               </div>
 
-              {/* Chapter Navigation */}
+              {/* Navigation */}
               <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
-                <h3 className="text-white font-semibold mb-3">Chapters</h3>
+                <h3 className="text-white font-semibold mb-3">
+                  {isMusicVideoMode ? "Sections" : "Chapters"}
+                </h3>
                 <div className="space-y-2">
-                  {breakdown.storyStructure.chapters.map((chapter, index) => {
-                    const chapterBreakdown = breakdown.chapterBreakdowns?.find(cb => cb.chapterId === chapter.id)
-                    const chapterAdditionalShots = additionalShots[chapter.id] || []
-                    const chapterTotalShots = (chapterBreakdown?.shots.length || 0) + chapterAdditionalShots.length
-                    const isSelected = selectedChapter === chapter.id
-                    
-                    return (
-                      <Button
-                        key={chapter.id}
-                        variant="ghost"
-                        onClick={() => selectChapter(chapter.id)}
-                        className={`w-full h-auto p-3 justify-start transition-all ${
-                          isSelected 
-                            ? 'bg-amber-600/20 border border-amber-500/30 hover:bg-amber-600/30' 
-                            : 'hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                              isSelected 
-                                ? 'bg-amber-500 text-slate-900' 
-                                : 'bg-amber-600/20 text-amber-300'
-                            }`}>
-                              {index + 1}
+                  {isMusicVideoMode && musicVideoBreakdown ? (
+                    musicVideoBreakdown.musicVideoStructure.sections.map((section: any, index: number) => {
+                      const sectionBreakdown = musicVideoBreakdown.sectionBreakdowns?.find((sb: any) => sb.sectionId === section.id)
+                      const sectionTotalShots = sectionBreakdown?.shots.length || 0
+                      const isSelected = selectedMusicVideoSection === section.id
+                      
+                      return (
+                        <Button
+                          key={section.id}
+                          variant="ghost"
+                          onClick={() => setSelectedMusicVideoSection(section.id)}
+                          className={`w-full h-auto p-3 justify-start transition-all ${
+                            isSelected 
+                              ? 'bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/30' 
+                              : 'hover:bg-slate-700/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                                isSelected 
+                                  ? 'bg-purple-500 text-white' 
+                                  : 'bg-purple-600/20 text-purple-300'
+                              }`}>
+                                {index + 1}
+                              </div>
+                              <div className="text-left">
+                                <div className="text-white font-medium text-sm">{section.title}</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge className={`text-xs ${
+                                    section.type === 'chorus' ? 'bg-purple-600/20 text-purple-300 border-purple-700/30' :
+                                    section.type === 'verse' ? 'bg-blue-600/20 text-blue-300 border-blue-700/30' :
+                                    section.type === 'bridge' ? 'bg-green-600/20 text-green-300 border-green-700/30' :
+                                    'bg-slate-600/20 text-slate-300 border-slate-700/30'
+                                  }`}>
+                                    {section.type}
+                                  </Badge>
+                                  {section.isHook && (
+                                    <Badge variant="outline" className="border-purple-500/30 text-purple-300 text-xs">
+                                      Hook #{section.repetitionNumber}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-left">
-                              <div className="text-white font-medium text-sm">{chapter.title}</div>
-                              <Badge className={`text-xs mt-1 ${getNarrativeBeatColor(chapter.narrativeBeat)}`}>
-                                {chapter.narrativeBeat.replace('-', ' ')}
-                              </Badge>
-                            </div>
+                            <Badge variant="secondary" className="bg-slate-600/20 text-slate-300 text-xs">
+                              {sectionTotalShots}
+                            </Badge>
                           </div>
-                          <Badge variant="secondary" className="bg-slate-600/20 text-slate-300 text-xs">
-                            {chapterTotalShots}
-                          </Badge>
-                        </div>
-                      </Button>
-                    )
-                  })}
+                        </Button>
+                      )
+                    })
+                  ) : breakdown && (
+                    breakdown.storyStructure.chapters.map((chapter: any, index: number) => {
+                      const chapterBreakdown = breakdown.chapterBreakdowns?.find((cb: any) => cb.chapterId === chapter.id)
+                      const chapterAdditionalShots = additionalShots[chapter.id] || []
+                      const chapterTotalShots = (chapterBreakdown?.shots.length || 0) + chapterAdditionalShots.length
+                      const isSelected = selectedChapter === chapter.id
+                      
+                      return (
+                        <Button
+                          key={chapter.id}
+                          variant="ghost"
+                          onClick={() => selectChapter(chapter.id)}
+                          className={`w-full h-auto p-3 justify-start transition-all ${
+                            isSelected 
+                              ? 'bg-amber-600/20 border border-amber-500/30 hover:bg-amber-600/30' 
+                              : 'hover:bg-slate-700/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                                isSelected 
+                                  ? 'bg-amber-500 text-slate-900' 
+                                  : 'bg-amber-600/20 text-amber-300'
+                              }`}>
+                                {index + 1}
+                              </div>
+                              <div className="text-left">
+                                <div className="text-white font-medium text-sm">{chapter.title}</div>
+                                <Badge className={`text-xs mt-1 ${getNarrativeBeatColor(chapter.narrativeBeat)}`}>
+                                  {chapter.narrativeBeat.replace('-', ' ')}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="bg-slate-600/20 text-slate-300 text-xs">
+                              {chapterTotalShots}
+                            </Badge>
+                          </div>
+                        </Button>
+                      )
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -883,6 +1046,177 @@ export default function StoryBreakdownPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Music Video Input Section */}
+                {isMusicVideoMode && !musicVideoBreakdown?.musicVideoStructure && (
+                  <>
+                    <div className="text-center mb-8">
+                      <p className="text-slate-300 text-lg">
+                        Transform song lyrics into synchronized visual shot breakdowns with performance and narrative coverage
+                      </p>
+                    </div>
+
+                    <Card className="bg-slate-800/50 border-slate-700">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <PlayCircle className="h-5 w-5 text-purple-400" />
+                          Song Information
+                        </CardTitle>
+                        <CardDescription className="text-slate-300">
+                          Provide song details for optimal music video breakdown
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-white mb-2 block">Song Title</label>
+                            <input
+                              type="text"
+                              placeholder="e.g., Blinding Lights"
+                              value={musicVideoData.songTitle}
+                              onChange={(e) => setMusicVideoData(prev => ({ ...prev, songTitle: e.target.value }))}
+                              className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium text-white mb-2 block">Artist</label>
+                            <input
+                              type="text"
+                              placeholder="e.g., The Weeknd"
+                              value={musicVideoData.artist}
+                              onChange={(e) => setMusicVideoData(prev => ({ ...prev, artist: e.target.value }))}
+                              className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium text-white mb-2 block">Genre</label>
+                            <Select 
+                              value={musicVideoData.genre} 
+                              onValueChange={(value) => setMusicVideoData(prev => ({ ...prev, genre: value }))}
+                            >
+                              <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white">
+                                <SelectValue placeholder="Select genre..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-800 border-slate-600">
+                                {MUSIC_VIDEO_GENRES.map((genre) => (
+                                  <SelectItem
+                                    key={genre}
+                                    value={genre.toLowerCase()}
+                                    className="text-white hover:bg-slate-700 focus:bg-slate-700"
+                                  >
+                                    {genre}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-slate-800/50 border-slate-700">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <Camera className="h-5 w-5 text-purple-400" />
+                          Lyrics Input
+                        </CardTitle>
+                        <CardDescription className="text-slate-300">
+                          Paste your song lyrics below. Include timestamps [00:00] if available for perfect sync
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="relative">
+                          <Textarea
+                            placeholder={`Enter your lyrics here...
+
+With timestamps (recommended):
+[00:00] Intro instrumental
+[00:15] Verse 1: "Walking through the door, can't take it anymore"
+[00:23] "See your face in every place I go"
+[00:31] Chorus: "But I'm moving on, moving on..."
+
+Without timestamps (system will estimate):
+Verse 1:
+Walking through the door, can't take it anymore
+See your face in every place I go
+
+Chorus:
+But I'm moving on, moving on...`}
+                            value={musicVideoData.lyrics}
+                            onChange={(e) => setMusicVideoData(prev => ({ ...prev, lyrics: e.target.value }))}
+                            className="min-h-[300px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400 resize-none pr-20 font-mono text-sm"
+                          />
+                          <div className="absolute top-2 right-2 flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                try {
+                                  const text = await navigator.clipboard.readText()
+                                  setMusicVideoData(prev => ({ ...prev, lyrics: text }))
+                                } catch (err) {
+                                  console.error("Failed to paste text: ", err)
+                                }
+                              }}
+                              className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700"
+                              title="Paste from clipboard"
+                            >
+                              <Clipboard className="h-4 w-4" />
+                            </Button>
+                            {musicVideoData.lyrics && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(musicVideoData.lyrics, "music-lyrics")}
+                                className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700"
+                                title="Copy lyrics"
+                              >
+                                {copiedStates["music-lyrics"] ? (
+                                  <Check className="h-4 w-4 text-green-400" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm text-slate-400 mt-2 flex items-center justify-between">
+                          <span>{musicVideoData.lyrics.length} characters</span>
+                          <div className="flex items-center gap-4 text-xs">
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              Timestamps detected: {(musicVideoData.lyrics.match(/\[\d{2}:\d{2}\]/g) || []).length}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                              Auto-structure mode: {(musicVideoData.lyrics.match(/\[\d{2}:\d{2}\]/g) || []).length === 0 ? 'ON' : 'OFF'}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Button
+                      onClick={handleGenerateMusicVideo}
+                      disabled={isGenerating || !musicVideoData.lyrics.trim()}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 text-lg"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                          Analyzing Song Structure & Generating Treatments...
+                        </>
+                      ) : (
+                        <>
+                          <PlayCircle className="h-5 w-5 mr-2" />
+                          Generate Music Video Breakdown
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
 
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
@@ -1848,6 +2182,221 @@ export default function StoryBreakdownPage() {
                   <div className="p-4 bg-red-900/20 border border-red-700 rounded-lg">
                     <p className="text-red-300">{error}</p>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Music Video Results Section */}
+            {isMusicVideoMode && musicVideoBreakdown?.musicVideoStructure && (
+              <div className="space-y-6">
+                {/* Treatment Selection */}
+                <Card className="bg-slate-800/50 border-slate-700 border-purple-500/30">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Film className="h-5 w-5 text-purple-400" />
+                      Video Treatments
+                      <Badge variant="secondary" className="bg-purple-600/20 text-purple-300">
+                        {musicVideoBreakdown.treatments?.length || 0} options
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription className="text-slate-300">
+                      Choose your preferred video treatment approach
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {musicVideoBreakdown.treatments?.map((treatment: any, index: number) => (
+                      <div
+                        key={treatment.id}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                          selectedTreatment?.id === treatment.id
+                            ? 'bg-purple-900/20 border-purple-500/50'
+                            : 'bg-slate-900/30 border-slate-600 hover:bg-slate-900/50'
+                        }`}
+                        onClick={() => setSelectedTreatment(treatment)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-white font-semibold">{treatment.title}</h4>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="border-purple-500/30 text-purple-300 text-xs">
+                              {treatment.performanceRatio}
+                            </Badge>
+                            {selectedTreatment?.id === treatment.id && (
+                              <Badge className="bg-purple-600 text-white text-xs">Selected</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-slate-300 text-sm mb-2">{treatment.concept}</p>
+                        <p className="text-slate-400 text-xs">{treatment.visualTheme}</p>
+                        
+                        {selectedTreatment?.id === treatment.id && (
+                          <div className="mt-3 pt-3 border-t border-slate-600">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                              <div>
+                                <span className="text-purple-400 font-semibold">First Hook:</span>
+                                <p className="text-slate-300">{treatment.hookStrategy?.firstChorus}</p>
+                              </div>
+                              <div>
+                                <span className="text-purple-400 font-semibold">Second Hook:</span>
+                                <p className="text-slate-300">{treatment.hookStrategy?.secondChorus}</p>
+                              </div>
+                              <div>
+                                <span className="text-purple-400 font-semibold">Final Hook:</span>
+                                <p className="text-slate-300">{treatment.hookStrategy?.finalChorus}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Selected Section Content */}
+                {selectedMusicVideoSection && (() => {
+                  const section = musicVideoBreakdown.musicVideoStructure.sections.find((s: any) => s.id === selectedMusicVideoSection)
+                  const sectionBreakdown = musicVideoBreakdown.sectionBreakdowns?.find((sb: any) => sb.sectionId === selectedMusicVideoSection)
+                  
+                  if (!section || !sectionBreakdown) return null
+
+                  const sectionIndex = musicVideoBreakdown.musicVideoStructure.sections.findIndex((s: any) => s.id === selectedMusicVideoSection)
+                  
+                  return (
+                    <Card className="bg-slate-800/50 border-slate-700 shadow-lg">
+                      <CardHeader className="border-l-4 border-purple-500">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                              {sectionIndex + 1}
+                            </div>
+                            <div>
+                              <CardTitle className="text-white text-2xl">{section.title}</CardTitle>
+                              <CardDescription className="text-slate-300 mt-1">
+                                {section.type} • {section.duration ? `${section.duration}s` : section.estimatedDuration}
+                                {section.isHook && <span className="text-purple-400"> • Hook #{section.repetitionNumber}</span>}
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className="bg-purple-600/20 text-purple-300 border-purple-700/30">
+                              {sectionBreakdown.performanceRatio}% performance
+                            </Badge>
+                            <Badge variant="secondary" className="bg-slate-600/20 text-slate-300">
+                              {sectionBreakdown.shots.length} shots
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-6">
+                        {/* Section Actions */}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(sectionBreakdown.shots.join("\n\n"), `section-${selectedMusicVideoSection}`)}
+                            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                          >
+                            {copiedStates[`section-${selectedMusicVideoSection}`] ? (
+                              <Check className="h-3 w-3 mr-1 text-green-400" />
+                            ) : (
+                              <Copy className="h-3 w-3 mr-1" />
+                            )}
+                            Copy All Shots
+                          </Button>
+                        </div>
+
+                        {/* Lyrics Display */}
+                        <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-700/30">
+                          <h5 className="text-purple-400 font-semibold mb-2">Lyrics</h5>
+                          <p className="text-slate-200 font-mono text-sm whitespace-pre-line">{section.lyrics}</p>
+                        </div>
+
+                        {/* Sync Points */}
+                        {sectionBreakdown.syncPoints && sectionBreakdown.syncPoints.length > 0 && (
+                          <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-700/30">
+                            <h5 className="text-blue-400 font-semibold mb-2">Key Sync Points</h5>
+                            <div className="space-y-1">
+                              {sectionBreakdown.syncPoints.map((syncPoint: string, index: number) => (
+                                <p key={index} className="text-slate-300 text-sm">• {syncPoint}</p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Shots */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
+                            <h4 className="text-purple-400 font-semibold">Shot Breakdown</h4>
+                            <Badge variant="secondary" className="bg-purple-600/20 text-purple-300 text-xs">
+                              {sectionBreakdown.shots.length} shots
+                            </Badge>
+                          </div>
+                          <div className="space-y-2">
+                            {sectionBreakdown.shots.map((shot: string, shotIndex: number) => (
+                              <div key={shotIndex} className="p-3 bg-slate-900/30 rounded-lg border border-slate-600">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs text-purple-400 font-semibold">SHOT</span>
+                                  <span className="text-xs text-slate-500">#{shotIndex + 1}</span>
+                                  {sectionBreakdown.performanceNotes && sectionBreakdown.performanceNotes[shotIndex] && (
+                                    <Badge variant="outline" className="border-green-500/30 text-green-300 text-xs">
+                                      Performance
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-slate-200 font-mono text-sm leading-relaxed">{shot}</p>
+                                {sectionBreakdown.performanceNotes && sectionBreakdown.performanceNotes[shotIndex] && (
+                                  <p className="text-green-400 text-xs mt-2 italic">
+                                    {sectionBreakdown.performanceNotes[shotIndex]}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Production Notes */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {sectionBreakdown.wardrobeNote && (
+                            <div className="p-3 bg-slate-900/20 rounded-lg border border-slate-600">
+                              <h5 className="text-amber-400 font-semibold mb-2">Wardrobe</h5>
+                              <p className="text-slate-300 text-sm">{sectionBreakdown.wardrobeNote}</p>
+                            </div>
+                          )}
+                          
+                          {sectionBreakdown.locationNote && (
+                            <div className="p-3 bg-slate-900/20 rounded-lg border border-slate-600">
+                              <h5 className="text-amber-400 font-semibold mb-2">Location</h5>
+                              <p className="text-slate-300 text-sm">{sectionBreakdown.locationNote}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Transition Note */}
+                        {sectionBreakdown.transitionNote && (
+                          <div className="p-3 bg-slate-900/20 rounded-lg border border-slate-600">
+                            <h5 className="text-slate-300 font-semibold mb-2">Transition to Next Section</h5>
+                            <p className="text-slate-400 text-sm">{sectionBreakdown.transitionNote}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
+                {/* Overall Analysis */}
+                {musicVideoBreakdown.overallAnalysis && (
+                  <Card className="bg-slate-800/50 border-slate-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-purple-400" />
+                        Music Video Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-slate-300 whitespace-pre-line">{musicVideoBreakdown.overallAnalysis}</p>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             )}

@@ -78,6 +78,81 @@ interface PromptOptions {
   includeColorPalette: boolean
 }
 
+// Music Video Interfaces
+interface MusicVideoSection {
+  id: string
+  type: 'intro' | 'verse' | 'chorus' | 'bridge' | 'outro' | 'instrumental'
+  title: string
+  lyrics: string
+  startTime?: string
+  endTime?: string
+  duration?: number
+  isHook: boolean
+  repetitionNumber?: number
+  estimatedDuration: string
+}
+
+interface MusicVideoStructure {
+  sections: MusicVideoSection[]
+  detectionMethod: 'timestamp' | 'ai-structure' | 'hybrid'
+  totalSections: number
+  songTitle: string
+  artist: string
+  genre: string
+  hookSections: string[]
+  fullLyrics: string
+}
+
+interface MusicVideoBreakdown {
+  sectionId: string
+  lyrics: string
+  performanceRatio: number // 0-100, percentage of performance vs narrative
+  shots: string[]
+  performanceNotes: string[]
+  syncPoints: string[]
+  transitionNote: string
+  wardrobeNote?: string
+  locationNote?: string
+}
+
+interface MusicVideoTreatment {
+  id: string
+  title: string
+  concept: string
+  visualTheme: string
+  narrativeArc: string
+  performanceRatio: string
+  keyMoments: Array<{
+    section: string
+    description: string
+  }>
+  hookStrategy: {
+    firstChorus: string
+    secondChorus: string
+    finalChorus: string
+  }
+}
+
+interface FullMusicVideoResult {
+  musicVideoStructure: MusicVideoStructure
+  treatments: MusicVideoTreatment[]
+  selectedTreatment?: MusicVideoTreatment
+  sectionBreakdowns: MusicVideoBreakdown[]
+  wardrobePlan: Array<{
+    lookNumber: number
+    sections: string[]
+    description: string
+    purpose: string
+  }>
+  locationProgression: Array<{
+    section: string
+    location: string
+    purpose: string
+    transitionPoint: string
+  }>
+  overallAnalysis: string
+}
+
 const STRUCTURE_DETECTION_PROMPT = `You are a professional story structure analyst. Your job is to detect existing chapter/scene structure in a story and enhance it with AI analysis for optimal visual breakdown.
 
 DETECTION PRIORITIES:
@@ -240,6 +315,131 @@ Generate only the requested visual approaches. Return your response in this exac
       "description": "Detailed visual description with title text in quotes"
     }
   ]
+}`
+
+const MUSIC_VIDEO_STRUCTURE_PROMPT = `You are a professional music video director and editor with expertise in song structure analysis. Your job is to analyze lyrics and create a comprehensive section breakdown for music video production.
+
+ANALYSIS PRIORITIES:
+1. TIMESTAMP DETECTION: Look for [00:00] format timestamps if provided
+2. SECTION IDENTIFICATION: Identify verses, choruses, bridges, intro, outro
+3. HOOK DETECTION: Find repeated lyrical phrases (usually the chorus/hook)
+4. STRUCTURE LOGIC: Apply standard song structure knowledge (verse ~30-45s, chorus ~20-30s)
+5. REPETITION TRACKING: Number repeated sections (Chorus 1, Chorus 2, etc.)
+
+SECTION CLASSIFICATION RULES:
+- INTRO: Instrumental or opening lines before first verse
+- VERSE: Narrative sections, usually longer, tell the story
+- CHORUS/HOOK: Repeated sections, usually the most memorable part
+- BRIDGE: Appears once, different from verse/chorus pattern
+- OUTRO: Ending section, may repeat chorus or fade
+
+TIMING COMPENSATION:
+- With timestamps: Use exact timing
+- Without timestamps: Estimate based on typical song structure
+- Hybrid: Use provided timestamps and estimate missing sections
+
+Return your analysis in this exact JSON format:
+{
+  "detectionMethod": "timestamp",
+  "songTitle": "Song title if provided",
+  "artist": "Artist name if provided", 
+  "genre": "Detected or provided genre",
+  "sections": [
+    {
+      "id": "section-1",
+      "type": "intro",
+      "title": "Intro",
+      "lyrics": "Full lyrics for this section",
+      "startTime": "00:00",
+      "endTime": "00:15",
+      "duration": 15,
+      "isHook": false,
+      "repetitionNumber": 1,
+      "estimatedDuration": "Short"
+    }
+  ],
+  "hookSections": ["section-id-1", "section-id-2"],
+  "totalSections": 6,
+  "analysisNotes": "Brief explanation of structure detection approach"
+}`
+
+const MUSIC_VIDEO_TREATMENT_PROMPT = `You are a world-renowned music video director with 20+ years experience directing for artists like Beyoncé, The Weeknd, and Kendrick Lamar. You understand visual storytelling, performance dynamics, and how to create memorable moments that become cultural touchstones.
+
+TASK: Create 3 distinct video treatments for the provided song.
+
+TREATMENT REQUIREMENTS:
+Each treatment must include:
+1. ONE-LINE CONCEPT (the elevator pitch)
+2. VISUAL THEME (the overall aesthetic/mood) 
+3. NARRATIVE ARC (what story unfolds, even if abstract)
+4. PERFORMANCE RATIO (% performance vs % narrative/artistic)
+5. KEY VISUAL MOMENTS (3-5 signature shots that define this video)
+6. HOOK TREATMENT (what we see during repeated sections - MUST be different each repetition)
+
+TREATMENT STYLES TO GENERATE:
+Treatment 1: GENRE-CLASSIC - What fans of this genre expect and love
+Treatment 2: CINEMATIC NARRATIVE - Tell a complete story through the song  
+Treatment 3: AVANT-GARDE/ARTISTIC - Unexpected, visually striking, potentially viral
+
+DIRECTOR STYLE INTEGRATION:
+Apply the selected director's visual approach to each treatment while maintaining music video conventions.
+
+Return your response in this exact JSON format:
+{
+  "treatments": [
+    {
+      "id": "treatment-1",
+      "title": "Genre Classic Treatment",
+      "concept": "One line elevator pitch",
+      "visualTheme": "Aesthetic description",
+      "narrativeArc": "Story progression",
+      "performanceRatio": "70% performance / 30% narrative",
+      "keyMoments": [
+        {
+          "section": "Section name",
+          "description": "Visual description"
+        }
+      ],
+      "hookStrategy": {
+        "firstChorus": "What we see in first chorus",
+        "secondChorus": "How it evolves in second chorus", 
+        "finalChorus": "Climactic final chorus approach"
+      }
+    }
+  ]
+}`
+
+const MUSIC_VIDEO_SECTION_BREAKDOWN_PROMPT = `You are a cinematographer and director creating a shot-by-shot breakdown for a music video section. You must sync visuals PERFECTLY to the lyrics and musical moments.
+
+CRITICAL MUSIC VIDEO RULES:
+1. PERFORMANCE SYNC: When lyrics are being sung, artist must be visible lip-syncing at least 40% of the time
+2. HOOK ESCALATION: Each repetition of chorus/hook must be visually different and more intense
+3. VISUAL PACING: Shot cuts must match the rhythm and energy of the music
+4. PERFORMANCE RATIO: Maintain the specified performance vs narrative balance
+5. SEAMLESS TRANSITIONS: Each section must flow smoothly to the next
+
+RUNWAY ML GEN 4 OPTIMIZATION:
+- Use professional music video terminology
+- Include performance staging details
+- Specify lip-sync moments clearly
+- Describe artist positioning and movement
+- Include lighting and atmosphere for mood
+
+SECTION ANALYSIS:
+- Identify the emotional energy of this section (1-10 scale)
+- Determine primary focus (performance/narrative/artistic)
+- Plan shot count based on lyrical phrasing and musical tempo
+- Consider this section's role in the overall video arc
+
+Return your response in this exact JSON format:
+{
+  "performanceRatio": 70,
+  "shots": ["Shot description with lip-sync and performance notes"],
+  "performanceNotes": ["Specific notes about artist performance and lip-sync timing"],
+  "syncPoints": ["Key lyrical moments that must be perfectly synced"],
+  "transitionNote": "How this section transitions to the next",
+  "wardrobeNote": "Any wardrobe considerations for this section",
+  "locationNote": "Location or set requirements for this section"
 }`
 
 export async function analyzeStoryStructure(story: string): Promise<StoryStructure> {
@@ -619,6 +819,334 @@ Generate additional shots for this specific chapter based on the requests above.
     console.error("Error generating additional chapter shots:", error)
     throw new Error("Failed to generate additional shots for this chapter. Please try again.")
   }
+}
+
+export async function analyzeMusicVideoStructure(
+  lyrics: string,
+  songTitle?: string,
+  artist?: string,
+  genre?: string
+): Promise<MusicVideoStructure> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OpenAI API key is not configured.")
+  }
+
+  const prompt = `${MUSIC_VIDEO_STRUCTURE_PROMPT}
+
+SONG INFORMATION:
+Title: ${songTitle || 'Unknown'}
+Artist: ${artist || 'Unknown'}
+Genre: ${genre || 'Unknown'}
+
+LYRICS TO ANALYZE:
+${lyrics}
+
+Analyze this song's structure and return the section breakdown in the specified JSON format.`
+
+  try {
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      prompt,
+      temperature: 0.3,
+    })
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("No valid JSON found in structure analysis response")
+    }
+
+    const result = JSON.parse(jsonMatch[0])
+
+    return {
+      sections: result.sections || [],
+      detectionMethod: result.detectionMethod || 'ai-structure',
+      totalSections: result.totalSections || result.sections?.length || 0,
+      songTitle: result.songTitle || songTitle || 'Unknown',
+      artist: result.artist || artist || 'Unknown', 
+      genre: result.genre || genre || 'Unknown',
+      hookSections: result.hookSections || [],
+      fullLyrics: lyrics
+    }
+  } catch (error) {
+    console.error("Error analyzing music video structure:", error)
+    throw new Error("Failed to analyze song structure. Please try again.")
+  }
+}
+
+export async function generateMusicVideoTreatments(
+  musicVideoStructure: MusicVideoStructure,
+  director: string,
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions
+): Promise<MusicVideoTreatment[]> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OpenAI API key is not configured.")
+  }
+
+  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
+
+  const prompt = `${MUSIC_VIDEO_TREATMENT_PROMPT}
+
+DIRECTOR SELECTION: ${directorContext}
+
+SONG INFORMATION:
+Title: ${musicVideoStructure.songTitle}
+Artist: ${musicVideoStructure.artist}
+Genre: ${musicVideoStructure.genre}
+Total Sections: ${musicVideoStructure.totalSections}
+
+SONG STRUCTURE:
+${musicVideoStructure.sections.map(section => 
+  `${section.title}: ${section.lyrics.substring(0, 100)}${section.lyrics.length > 100 ? '...' : ''}`
+).join('\n')}
+
+HOOK SECTIONS: ${musicVideoStructure.hookSections.length} repetitions
+${musicVideoStructure.sections
+  .filter(s => musicVideoStructure.hookSections.includes(s.id))
+  .map(s => `${s.title}: "${s.lyrics.substring(0, 50)}..."`)
+  .join('\n')}
+
+Generate 3 distinct treatments that work with this song structure and director style. Return only valid JSON.`
+
+  try {
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      prompt,
+      temperature: 0.8,
+    })
+
+    // Clean the response to ensure valid JSON
+    let cleanedText = text.trim()
+    
+    // Find the JSON block
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("No valid JSON found in treatment response")
+    }
+
+    let jsonString = jsonMatch[0]
+    
+    // Clean up common JSON issues
+    jsonString = jsonString
+      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+      .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Quote unquoted keys
+      .replace(/:\s*'([^']*)'/g, ': "$1"') // Replace single quotes with double quotes
+      .replace(/\n/g, ' ') // Replace newlines with spaces
+      .replace(/\s+/g, ' ') // Normalize whitespace
+
+    const result = JSON.parse(jsonString)
+    return result.treatments || []
+  } catch (error) {
+    console.error("Error generating music video treatments:", error)
+    console.error("Raw response:", text)
+    throw new Error("Failed to generate video treatments. Please try again.")
+  }
+}
+
+export async function generateMusicVideoSectionBreakdown(
+  musicVideoStructure: MusicVideoStructure,
+  sectionId: string,
+  director: string,
+  selectedTreatment: MusicVideoTreatment,
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions
+): Promise<MusicVideoBreakdown> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OpenAI API key is not configured.")
+  }
+
+  const section = musicVideoStructure.sections.find(s => s.id === sectionId)
+  if (!section) {
+    throw new Error(`Section ${sectionId} not found`)
+  }
+
+  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
+  const sectionIndex = musicVideoStructure.sections.findIndex(s => s.id === sectionId)
+  const previousSection = sectionIndex > 0 ? musicVideoStructure.sections[sectionIndex - 1] : null
+  const nextSection = sectionIndex < musicVideoStructure.sections.length - 1 ? musicVideoStructure.sections[sectionIndex + 1] : null
+
+  // Determine if this is a hook repetition and which number
+  const isHookRepetition = section.isHook && section.repetitionNumber
+  const hookStrategy = isHookRepetition ? 
+    (section.repetitionNumber === 1 ? selectedTreatment.hookStrategy.firstChorus :
+     section.repetitionNumber === 2 ? selectedTreatment.hookStrategy.secondChorus :
+     selectedTreatment.hookStrategy.finalChorus) : null
+
+  const prompt = `${MUSIC_VIDEO_SECTION_BREAKDOWN_PROMPT}
+
+DIRECTOR SELECTION: ${directorContext}
+
+SELECTED TREATMENT: ${selectedTreatment.title}
+Treatment Concept: ${selectedTreatment.concept}
+Visual Theme: ${selectedTreatment.visualTheme}
+Overall Performance Ratio: ${selectedTreatment.performanceRatio}
+
+CURRENT SECTION:
+Type: ${section.type}
+Title: ${section.title}
+Lyrics: ${section.lyrics}
+Duration: ${section.duration ? `${section.duration}s` : section.estimatedDuration}
+Is Hook: ${section.isHook}
+${isHookRepetition ? `Repetition #: ${section.repetitionNumber}` : ''}
+
+${hookStrategy ? `HOOK STRATEGY FOR THIS REPETITION: ${hookStrategy}` : ''}
+
+CONTEXT:
+Previous Section: ${previousSection ? `${previousSection.title} - "${previousSection.lyrics.substring(0, 50)}..."` : 'None (First section)'}
+Next Section: ${nextSection ? `${nextSection.title} - "${nextSection.lyrics.substring(0, 50)}..."` : 'None (Final section)'}
+
+SONG POSITION: Section ${sectionIndex + 1} of ${musicVideoStructure.totalSections}
+
+Generate comprehensive shot breakdown for this section that maintains perfect sync with lyrics and music. Return only valid JSON.`
+
+  try {
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      prompt,
+      temperature: 0.7,
+    })
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("No valid JSON found in section breakdown response")
+    }
+
+    const result = JSON.parse(jsonMatch[0])
+
+    return {
+      sectionId,
+      lyrics: section.lyrics,
+      performanceRatio: result.performanceRatio || 70,
+      shots: result.shots || [],
+      performanceNotes: result.performanceNotes || [],
+      syncPoints: result.syncPoints || [],
+      transitionNote: result.transitionNote || "",
+      wardrobeNote: result.wardrobeNote,
+      locationNote: result.locationNote
+    }
+  } catch (error) {
+    console.error("Error generating section breakdown:", error)
+    throw new Error(`Failed to generate breakdown for ${section.title}. Please try again.`)
+  }
+}
+
+export async function generateFullMusicVideoBreakdown(
+  lyrics: string,
+  director: string,
+  songTitle?: string,
+  artist?: string,
+  genre?: string,
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions
+): Promise<FullMusicVideoResult> {
+  // Step 1: Analyze song structure
+  const musicVideoStructure = await analyzeMusicVideoStructure(lyrics, songTitle, artist, genre)
+  
+  // Step 2: Generate treatments
+  const treatments = await generateMusicVideoTreatments(musicVideoStructure, director, customDirectors, promptOptions)
+  
+  // Step 3: Use first treatment as default (user can switch later)
+  const selectedTreatment = treatments[0]
+  
+  // Step 4: Generate breakdowns for each section
+  const sectionBreakdowns: MusicVideoBreakdown[] = []
+  
+  for (const section of musicVideoStructure.sections) {
+    const sectionBreakdown = await generateMusicVideoSectionBreakdown(
+      musicVideoStructure,
+      section.id,
+      director,
+      selectedTreatment,
+      customDirectors,
+      promptOptions
+    )
+    sectionBreakdowns.push(sectionBreakdown)
+  }
+
+  // Step 5: Generate wardrobe and location plans
+  const wardrobePlan = generateWardrobePlan(sectionBreakdowns, selectedTreatment)
+  const locationProgression = generateLocationProgression(sectionBreakdowns, selectedTreatment)
+  
+  // Step 6: Generate overall analysis
+  const totalShots = sectionBreakdowns.reduce((sum, section) => sum + section.shots.length, 0)
+  const avgPerformanceRatio = sectionBreakdowns.reduce((sum, section) => sum + section.performanceRatio, 0) / sectionBreakdowns.length
+  
+  const overallAnalysis = `Complete music video breakdown generated with ${musicVideoStructure.totalSections} sections, ${totalShots} total shots. Average performance ratio: ${Math.round(avgPerformanceRatio)}% performance / ${Math.round(100 - avgPerformanceRatio)}% narrative. Structure detection: ${musicVideoStructure.detectionMethod}. Treatment: "${selectedTreatment.title}" - ${selectedTreatment.concept}. All shots optimized for Runway ML Gen 4 with perfect lyric synchronization.`
+
+  return {
+    musicVideoStructure,
+    treatments,
+    selectedTreatment,
+    sectionBreakdowns,
+    wardrobePlan,
+    locationProgression,
+    overallAnalysis
+  }
+}
+
+function generateWardrobePlan(sectionBreakdowns: MusicVideoBreakdown[], treatment: MusicVideoTreatment): Array<{
+  lookNumber: number
+  sections: string[]
+  description: string
+  purpose: string
+}> {
+  // Simple wardrobe plan generation - can be enhanced
+  const looks = []
+  const sectionsPerLook = Math.ceil(sectionBreakdowns.length / 3)
+  
+  for (let i = 0; i < 3; i++) {
+    const startIndex = i * sectionsPerLook
+    const endIndex = Math.min(startIndex + sectionsPerLook, sectionBreakdowns.length)
+    const sections = sectionBreakdowns.slice(startIndex, endIndex).map(s => s.sectionId)
+    
+    looks.push({
+      lookNumber: i + 1,
+      sections,
+      description: `Look ${i + 1} - ${treatment.visualTheme} inspired outfit`,
+      purpose: i === 0 ? 'Establish character' : i === 1 ? 'Build intensity' : 'Climactic finale'
+    })
+  }
+  
+  return looks
+}
+
+function generateLocationProgression(sectionBreakdowns: MusicVideoBreakdown[], treatment: MusicVideoTreatment): Array<{
+  section: string
+  location: string
+  purpose: string
+  transitionPoint: string
+}> {
+  // Simple location progression - can be enhanced
+  return sectionBreakdowns.map((breakdown, index) => ({
+    section: breakdown.sectionId,
+    location: breakdown.locationNote || `Location ${index + 1}`,
+    purpose: `Support ${treatment.visualTheme} aesthetic`,
+    transitionPoint: breakdown.transitionNote || 'Smooth cut'
+  }))
 }
 
 function getDirectorContext(
