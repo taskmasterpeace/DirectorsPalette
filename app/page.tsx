@@ -9,82 +9,128 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Film, Camera, Zap, Eye, Palette, Clock, Copy, Clipboard, Check, Plus, Target, Layers, ChevronDown, ChevronRight, BookOpen, PlayCircle, BarChart3, Menu, X } from 'lucide-react'
+import { Film, Camera, Zap, Eye, Palette, Clock, Copy, Clipboard, Check, Plus, Target, Layers, ChevronDown, ChevronRight, BookOpen, PlayCircle, BarChart3, Menu, X, Settings } from 'lucide-react'
 import { generateBreakdown, generateAdditionalChapterShots } from "./actions"
 
 const DIRECTORS = [
-  { value: "none", label: "None (Standard Coverage)", icon: Camera },
+  { value: "none", label: "None (Standard Coverage)", icon: Camera, category: "Standard" },
+  
+  // Contemporary Masters
   {
-    value: "spike-lee",
-    label: "Spike Lee",
-    icon: Zap,
-    description: "Dynamic movement, bold colors, social consciousness",
-  },
-  {
-    value: "christopher-nolan",
-    label: "Christopher Nolan",
+    value: "taskmasterpeace",
+    label: "Taskmasterpeace Style",
     icon: Eye,
-    description: "IMAX scale, complex narratives, technical precision",
+    description: "Emotionally-driven visual storytelling with intimate dynamic cinematography",
+    category: "Contemporary"
   },
+  {
+    value: "roger-deakins",
+    label: "Roger Deakins Style", 
+    icon: Camera,
+    description: "Cinematic silhouettes and natural drama",
+    category: "Contemporary"
+  },
+  {
+    value: "emmanuel-lubezki",
+    label: "Emmanuel Lubezki Style",
+    icon: Layers,
+    description: "Flowing natural light poetry",
+    category: "Contemporary"
+  },
+  {
+    value: "rian-johnson",
+    label: "Rian Johnson Style",
+    icon: Target,
+    description: "Genre-blending creative storytelling",
+    category: "Contemporary"
+  },
+
+  // Auteur Directors
   {
     value: "wes-anderson",
     label: "Wes Anderson",
     icon: Palette,
-    description: "Symmetrical framing, whimsical details, vintage aesthetic",
+    description: "Whimsical symmetrical storytelling",
+    category: "Auteur"
   },
   {
     value: "denis-villeneuve",
     label: "Denis Villeneuve",
     icon: Clock,
-    description: "Atmospheric scale, slow pacing, environmental mood",
-  },
-  {
-    value: "quentin-tarantino",
-    label: "Quentin Tarantino",
-    icon: Zap,
-    description: "Pop culture dialogue, extreme close-ups, violence as art",
+    description: "Epic atmospheric sci-fi realism",
+    category: "Auteur"
   },
   {
     value: "david-fincher",
     label: "David Fincher",
     icon: Eye,
-    description: "Dark precision, psychological tension, meticulous detail",
+    description: "Precise psychological darkness",
+    category: "Auteur"
+  },
+  {
+    value: "christopher-nolan",
+    label: "Christopher Nolan",
+    icon: Film,
+    description: "IMAX-scale mind-bending epics",
+    category: "Auteur"
+  },
+  {
+    value: "quentin-tarantino",
+    label: "Quentin Tarantino",
+    icon: Zap,
+    description: "Pop culture saturated genre mashup",
+    category: "Auteur"
   },
   {
     value: "ridley-scott",
     label: "Ridley Scott",
     icon: Film,
-    description: "Epic scale, atmospheric lighting, detailed world-building",
+    description: "Epic cinematic world-building",
+    category: "Auteur"
+  },
+  {
+    value: "jordan-peele",
+    label: "Jordan Peele",
+    icon: Eye,
+    description: "Social horror through unconventional framing",
+    category: "Auteur"
+  },
+
+  // Classic Masters
+  {
+    value: "spike-lee",
+    label: "Spike Lee",
+    icon: Zap,
+    description: "Dynamic movement, bold colors, social consciousness",
+    category: "Classic"
   },
   {
     value: "martin-scorsese",
     label: "Martin Scorsese",
     icon: Camera,
     description: "Kinetic energy, urban grit, character-driven intensity",
+    category: "Classic"
   },
   {
     value: "terrence-malick",
     label: "Terrence Malick",
     icon: Layers,
     description: "Poetic naturalism, golden hour, philosophical depth",
-  },
-  {
-    value: "jordan-peele",
-    label: "Jordan Peele",
-    icon: Eye,
-    description: "Social horror, suspenseful build-up, symbolic imagery",
+    category: "Classic"
   },
   {
     value: "coen-brothers",
     label: "Coen Brothers",
     icon: Film,
     description: "Dark comedy, americana, quirky character details",
+    category: "Classic"
   },
   {
     value: "ari-aster",
     label: "Ari Aster",
     icon: Target,
     description: "Symmetrical horror, unsettling beauty, slow dread",
+    category: "Classic"
   },
 ]
 
@@ -216,6 +262,24 @@ export default function StoryBreakdownPage() {
     narrativeFocus: ""
   })
 
+  // New dynamic prompting options
+  const [promptOptions, setPromptOptions] = useState({
+    includeCameraStyle: true,
+    includeColorPalette: true
+  })
+
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+
+  const [showPromptEditor, setShowPromptEditor] = useState(false)
+  const [editablePrompts, setEditablePrompts] = useState({
+    structureDetection: "",
+    chapterBreakdown: "",
+    additionalShots: "",
+    titleCard: ""
+  })
+  const [showTitleCardGenerator, setShowTitleCardGenerator] = useState(false)
+  const [titleCardChapter, setTitleCardChapter] = useState("")
+
   const copyToClipboard = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -251,7 +315,7 @@ export default function StoryBreakdownPage() {
       const result = await generateBreakdown(story, selectedDirector, {
         enabled: titleCardOptions.enabled,
         format: titleCardOptions.format as 'full' | 'name-only' | 'roman-numerals'
-      })
+      }, customDirectors, promptOptions)
       setBreakdown(result)
       
       // Auto-select first chapter
@@ -301,7 +365,7 @@ export default function StoryBreakdownPage() {
         existingAdditionalShots: additionalShots[chapterId] || [],
         categories: selectedCategories,
         customRequest: customRequest.trim(),
-      })
+      }, customDirectors, promptOptions)
 
       setAdditionalShots(prev => ({
         ...prev,
@@ -418,7 +482,8 @@ export default function StoryBreakdownPage() {
       label: director.name,
       icon: Palette,
       description: director.description,
-      isCustom: true
+      isCustom: true,
+      category: 'Custom'
     }))
     
     return [...DIRECTORS, ...customDirectorOptions]
@@ -671,34 +736,88 @@ export default function StoryBreakdownPage() {
                       Choose a director's cinematographic approach
                     </CardDescription>
                   </CardHeader>
+                  
+                  {/* Category Filter */}
                   <CardContent>
+                    <div className="mb-4">
+                      <label className="text-sm font-medium text-white mb-2 block">Browse by Category</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: 'all', label: 'All Styles' },
+                          { key: 'Contemporary', label: 'Contemporary' },
+                          { key: 'Auteur', label: 'Auteur Directors' },
+                          { key: 'Classic', label: 'Classic Masters' },
+                          { key: 'Custom', label: 'Custom' }
+                        ].map(({ key, label }) => (
+                          <Button
+                            key={key}
+                            size="sm"
+                            variant={selectedCategory === key ? 'default' : 'outline'}
+                            onClick={() => setSelectedCategory(key)}
+                            className={`h-7 px-3 text-xs ${
+                              selectedCategory === key 
+                                ? 'bg-amber-600 hover:bg-amber-700' 
+                                : 'border-slate-600 text-slate-300 hover:bg-slate-700'
+                            }`}
+                          >
+                            {label}
+                            {key !== 'all' && (
+                              <Badge variant="secondary" className="ml-1 bg-slate-600/20 text-slate-400 text-xs">
+                                {key === 'Custom' 
+                                  ? customDirectors.length 
+                                  : getAllDirectors().filter(d => d.category === key).length
+                                }
+                              </Badge>
+                            )}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
                     <Select value={selectedDirector} onValueChange={setSelectedDirector}>
                       <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600">
-                        {getAllDirectors().map((director) => {
-                          const IconComponent = director.icon
-                          return (
-                            <SelectItem
-                              key={director.value}
-                              value={director.value}
-                              className="text-white hover:bg-slate-700 focus:bg-slate-700"
-                            >
-                              <div className="flex items-center gap-2">
-                                <IconComponent className="h-4 w-4 text-amber-400" />
-                                {director.label}
-                                {director.isCustom && (
-                                  <Badge variant="outline" className="border-purple-500/30 text-purple-300 text-xs ml-2">
-                                    Custom
-                                  </Badge>
-                                )}
-                              </div>
-                            </SelectItem>
+                      <SelectContent className="bg-slate-800 border-slate-600 max-h-80">
+                        {getAllDirectors()
+                          .filter(director => 
+                            selectedCategory === 'all' || 
+                            director.category === selectedCategory ||
+                            (selectedCategory === 'Custom' && director.isCustom)
                           )
-                        })}
+                          .map((director) => {
+                            const IconComponent = director.icon
+                            return (
+                              <SelectItem
+                                key={director.value}
+                                value={director.value}
+                                className="text-white hover:bg-slate-700 focus:bg-slate-700"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <IconComponent className="h-4 w-4 text-amber-400" />
+                                  <div className="flex flex-col items-start">
+                                    <span>{director.label}</span>
+                                    {director.description && (
+                                      <span className="text-xs text-slate-400">{director.description}</span>
+                                    )}
+                                  </div>
+                                  {director.isCustom && (
+                                    <Badge variant="outline" className="border-purple-500/30 text-purple-300 text-xs ml-auto">
+                                      Custom
+                                    </Badge>
+                                  )}
+                                  {director.category && !director.isCustom && (
+                                    <Badge variant="outline" className="border-amber-500/30 text-amber-300 text-xs ml-auto">
+                                      {director.category}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
                       </SelectContent>
                     </Select>
+                  
 
                     <div className="flex gap-2 mt-3">
                       <Button
@@ -825,6 +944,63 @@ export default function StoryBreakdownPage() {
                         )}
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+
+                {/* Dynamic Prompting Options */}
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Settings className="h-5 w-5 text-amber-400" />
+                      Prompt Options
+                    </CardTitle>
+                    <CardDescription className="text-slate-300">
+                      Control what elements are included in the AI prompts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="include-camera-style"
+                        checked={promptOptions.includeCameraStyle}
+                        onCheckedChange={(checked) => 
+                          setPromptOptions(prev => ({ ...prev, includeCameraStyle: !!checked }))
+                        }
+                      />
+                      <label htmlFor="include-camera-style" className="text-sm font-medium text-white cursor-pointer">
+                        Include camera movement & style descriptions
+                      </label>
+                    </div>
+                    <p className="text-xs text-slate-400 ml-6">
+                      When enabled, shots will include detailed camera movements, angles, and technical specifications
+                    </p>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="include-color-palette"
+                        checked={promptOptions.includeColorPalette}
+                        onCheckedChange={(checked) => 
+                          setPromptOptions(prev => ({ ...prev, includeColorPalette: !!checked }))
+                        }
+                      />
+                      <label htmlFor="include-color-palette" className="text-sm font-medium text-white cursor-pointer">
+                        Include color palette & lighting descriptions
+                      </label>
+                    </div>
+                    <p className="text-xs text-slate-400 ml-6">
+                      When enabled, shots will include color grading, lighting conditions, and mood descriptions
+                    </p>
+
+                    <div className="mt-4 p-3 bg-blue-900/10 border border-blue-700/30 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        <span className="text-blue-400 font-semibold text-sm">Current Settings</span>
+                      </div>
+                      <div className="text-xs text-slate-300 space-y-1">
+                        <div>Camera Style: <span className={promptOptions.includeCameraStyle ? 'text-green-400' : 'text-red-400'}>{promptOptions.includeCameraStyle ? 'Enabled' : 'Disabled'}</span></div>
+                        <div>Color Palette: <span className={promptOptions.includeColorPalette ? 'text-green-400' : 'text-red-400'}>{promptOptions.includeColorPalette ? 'Enabled' : 'Disabled'}</span></div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 

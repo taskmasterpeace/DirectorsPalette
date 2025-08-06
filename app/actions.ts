@@ -73,6 +73,11 @@ interface AdditionalShotsRequest {
   customRequest: string
 }
 
+interface PromptOptions {
+  includeCameraStyle: boolean
+  includeColorPalette: boolean
+}
+
 const STRUCTURE_DETECTION_PROMPT = `You are a professional story structure analyst. Your job is to detect existing chapter/scene structure in a story and enhance it with AI analysis for optimal visual breakdown.
 
 DETECTION PRIORITIES:
@@ -331,13 +336,14 @@ export async function generateTitleCards(
     cameraStyle: string
     colorPalette: string
     narrativeFocus: string
-  }>
+  }>,
+  promptOptions?: PromptOptions
 ): Promise<TitleCard[]> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OpenAI API key is not configured.")
   }
 
-  const directorContext = getDirectorContext(director, customDirectors)
+  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
   
   // Format the title based on user preference
   let formattedTitle = ""
@@ -417,7 +423,8 @@ export async function generateChapterBreakdown(
     cameraStyle: string
     colorPalette: string
     narrativeFocus: string
-  }>
+  }>,
+  promptOptions?: PromptOptions
 ): Promise<ChapterBreakdown> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OpenAI API key is not configured.")
@@ -428,7 +435,7 @@ export async function generateChapterBreakdown(
     throw new Error(`Chapter ${chapterId} not found`)
   }
 
-  const directorContext = getDirectorContext(director, customDirectors)
+  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
   
   const globalReferencesText = globalReferences ? `
 EXISTING GLOBAL REFERENCES (maintain consistency):
@@ -481,7 +488,8 @@ Generate comprehensive visual breakdown for this specific chapter while maintain
           titleCardOptions.format,
           globalReferences?.characters || [],
           globalReferences?.locations || [],
-          customDirectors
+          customDirectors,
+          promptOptions
         )
       } catch (error) {
         console.error("Error generating title cards:", error)
@@ -517,7 +525,8 @@ export async function generateFullStoryBreakdown(
     cameraStyle: string
     colorPalette: string
     narrativeFocus: string
-  }>
+  }>,
+  promptOptions?: PromptOptions
 ): Promise<FullBreakdownResult> {
   // Step 1: Analyze story structure
   const storyStructure = await analyzeStoryStructure(story)
@@ -533,7 +542,8 @@ export async function generateFullStoryBreakdown(
       director, 
       globalReferences,
       titleCardOptions,
-      customDirectors
+      customDirectors,
+      promptOptions
     )
     
     chapterBreakdowns.push(chapterBreakdown)
@@ -559,7 +569,8 @@ export async function generateFullStoryBreakdown(
   }
 }
 
-export async function generateAdditionalChapterShots(request: AdditionalShotsRequest,
+export async function generateAdditionalChapterShots(
+  request: AdditionalShotsRequest,
   customDirectors?: Array<{
     id: string
     name: string
@@ -568,7 +579,9 @@ export async function generateAdditionalChapterShots(request: AdditionalShotsReq
     cameraStyle: string
     colorPalette: string
     narrativeFocus: string
-  }>): Promise<AdditionalShotsResult> {
+  }>,
+  promptOptions?: PromptOptions
+): Promise<AdditionalShotsResult> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OpenAI API key is not configured.")
   }
@@ -578,7 +591,7 @@ export async function generateAdditionalChapterShots(request: AdditionalShotsReq
     throw new Error(`Chapter ${request.chapterId} not found`)
   }
 
-  const directorContext = getDirectorContext(request.director, customDirectors)
+  const directorContext = getDirectorContext(request.director, customDirectors, promptOptions)
   const allExistingShots = [...request.existingBreakdown.shots, ...request.existingAdditionalShots]
 
   const categoriesText = request.categories.length > 0 
@@ -639,64 +652,171 @@ Generate additional shots for this specific chapter based on the requests above.
   }
 }
 
-function getDirectorContext(director: string, customDirectors?: Array<{
-  id: string
-  name: string
-  description: string
-  visualStyle: string
-  cameraStyle: string
-  colorPalette: string
-  narrativeFocus: string
-}>): string {
+function getDirectorContext(
+  director: string, 
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions
+): string {
   // Check for custom directors first
   if (customDirectors) {
     const customDirector = customDirectors.find(d => d.id === director)
     if (customDirector) {
-      return `Apply ${customDirector.name} style: ${customDirector.description}. 
-Visual Style: ${customDirector.visualStyle}
-Camera Style: ${customDirector.cameraStyle}
-Color Palette: ${customDirector.colorPalette}
-Narrative Focus: ${customDirector.narrativeFocus}`
+      let context = `Apply ${customDirector.name} style: ${customDirector.description}.`
+      
+      if (customDirector.visualStyle) {
+        context += `\nVisual Style: ${customDirector.visualStyle}`
+      }
+      
+      if (promptOptions?.includeCameraStyle && customDirector.cameraStyle) {
+        context += `\nCamera Style: ${customDirector.cameraStyle}`
+      }
+      
+      if (promptOptions?.includeColorPalette && customDirector.colorPalette) {
+        context += `\nColor Palette: ${customDirector.colorPalette}`
+      }
+      
+      if (customDirector.narrativeFocus) {
+        context += `\nNarrative Focus: ${customDirector.narrativeFocus}`
+      }
+      
+      return context
     }
   }
 
+  // Base director context without optional elements
+  let baseContext = ""
+  let cameraContext = ""
+  let colorContext = ""
+
   switch (director) {
+    case "taskmasterpeace":
+      baseContext = "Apply Taskmasterpeace style with emotionally-driven visual storytelling. Focus on authentic human moments following traditional storytelling rules, multiple establishing shots to ground the audience, intimate emotional captures with atmospheric lighting that reveals the complete emotional journey."
+      cameraContext = "Use handheld intimate movements, dynamic motion that matches scene energy, over-the-shoulder dialogue coverage, essential establishing shots."
+      colorContext = "Apply cool blues and teals for aspirational stories, desaturated tones for distancing/realism, strategic color temperature shifts."
+      break
+    case "roger-deakins":
+      baseContext = "Apply Roger Deakins style with cinematic silhouettes and natural drama. Focus on environmental storytelling, mood over dialogue, visual metaphors."
+      cameraContext = "Use steady controlled movements, low angles, wide establishing shots, dramatic backlighting, silhouette work, atmospheric haze, natural light sources."
+      colorContext = "Apply high contrast, deep blues, golden hour warmth, stark blacks with dramatic lighting contrasts."
+      break
+    case "emmanuel-lubezki":
+      baseContext = "Apply Emmanuel Lubezki style with flowing natural light poetry. Focus on human connection with nature, spiritual journeys, raw emotion."
+      cameraContext = "Use fluid steadicam, 360-degree movements, following action naturally, golden hour magic, long continuous takes, immersive environments."
+      colorContext = "Apply warm golden tones, natural earth colors, soft highlights with natural lighting."
+      break
+    case "rian-johnson":
+      baseContext = "Apply Rian Johnson style with genre-blending creative storytelling. Focus on genre deconstruction, mystery elements, character subversion."
+      cameraContext = "Use inventive movements, POV shots, playful framing, creative angles, color coding, genre visual language mixing."
+      colorContext = "Apply bold primary colors, genre-specific palettes, symbolic color use."
+      break
     case "spike-lee":
-      return "Apply Spike Lee style with dynamic camera movements, bold saturated colors, and social consciousness focus. Use Dutch angles, dolly shots, and vibrant urban aesthetics. Emphasize character reactions and cultural authenticity."
+      baseContext = "Apply Spike Lee style with social consciousness focus and cultural authenticity. Emphasize character reactions and dynamic storytelling."
+      cameraContext = "Use dynamic camera movements, Dutch angles, and dolly shots with vibrant urban aesthetics."
+      colorContext = "Apply bold saturated colors with high contrast and vibrant urban color schemes."
+      break
     case "christopher-nolan":
-      return "Apply Christopher Nolan style with IMAX-scale establishing shots, technical precision, and complex narrative support. Use practical effects emphasis, architectural framing, and methodical pacing. Focus on environmental storytelling and temporal complexity."
+      baseContext = "Apply Christopher Nolan style with IMAX-scale mind-bending epics. Focus on time manipulation, complex narratives, intellectual puzzles."
+      cameraContext = "Use handheld action, sweeping aerials, rotating perspectives, large format cinematography, practical effects, architectural framing."
+      colorContext = "Apply cool blues, steel grays, minimal saturation, stark contrasts."
+      break
     case "wes-anderson":
-      return "Apply Wes Anderson style with perfectly symmetrical framing, whimsical details, and vintage aesthetics. Use centered compositions, pastel color palettes, and dollhouse-like precision. Emphasize quirky character moments and meticulous production design."
+      baseContext = "Apply Wes Anderson style with whimsical symmetrical storytelling. Focus on character quirks, nostalgic themes, ensemble storytelling."
+      cameraContext = "Use static shots, precise dollies, symmetrical framing, perfectly centered compositions, dollhouse-like sets, meticulous production design."
+      colorContext = "Apply pastel pinks, mint greens, warm yellows, cream whites with vintage aesthetics."
+      break
     case "denis-villeneuve":
-      return "Apply Denis Villeneuve style with atmospheric wide shots, environmental mood, and contemplative pacing. Use natural lighting, epic scale with human vulnerability, and immersive soundscapes. Focus on emotional resonance through visual poetry."
+      baseContext = "Apply Denis Villeneuve style with epic atmospheric sci-fi realism. Focus on philosophical themes, isolation, humanity vs technology."
+      cameraContext = "Use sweeping crane shots, slow push-ins, static wide shots, massive scale compositions."
+      colorContext = "Apply muted earth tones, orange/teal contrast, desaturated colors with environmental storytelling."
+      break
     case "quentin-tarantino":
-      return "Apply Quentin Tarantino style with pop culture dialogue focus, extreme close-ups, and stylized violence. Use retro aesthetics, bold color choices, and dynamic camera movements. Emphasize character interactions and cultural references."
+      baseContext = "Apply Quentin Tarantino style with pop culture saturated genre mashup. Focus on character dialogue, revenge stories, pop culture references."
+      cameraContext = "Use Dutch angles, crash zooms, trunk shots, unconventional framing, retro aesthetic, bold graphic compositions."
+      colorContext = "Apply saturated primary colors, vintage film stocks, high contrast."
+      break
     case "david-fincher":
-      return "Apply David Fincher style with dark precision, psychological tension, and meticulous technical detail. Use controlled camera movements, desaturated color palettes, and clinical framing. Focus on creating unease and methodical revelation."
+      baseContext = "Apply David Fincher style with precise psychological darkness. Focus on psychological tension, obsession, dark human nature."
+      cameraContext = "Use slow methodical push-ins, locked-off precision shots, controlled artificial lighting, sharp focus, clinical cleanliness meets urban grit."
+      colorContext = "Apply green/yellow sickly tones, deep blacks, minimal warm colors."
+      break
     case "ridley-scott":
-      return "Apply Ridley Scott style with epic atmospheric scale, detailed world-building, and cinematic grandeur. Use dramatic lighting, sweeping camera movements, and rich environmental textures. Emphasize immersive production design and heroic framing."
+      baseContext = "Apply Ridley Scott style with epic cinematic world-building. Focus on historical epics, survival stories, moral complexity."
+      cameraContext = "Use sweeping movements, multiple cameras, dynamic angles, atmospheric smoke and haze, epic scale, detailed production design."
+      colorContext = "Apply warm amber tones, deep shadows, rich earth colors."
+      break
     case "martin-scorsese":
-      return "Apply Martin Scorsese style with kinetic energy, urban grit, and character-driven intensity. Use tracking shots, handheld camera work, and warm color tones. Focus on human drama and cultural authenticity with dynamic pacing."
+      baseContext = "Apply Martin Scorsese style with kinetic energy and character-driven intensity. Focus on human drama and cultural authenticity with dynamic pacing."
+      cameraContext = "Use tracking shots, handheld camera work, and urban grit cinematography."
+      colorContext = "Apply warm color tones with rich, saturated palettes and authentic lighting."
+      break
     case "terrence-malick":
-      return "Apply Terrence Malick style with poetic naturalism, golden hour lighting, and philosophical depth. Use flowing camera movements, natural environments, and contemplative pacing. Emphasize spiritual themes and connection to nature."
+      baseContext = "Apply Terrence Malick style with poetic naturalism and philosophical depth. Emphasize spiritual themes and connection to nature."
+      cameraContext = "Use flowing camera movements, natural environments, and contemplative pacing."
+      colorContext = "Apply golden hour lighting with natural color palettes and organic tones."
+      break
     case "jordan-peele":
-      return "Apply Jordan Peele style with social horror elements, suspenseful build-up, and symbolic imagery. Use precise framing, unsettling compositions, and meaningful visual metaphors. Focus on psychological tension and cultural commentary."
+      baseContext = "Apply Jordan Peele style with social horror through unconventional framing. Focus on social commentary through horror, racial themes, family dynamics."
+      cameraContext = "Use static uncomfortable framing, slow reveals, POV perspectives, uncomfortable compositions, suburban uncanny valley."
+      colorContext = "Apply suburban pastels hiding darkness, high contrast day/night with hidden symbols."
+      break
     case "coen-brothers":
-      return "Apply Coen Brothers style with dark comedy, americana aesthetics, and quirky character details. Use symmetrical compositions, deadpan framing, and regional authenticity. Emphasize absurdist moments and character eccentricities."
+      baseContext = "Apply Coen Brothers style with dark comedy and americana aesthetics. Emphasize absurdist moments and character eccentricities."
+      cameraContext = "Use symmetrical compositions, deadpan framing, and regional authenticity."
+      colorContext = "Apply quirky character details with authentic regional color palettes."
+      break
     case "ari-aster":
-      return "Apply Ari Aster style with symmetrical horror compositions, unsettling beauty, and slow-building dread. Use precise geometric framing, disturbing pastoral imagery, and meticulous production design. Focus on psychological unease and visual symbolism."
+      baseContext = "Apply Ari Aster style with symmetrical horror compositions and slow-building dread. Focus on psychological unease and visual symbolism."
+      cameraContext = "Use precise geometric framing, disturbing pastoral imagery, and meticulous composition."
+      colorContext = "Apply unsettling beauty with carefully controlled color palettes and symbolic lighting."
+      break
     default:
       return "No specific director style - use standard comprehensive coverage with professional cinematographic techniques"
   }
+
+  // Handle minimal mode (both options disabled)
+  if (promptOptions && !promptOptions.includeCameraStyle && !promptOptions.includeColorPalette) {
+    return baseContext + " Focus on basic composition, subject matter, and essential visual elements without technical camera specifications or detailed color descriptions."
+  }
+
+  // Build the final context based on prompt options
+  let finalContext = baseContext
+
+  if (promptOptions?.includeCameraStyle && cameraContext) {
+    finalContext += ` ${cameraContext}`
+  }
+
+  if (promptOptions?.includeColorPalette && colorContext) {
+    finalContext += ` ${colorContext}`
+  }
+
+  return finalContext
 }
 
 // Legacy function for backward compatibility
 export async function generateBreakdown(
   story: string, 
   director: string, 
-  titleCardOptions?: TitleCardOptions
+  titleCardOptions?: TitleCardOptions,
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions
 ): Promise<any> {
-  const fullResult = await generateFullStoryBreakdown(story, director, titleCardOptions)
+  const fullResult = await generateFullStoryBreakdown(story, director, titleCardOptions, customDirectors, promptOptions)
   
   // Flatten for backward compatibility
   const allShots = fullResult.chapterBreakdowns.flatMap(chapter => chapter.shots)
@@ -707,7 +827,7 @@ export async function generateBreakdown(
   return {
     characterReferences: fullResult.globalReferences.characters,
     locationReferences: fullResult.globalReferences.locations,
-    propReferences: fullResult.globalReferences.props,
+    propReferences: fullResult.globalReferences.locations,
     shots: allShots,
     coverageAnalysis: allAnalysis,
     additionalOpportunities: fullResult.chapterBreakdowns.flatMap(chapter => chapter.additionalOpportunities),
@@ -718,19 +838,137 @@ export async function generateBreakdown(
   }
 }
 
-export async function generateAdditionalShots(request: any, customDirectors?: Array<{
-  id: string
-  name: string
-  description: string
-  visualStyle: string
-  cameraStyle: string
-  colorPalette: string
-  narrativeFocus: string
-}>): Promise<AdditionalShotsResult> {
+export async function generateAdditionalShots(
+  request: any, 
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions
+): Promise<AdditionalShotsResult> {
   // For backward compatibility, if no chapterId provided, use first chapter
   if (!request.chapterId && request.existingBreakdown.storyStructure) {
     request.chapterId = request.existingBreakdown.storyStructure.chapters[0]?.id
   }
   
-  return generateAdditionalChapterShots({...request, director: request.director, storyStructure: request.existingBreakdown.storyStructure, chapterId: request.chapterId, existingBreakdown: request.existingBreakdown, existingAdditionalShots: request.existingBreakdown.additionalOpportunities, categories: [], customRequest: ""}, customDirectors)
+  return generateAdditionalChapterShots({
+    ...request, 
+    director: request.director, 
+    storyStructure: request.existingBreakdown.storyStructure, 
+    chapterId: request.chapterId, 
+    existingBreakdown: request.existingBreakdown, 
+    existingAdditionalShots: request.existingBreakdown.additionalOpportunities, 
+    categories: [], 
+    customRequest: ""
+  }, customDirectors, promptOptions)
+}
+
+export function getDefaultPrompts() {
+  return {
+    structureDetection: STRUCTURE_DETECTION_PROMPT,
+    chapterBreakdown: CHAPTER_BREAKDOWN_PROMPT,
+    additionalShots: ADDITIONAL_CHAPTER_SHOTS_PROMPT,
+    titleCard: TITLE_CARD_PROMPT
+  }
+}
+
+export async function generateStandaloneTitleCards(
+  chapterTitle: string,
+  director: string,
+  titleFormat: string,
+  customDirectors?: Array<{
+    id: string
+    name: string
+    description: string
+    visualStyle: string
+    cameraStyle: string
+    colorPalette: string
+    narrativeFocus: string
+  }>,
+  promptOptions?: PromptOptions,
+  customPrompt?: string
+): Promise<TitleCard[]> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OpenAI API key is not configured.")
+  }
+
+  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
+  
+  // Create a mock chapter for standalone generation
+  const mockChapter: Chapter = {
+    id: "standalone-1",
+    title: chapterTitle,
+    content: `This is a standalone title card generation for "${chapterTitle}".`,
+    startPosition: 0,
+    endPosition: 100,
+    estimatedDuration: "Medium",
+    keyCharacters: [],
+    primaryLocation: "",
+    narrativeBeat: "setup"
+  }
+  
+  // Format the title based on user preference
+  let formattedTitle = ""
+  
+  switch (titleFormat) {
+    case 'full':
+      formattedTitle = `Chapter 1: ${chapterTitle}`
+      break
+    case 'roman-numerals':
+      formattedTitle = `Chapter I: ${chapterTitle}`
+      break
+    case 'name-only':
+    default:
+      formattedTitle = chapterTitle
+      break
+  }
+
+  const prompt = customPrompt || `${TITLE_CARD_PROMPT}
+
+DIRECTOR SELECTION: ${directorContext}
+
+CHAPTER DETAILS:
+Title: ${chapterTitle}
+Formatted Title for Display: "${formattedTitle}"
+Content: Standalone title card generation
+Narrative Beat: setup
+Key Characters: N/A
+Primary Location: N/A
+Estimated Duration: N/A
+
+AVAILABLE CHARACTER REFERENCES:
+N/A - Standalone generation
+
+AVAILABLE LOCATION REFERENCES:
+N/A - Standalone generation
+
+Generate three distinct title card approaches for this standalone title. Each description must include the formatted title "${formattedTitle}" in quotes. Return only valid JSON.`
+
+  try {
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      prompt,
+      temperature: 0.8,
+    })
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error("No valid JSON found in title card response")
+    }
+
+    const result = JSON.parse(jsonMatch[0])
+
+    return result.titleCards.map((card: any) => ({
+      ...card,
+      chapterId: "standalone-1"
+    })) || []
+  } catch (error) {
+    console.error("Error generating standalone title cards:", error)
+    throw new Error(`Failed to generate title cards for "${chapterTitle}". Please try again.`)
+  }
 }
