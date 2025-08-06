@@ -9,8 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Film, Camera, Zap, Eye, Palette, Clock, Copy, Clipboard, Check, Plus, Target, Layers, ChevronDown, ChevronRight, BookOpen, PlayCircle, BarChart3, Menu, X, Settings } from 'lucide-react'
+import { Film, Camera, Zap, Eye, Palette, Clock, Copy, Clipboard, Check, Plus, Target, Layers, ChevronDown, ChevronRight, BookOpen, PlayCircle, BarChart3, Menu, X, Settings, ChevronLeft, FolderOpen } from 'lucide-react'
 import { generateBreakdown, generateAdditionalChapterShots } from "./actions"
+import React from "react"
+import { ProjectManager } from "@/components/project-manager"
+import { projectDB, SavedProject } from "@/lib/indexeddb"
 
 const DIRECTORS = [
   { value: "none", label: "None (Standard Coverage)", icon: Camera, category: "Standard" },
@@ -280,6 +283,24 @@ export default function StoryBreakdownPage() {
   const [showTitleCardGenerator, setShowTitleCardGenerator] = useState(false)
   const [titleCardChapter, setTitleCardChapter] = useState("")
 
+  // Add title card approach selection state after the other state declarations:
+  const [titleCardApproaches, setTitleCardApproaches] = useState<string[]>(['character-focus', 'location-focus', 'abstract-thematic'])
+
+  const [currentProjectId, setCurrentProjectId] = useState<string>("")
+  const [showProjectManager, setShowProjectManager] = useState(false)
+
+  // Add this useEffect after the other state declarations
+  React.useEffect(() => {
+    const loadDefaultPrompts = async () => {
+      if (!editablePrompts.structureDetection) {
+        const { getDefaultPrompts } = await import('./actions')
+        const defaults = getDefaultPrompts()
+        setEditablePrompts(defaults)
+      }
+    }
+    loadDefaultPrompts()
+  }, [])
+
   const copyToClipboard = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -314,7 +335,8 @@ export default function StoryBreakdownPage() {
     try {
       const result = await generateBreakdown(story, selectedDirector, {
         enabled: titleCardOptions.enabled,
-        format: titleCardOptions.format as 'full' | 'name-only' | 'roman-numerals'
+        format: titleCardOptions.format as 'full' | 'name-only' | 'roman-numerals',
+        approaches: titleCardApproaches
       }, customDirectors, promptOptions)
       setBreakdown(result)
       
@@ -512,6 +534,75 @@ export default function StoryBreakdownPage() {
     return breakdown.storyStructure.chapters.find(c => c.id === selectedChapter)
   }
 
+  const handleLoadProject = (project: SavedProject) => {
+    setStory(project.story)
+    setSelectedDirector(project.selectedDirector)
+    setBreakdown(project.breakdown)
+    setAdditionalShots(project.additionalShots)
+    setTitleCardOptions(project.titleCardOptions)
+    setTitleCardApproaches(project.titleCardApproaches)
+    setCustomDirectors(project.customDirectors)
+    setPromptOptions(project.promptOptions)
+    setSelectedChapter(project.selectedChapter)
+    setExpandedChapters(project.expandedChapters)
+    setCurrentProjectId(project.id)
+    setShowProjectManager(false)
+    
+    // If there's a breakdown, show it
+    if (project.breakdown?.storyStructure) {
+      setSelectedChapter(project.selectedChapter || project.breakdown.storyStructure.chapters[0]?.id || "")
+    }
+  }
+
+  const handleNewProject = () => {
+    setBreakdown(null)
+    setStory("")
+    setAdditionalShots({})
+    setSelectedChapter("")
+    setExpandedChapters({})
+    setActiveChapterForGeneration("")
+    setError("")
+    setSearchQuery("")
+    setTitleCardChapter("")
+    setCurrentProjectId("")
+    setShowProjectManager(false)
+  }
+
+  const handleProjectSaved = (projectId: string) => {
+    setCurrentProjectId(projectId)
+  }
+
+  const getCurrentProjectData = () => ({
+    name: currentProjectId ? "Current Project" : `Project ${new Date().toLocaleDateString()}`,
+    story,
+    selectedDirector,
+    breakdown,
+    additionalShots,
+    titleCardOptions,
+    titleCardApproaches,
+    customDirectors,
+    promptOptions,
+    selectedChapter,
+    expandedChapters
+  })
+
+  // Auto-save functionality
+  React.useEffect(() => {
+    const autoSave = async () => {
+      if (currentProjectId && breakdown?.storyStructure && story.trim()) {
+        try {
+          await projectDB.updateProject(currentProjectId, getCurrentProjectData())
+        } catch (error) {
+          console.error('Auto-save failed:', error)
+        }
+      }
+    }
+
+    // Auto-save every 30 seconds if there's a current project
+    const interval = setInterval(autoSave, 30000)
+    return () => clearInterval(interval)
+  }, [currentProjectId, story, breakdown, additionalShots, selectedChapter])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
@@ -520,6 +611,41 @@ export default function StoryBreakdownPage() {
           <div className="flex items-center gap-3">
             <Film className="h-6 w-6 text-amber-400" />
             <h1 className="text-2xl font-bold text-white">Visual Story Breakdown</h1>
+            {breakdown?.storyStructure && (
+              <div className="flex gap-2 ml-4">
+                <Button
+                  onClick={() => setShowProjectManager(!showProjectManager)}
+                  variant="outline"
+                  size="sm"
+                  className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
+                >
+                  <FolderOpen className="h-4 w-4 mr-1" />
+                  Projects
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Just hide the breakdown view, don't clear data
+                    setSelectedChapter("")
+                    setSidebarOpen(false)
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500/30 text-blue-300 hover:bg-blue-600/20"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Input
+                </Button>
+                <Button
+                  onClick={handleNewProject}
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-500/30 text-amber-300 hover:bg-amber-600/20"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Story
+                </Button>
+              </div>
+            )}
           </div>
           {breakdown?.storyStructure && (
             <Button
@@ -666,9 +792,41 @@ export default function StoryBreakdownPage() {
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6">
-            {!breakdown?.storyStructure ? (
+            {/* Project Manager */}
+            {showProjectManager && (
+              <div className="max-w-4xl mx-auto mb-6">
+                <ProjectManager
+                  currentProject={getCurrentProjectData()}
+                  onLoadProject={handleLoadProject}
+                  onNewProject={handleNewProject}
+                  currentProjectId={currentProjectId}
+                  onProjectSaved={handleProjectSaved}
+                />
+              </div>
+            )}
+
+            {!breakdown?.storyStructure || !selectedChapter ? (
               /* Input Section */
               <div className="max-w-2xl mx-auto space-y-6">
+                {breakdown?.storyStructure && (
+                  <div className="mb-6 p-4 bg-green-900/20 border border-green-700/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Check className="h-4 w-4 text-green-400" />
+                      <span className="text-green-400 font-semibold">Breakdown Generated</span>
+                    </div>
+                    <p className="text-slate-300 text-sm">
+                      Your story breakdown is ready with {breakdown.storyStructure.totalChapters} chapters. 
+                      You can modify settings below and regenerate, or{" "}
+                      <button 
+                        onClick={() => setSelectedChapter(breakdown.storyStructure!.chapters[0].id)}
+                        className="text-green-400 hover:text-green-300 underline"
+                      >
+                        view your results
+                      </button>.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="text-center mb-8">
                   <p className="text-slate-300 text-lg">
                     Transform any narrative into chapter-organized visual shot breakdowns optimized for Runway ML Gen 4
@@ -1008,6 +1166,198 @@ export default function StoryBreakdownPage() {
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
                       <Palette className="h-5 w-5 text-amber-400" />
+                      Standalone Title Card Generator
+                    </CardTitle>
+                    <CardDescription className="text-slate-300">
+                      Generate title cards without needing a full story breakdown
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-white mb-2 block">Chapter Title</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., The Beginning, The Final Battle, etc."
+                        value={titleCardChapter}
+                        onChange={(e) => setTitleCardChapter(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-white mb-2 block">Director Style</label>
+                        <Select value={selectedDirector} onValueChange={setSelectedDirector}>
+                          <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 border-slate-600">
+                            {getAllDirectors().map((director) => {
+                              const IconComponent = director.icon
+                              return (
+                                <SelectItem
+                                  key={director.value}
+                                  value={director.value}
+                                  className="text-white hover:bg-slate-700 focus:bg-slate-700"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <IconComponent className="h-3 w-3 text-amber-400" />
+                                    <span className="text-sm">{director.label}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-white mb-2 block">Title Format</label>
+                        <Select 
+                          value={titleCardOptions.format} 
+                          onValueChange={(value) => setTitleCardOptions(prev => ({ ...prev, format: value }))}
+                        >
+                          <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 border-slate-600">
+                            <SelectItem value="full" className="text-white hover:bg-slate-700 focus:bg-slate-700">
+                              Chapter 1: Title
+                            </SelectItem>
+                            <SelectItem value="roman-numerals" className="text-white hover:bg-slate-700 focus:bg-slate-700">
+                              Chapter I: Title
+                            </SelectItem>
+                            <SelectItem value="name-only" className="text-white hover:bg-slate-700 focus:bg-slate-700">
+                              Title Only
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-white mb-3 block">Visual Approaches</label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {[
+                          { id: 'character-focus', label: 'Character Focus', desc: 'Feature characters in cinematic poses' },
+                          { id: 'location-focus', label: 'Location/Object Focus', desc: 'Highlight locations or objects' },
+                          { id: 'abstract-thematic', label: 'Abstract/Thematic', desc: 'Conceptual theme representations' }
+                        ].map(approach => (
+                          <div key={approach.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`standalone-${approach.id}`}
+                              checked={titleCardApproaches.includes(approach.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setTitleCardApproaches(prev => [...prev, approach.id])
+                                } else {
+                                  setTitleCardApproaches(prev => prev.filter(a => a !== approach.id))
+                                }
+                              }}
+                            />
+                            <label htmlFor={`standalone-${approach.id}`} className="text-sm text-white cursor-pointer">
+                              <span className="font-medium">{approach.label}</span>
+                              <span className="text-slate-400 block text-xs">{approach.desc}</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={async () => {
+                        if (!titleCardChapter.trim()) {
+                          setError("Please enter a chapter title")
+                          return
+                        }
+                        
+                        if (titleCardApproaches.length === 0) {
+                          setError("Please select at least one visual approach")
+                          return
+                        }
+                        
+                        setIsGenerating(true)
+                        setError("")
+                        
+                        try {
+                          const { generateStandaloneTitleCards } = await import('./actions')
+                          const titleCards = await generateStandaloneTitleCards(
+                            titleCardChapter,
+                            selectedDirector,
+                            titleCardOptions.format,
+                            titleCardApproaches,
+                            customDirectors,
+                            promptOptions
+                          )
+                          
+                          // Display results in a temporary breakdown
+                          setBreakdown({
+                            characterReferences: [],
+                            locationReferences: [],
+                            propReferences: [],
+                            shots: [],
+                            coverageAnalysis: `Standalone title cards generated for "${titleCardChapter}"`,
+                            additionalOpportunities: [],
+                            storyStructure: {
+                              chapters: [{
+                                id: "standalone-1",
+                                title: titleCardChapter,
+                                content: "Standalone title card generation",
+                                startPosition: 0,
+                                endPosition: 100,
+                                estimatedDuration: "N/A",
+                                keyCharacters: [],
+                                primaryLocation: "",
+                                narrativeBeat: "setup"
+                              }],
+                              detectionMethod: "ai-generated",
+                              totalChapters: 1,
+                              fullStory: "Standalone title card generation"
+                            },
+                            chapterBreakdowns: [{
+                              chapterId: "standalone-1",
+                              characterReferences: [],
+                              locationReferences: [],
+                              propReferences: [],
+                              shots: [],
+                              coverageAnalysis: `Generated ${titleCards.length} title card options`,
+                              additionalOpportunities: [],
+                              titleCards
+                            }],
+                            overallAnalysis: `Standalone title card generation complete for "${titleCardChapter}"`
+                          })
+                          
+                          setSelectedChapter("standalone-1")
+                          
+                        } catch (err) {
+                          const errorMessage = err instanceof Error ? err.message : "Failed to generate title cards"
+                          setError(errorMessage)
+                        } finally {
+                          setIsGenerating(false)
+                        }
+                      }}
+                      disabled={isGenerating || !titleCardChapter.trim() || titleCardApproaches.length === 0}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Generating Title Cards...
+                        </>
+                      ) : (
+                        <>
+                          <Palette className="h-4 w-4 mr-2" />
+                          Generate Title Cards ({titleCardApproaches.length} approaches)
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Palette className="h-5 w-5 text-amber-400" />
                       Title Cards
                     </CardTitle>
                     <CardDescription className="text-slate-300">
@@ -1029,29 +1379,94 @@ export default function StoryBreakdownPage() {
                     </div>
 
                     {titleCardOptions.enabled && (
-                      <div>
-                        <label className="text-sm font-medium text-white mb-2 block">Title Format</label>
-                        <Select 
-                          value={titleCardOptions.format} 
-                          onValueChange={(value) => 
-                            setTitleCardOptions(prev => ({ ...prev, format: value }))
-                          }
-                        >
-                          <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-800 border-slate-600">
-                            <SelectItem value="full" className="text-white hover:bg-slate-700 focus:bg-slate-700">
-                              Chapter 5: The Gate
-                            </SelectItem>
-                            <SelectItem value="roman-numerals" className="text-white hover:bg-slate-700 focus:bg-slate-700">
-                              Chapter V: The Gate
-                            </SelectItem>
-                            <SelectItem value="name-only" className="text-white hover:bg-slate-700 focus:bg-slate-700">
-                              The Gate
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-white mb-2 block">Title Format</label>
+                          <Select 
+                            value={titleCardOptions.format} 
+                            onValueChange={(value) => 
+                              setTitleCardOptions(prev => ({ ...prev, format: value }))
+                            }
+                          >
+                            <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-600">
+                              <SelectItem value="full" className="text-white hover:bg-slate-700 focus:bg-slate-700">
+                                Chapter 5: The Gate
+                              </SelectItem>
+                              <SelectItem value="roman-numerals" className="text-white hover:bg-slate-700 focus:bg-slate-700">
+                                Chapter V: The Gate
+                              </SelectItem>
+                              <SelectItem value="name-only" className="text-white hover:bg-slate-700 focus:bg-slate-700">
+                                The Gate
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-white mb-3 block">Visual Approaches</label>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="character-focus"
+                                checked={titleCardApproaches.includes('character-focus')}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setTitleCardApproaches(prev => [...prev, 'character-focus'])
+                                  } else {
+                                    setTitleCardApproaches(prev => prev.filter(a => a !== 'character-focus'))
+                                  }
+                                }}
+                              />
+                              <label htmlFor="character-focus" className="text-sm text-white cursor-pointer">
+                                <span className="font-medium">Character Focus</span>
+                                <span className="text-slate-400 block text-xs">Feature key characters in cinematic poses</span>
+                              </label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="location-focus"
+                                checked={titleCardApproaches.includes('location-focus')}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setTitleCardApproaches(prev => [...prev, 'location-focus'])
+                                  } else {
+                                    setTitleCardApproaches(prev => prev.filter(a => a !== 'location-focus'))
+                                  }
+                                }}
+                              />
+                              <label htmlFor="location-focus" className="text-sm text-white cursor-pointer">
+                                <span className="font-medium">Location/Object Focus</span>
+                                <span className="text-slate-400 block text-xs">Highlight primary locations or significant objects</span>
+                              </label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="abstract-thematic"
+                                checked={titleCardApproaches.includes('abstract-thematic')}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setTitleCardApproaches(prev => [...prev, 'abstract-thematic'])
+                                  } else {
+                                    setTitleCardApproaches(prev => prev.filter(a => a !== 'abstract-thematic'))
+                                  }
+                                }}
+                              />
+                              <label htmlFor="abstract-thematic" className="text-sm text-white cursor-pointer">
+                                <span className="font-medium">Abstract/Thematic</span>
+                                <span className="text-slate-400 block text-xs">Create conceptual compositions representing themes</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {titleCardApproaches.length === 0 && (
+                            <p className="text-red-400 text-xs mt-2">Select at least one visual approach</p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>

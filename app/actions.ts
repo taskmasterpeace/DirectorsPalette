@@ -193,45 +193,15 @@ Return response in this exact JSON format:
   "coverageAnalysis": "Updated analysis of this chapter's coverage including new shots"
 }`
 
-const TITLE_CARD_PROMPT = `You are a professional title card designer specializing in cinematic chapter titles optimized for Runway ML Gen 4 generation. Your job is to create three distinct visual approaches for chapter title cards that match the story's tone and selected director style.
+const TITLE_CARD_PROMPT = `You are a professional title card designer specializing in cinematic chapter titles optimized for Runway ML Gen 4 generation. Your job is to create distinct visual approaches for chapter title cards that match the story's tone and selected director style.
 
 TITLE CARD GENERATION RULES:
 1. ALWAYS put the title text in quotes for Runway ML Gen 4 compatibility
-2. Create three distinct visual approaches: Character Focus, Location/Object Focus, Abstract/Thematic
+2. Create visual approaches based on the requested categories
 3. Match the selected director's visual style and aesthetic preferences
 4. Use existing character and location references for consistency
 5. Consider the chapter's narrative beat and emotional tone
 6. Ensure text is readable and cinematically composed
-
-DIRECTOR STYLE ADAPTATIONS:
-
-**SPIKE LEE STYLE:**
-- Bold, saturated color schemes with high contrast
-- Dynamic camera angles and energetic compositions
-- Street art-inspired or bold typography styles
-- Character-focused shots with social consciousness elements
-- Vibrant, urban aesthetic with cultural authenticity
-
-**CHRISTOPHER NOLAN STYLE:**
-- Dark, high-contrast compositions with technical precision
-- Architectural and mechanical elements as design features
-- Bold, industrial typography with clean lines
-- IMAX-scale wide shots or extreme close-ups of technical details
-- Sophisticated, methodical visual approach
-
-**WES ANDERSON STYLE:**
-- Perfectly centered, symmetrical compositions
-- Vintage color palettes (pastels, earth tones, muted colors)
-- Whimsical, handcrafted typography with quirky character
-- Detailed prop focus and dollhouse-like aesthetic
-- Flat, tableau-style compositions with meticulous framing
-
-**DENIS VILLENEUVE STYLE:**
-- Atmospheric, environmental compositions with epic scale
-- Muted, cinematic color grading with natural tones
-- Clean, minimal typography with elegant simplicity
-- Vast landscapes or intimate environmental details
-- Contemplative, mood-driven visual approach
 
 VISUAL APPROACH DEFINITIONS:
 
@@ -260,25 +230,13 @@ RUNWAY ML GEN 4 OPTIMIZATION:
 - Ensure text placement and typography are clearly described
 - Keep descriptions focused and visually specific
 
-Return your response in this exact JSON format:
+Generate only the requested visual approaches. Return your response in this exact JSON format:
 {
   "titleCards": [
     {
-      "id": "character-focus",
-      "style": "character-focus",
-      "styleLabel": "Character Focus",
-      "description": "Detailed visual description with title text in quotes"
-    },
-    {
-      "id": "location-focus", 
-      "style": "location-focus",
-      "styleLabel": "Location Focus",
-      "description": "Detailed visual description with title text in quotes"
-    },
-    {
-      "id": "abstract-thematic",
-      "style": "abstract-thematic", 
-      "styleLabel": "Abstract/Thematic",
+      "id": "approach-id",
+      "style": "approach-style",
+      "styleLabel": "Approach Label",
       "description": "Detailed visual description with title text in quotes"
     }
   ]
@@ -328,6 +286,7 @@ export async function generateTitleCards(
   titleFormat: string,
   characterReferences: string[],
   locationReferences: string[],
+  selectedApproaches: string[] = ['character-focus', 'location-focus', 'abstract-thematic'],
   customDirectors?: Array<{
     id: string
     name: string
@@ -368,6 +327,15 @@ export async function generateTitleCards(
 
 DIRECTOR SELECTION: ${directorContext}
 
+REQUESTED APPROACHES: ${selectedApproaches.map(approach => {
+  switch(approach) {
+    case 'character-focus': return 'Character Focus'
+    case 'location-focus': return 'Location/Object Focus' 
+    case 'abstract-thematic': return 'Abstract/Thematic'
+    default: return approach
+  }
+}).join(', ')}
+
 CHAPTER DETAILS:
 Title: ${chapter.title}
 Formatted Title for Display: "${formattedTitle}"
@@ -383,7 +351,7 @@ ${characterReferences.join('\n')}
 AVAILABLE LOCATION REFERENCES:
 ${locationReferences.join('\n')}
 
-Generate three distinct title card approaches for this chapter. Each description must include the formatted title "${formattedTitle}" in quotes. Return only valid JSON.`
+Generate title card approaches for the requested categories. Each description must include the formatted title "${formattedTitle}" in quotes. Return only valid JSON.`
 
   try {
     const { text } = await generateText({
@@ -488,6 +456,7 @@ Generate comprehensive visual breakdown for this specific chapter while maintain
           titleCardOptions.format,
           globalReferences?.characters || [],
           globalReferences?.locations || [],
+          undefined,
           customDirectors,
           promptOptions
         )
@@ -881,6 +850,7 @@ export async function generateStandaloneTitleCards(
   chapterTitle: string,
   director: string,
   titleFormat: string,
+  selectedApproaches: string[] = ['character-focus', 'location-focus', 'abstract-thematic'],
   customDirectors?: Array<{
     id: string
     name: string
