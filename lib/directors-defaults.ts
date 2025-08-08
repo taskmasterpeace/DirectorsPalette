@@ -1,0 +1,103 @@
+import { FilmDirector, MusicVideoDirector } from "./director-types"
+
+export const defaultFilmDirectors: FilmDirector[] = [
+  {
+    id: "wes-anderson",
+    domain: "film",
+    name: "Wes Anderson",
+    description: "Whimsical symmetrical storytelling",
+    visualStyle: "Pastel palettes, centered framing, ocular symmetry, dollhouse moves",
+    cameraStyle: "Precise lateral moves, whip pans, tableau staging",
+    colorPalette: "Warm pastels with strong accents",
+    narrativeFocus: "Quirky character dynamics and melancholic humor",
+    category: "Auteur",
+    tags: ["whimsical", "symmetry", "tableau"],
+    disciplines: ["composition", "color-lighting", "tone-mood"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "david-fincher",
+    domain: "film",
+    name: "David Fincher",
+    description: "Precise psychological darkness",
+    visualStyle: "Cool palettes, controlled digital moves, clinical precision",
+    cameraStyle: "Locked/tracked, subtle dolly/tilt combined with VFX-invisibles",
+    colorPalette: "Muted cool, green/steel tonalities",
+    narrativeFocus: "Psychological tension and methodical reveals",
+    category: "Auteur",
+    tags: ["precise", "cool", "psychological"],
+    disciplines: ["camera-movement", "tone-mood", "editing-rhythm"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "roger-deakins",
+    domain: "film",
+    name: "Roger Deakins Style",
+    description: "Cinematic silhouettes and natural drama",
+    visualStyle: "Naturalistic light, sculpted silhouettes, clarity",
+    cameraStyle: "Measured movement, emphasis on composition and depth",
+    colorPalette: "Balanced neutral with dramatic contrast",
+    narrativeFocus: "Character-driven realism",
+    category: "Contemporary",
+    tags: ["natural", "silhouette", "cinematic"],
+    disciplines: ["composition", "color-lighting", "tone-mood"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+]
+
+export const defaultMusicVideoDirectors: MusicVideoDirector[] = [
+  {
+    id: "hype-williams",
+    domain: "music-video",
+    name: "Hype Williams",
+    description: "Glossy, cinematic hip‑hop iconography",
+    visualHallmarks:
+      "Fisheye/super-wide lenses, bold saturated colors, stylized letterbox, split-screen, high-gloss lighting",
+    narrativeStyle:
+      "Attitude-first; celebratory; visual storytelling with bursts of surreal abstraction",
+    pacingAndEnergy: "High-energy, kinetic, larger-than-life",
+    genres: ["Hip-Hop", "R&B", "Pop"],
+    category: "Hip-Hop & R&B Visionaries",
+    tags: ["glossy", "kinetic", "iconic"],
+    disciplines: ["performance", "editing", "visual-effects"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "director-x",
+    domain: "music-video",
+    name: "Director X",
+    description: "Polished, performance-driven, urban-chic visuals",
+    visualHallmarks:
+      "Clean, glossy, color blocks, smooth moves, party/chic set-pieces",
+    narrativeStyle:
+      "Accessible mini-stories; direct-to-audience; simple 3-act structures",
+    pacingAndEnergy: "Fun, vibrant, rhythm-driven",
+    genres: ["Hip-Hop", "R&B", "Dancehall", "Pop"],
+    category: "Hip-Hop & R&B Visionaries",
+    tags: ["polished", "party", "chic"],
+    disciplines: ["performance", "choreography", "editing"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "michel-gondry",
+    domain: "music-video",
+    name: "Michel Gondry",
+    description: "Surreal, handmade, and dreamlike",
+    visualHallmarks:
+      "In-camera illusions, stop-motion, handcrafted sets, playful repetition",
+    narrativeStyle:
+      "Whimsical, abstract, poetic metaphors, memory/relationship motifs",
+    pacingAndEnergy: "Playful, unpredictable, dynamic then contemplative",
+    genres: ["Indie", "Electronic", "Pop"],
+    category: "Avant-Garde & Indie Innovators",
+    tags: ["handmade", "surreal", "practical"],
+    disciplines: ["narrative", "visual-effects", "editing"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+]

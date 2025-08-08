@@ -1,189 +1,199 @@
+export interface LocationConfig {
+  id: string;
+  reference: string;
+  name: string;
+  description: string;
+  purpose: string;
+  assignedSections: string[];
+}
+
+export interface WardrobeConfig {
+  id: string;
+  reference: string;
+  name: string;
+  description: string;
+  purpose: string;
+  assignedSections: string[];
+}
+
+export interface PropConfig {
+  id:string;
+  reference: string;
+  name: string;
+  description: string;
+  purpose: string;
+  assignedSections: string[];
+}
+
+export interface Treatment {
+  id: string;
+  name: string;
+  concept: string;
+  visualTheme: string;
+  performanceRatio: number;
+  hookStrategy: string;
+}
+
+export interface MusicVideoConfig {
+  selectedTreatmentId?: string;
+  customTreatment?: Treatment;
+  locations: LocationConfig[];
+  wardrobe: WardrobeConfig[];
+  props: PropConfig[];
+  isConfigured: boolean;
+}
+
 export interface SavedProject {
-  id: string
-  name: string
-  createdAt: Date
-  updatedAt: Date
-  
-  // Mode selection
-  isMusicVideoMode?: boolean
+  id: string;
+  name: string;
+  updatedAt: Date;
+  isMusicVideoMode: boolean;
   
   // Story mode data
-  story?: string
-  selectedDirector: string
-  breakdown?: any
-  additionalShots?: { [chapterId: string]: string[] }
-  titleCardOptions?: {
-    enabled: boolean
-    format: string
-  }
-  titleCardApproaches?: string[]
-  selectedChapter?: string
-  expandedChapters?: { [chapterId: string]: boolean }
+  story?: string;
+  selectedDirector?: string;
+  breakdown?: any;
+  additionalShots?: { [chapterId: string]: string[] };
+  titleCardOptions?: any;
+  titleCardApproaches?: string[];
+  selectedChapter?: string;
+  expandedChapters?: { [chapterId: string]: boolean };
   
   // Music video mode data
   musicVideoData?: {
-    lyrics: string
-    songTitle: string
-    artist: string
-    genre: string
-  }
-  musicVideoBreakdown?: any
-  selectedTreatment?: any
-  selectedMusicVideoSection?: string
-  
+    lyrics: string;
+    songTitle: string;
+    artist: string;
+    genre: string;
+  };
+  musicVideoBreakdown?: any;
+  selectedTreatment?: any;
+  selectedMusicVideoSection?: string;
+  musicVideoConfig?: MusicVideoConfig;
+  additionalMusicVideoShots?: { [sectionId:string]: string[] };
+  selectedMusicVideoDirector?: string; // Added line
+  customMusicVideoDirectors?: any[]; // Added line
+
   // Shared data
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>
-  promptOptions?: {
-    includeCameraStyle: boolean
-    includeColorPalette: boolean
-  }
+  customDirectors?: any[];
+  promptOptions?: any;
 }
 
-class ProjectDatabase {
-  private dbName = 'StoryBreakdownProjects'
-  private version = 2 // Increment version for music video support
-  private db: IDBDatabase | null = null
+const DB_NAME = "DirectorStyleDB";
+const DB_VERSION = 2;
+const STORE_NAME = "projects";
 
-  async init(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.version)
-      
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => {
-        this.db = request.result
-        resolve()
-      }
-      
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result
-        
-        // Create projects store if it doesn't exist
-        if (!db.objectStoreNames.contains('projects')) {
-          const store = db.createObjectStore('projects', { keyPath: 'id' })
-          store.createIndex('createdAt', 'createdAt', { unique: false })
-          store.createIndex('updatedAt', 'updatedAt', { unique: false })
-          store.createIndex('name', 'name', { unique: false })
-        }
-      }
-    })
+class ProjectDBManager {
+  private dbPromise: Promise<IDBDatabase>;
+
+  constructor() {
+    // This check ensures that IndexedDB is only accessed in the browser.
+    if (typeof window !== 'undefined') {
+      this.dbPromise = new Promise((resolve, reject) => {
+        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onerror = () => {
+          console.error("Database error:", request.error);
+          reject(new Error("Database error"));
+        };
+
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+
+        request.onupgradeneeded = (event) => {
+          const db = (event.target as IDBOpenDBRequest).result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+      });
+    } else {
+      // On the server, create a dummy promise. Methods will throw an error.
+      this.dbPromise = Promise.reject(new Error("IndexedDB is not available on the server."));
+    }
   }
 
-  async saveProject(project: Omit<SavedProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    if (!this.db) await this.init()
+  private async getDB(): Promise<IDBDatabase> {
+    // This will either return the resolved DB promise or the rejected one from the constructor.
+    return this.dbPromise;
+  }
+
+  async saveProject(project: Omit<SavedProject, 'id' | 'updatedAt'>): Promise<string> {
+    const db = await this.getDB();
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
     
-    const id = `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const now = new Date()
-    
-    const fullProject: SavedProject = {
+    const id = crypto.randomUUID();
+    const projectToSave: SavedProject = {
       ...project,
       id,
-      createdAt: now,
-      updatedAt: now
-    }
+      updatedAt: new Date(),
+    };
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['projects'], 'readwrite')
-      const store = transaction.objectStore('projects')
-      const request = store.add(fullProject)
-      
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => resolve(id)
-    })
+      const request = store.add(projectToSave);
+      request.onsuccess = () => resolve(id);
+      request.onerror = () => reject(request.error);
+    });
   }
 
-  async updateProject(id: string, updates: Partial<SavedProject>): Promise<void> {
-    if (!this.db) await this.init()
-    
+  async updateProject(projectId: string, projectData: Partial<SavedProject>): Promise<void> {
+    const db = await this.getDB();
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['projects'], 'readwrite')
-      const store = transaction.objectStore('projects')
-      const getRequest = store.get(id)
-      
-      getRequest.onerror = () => reject(getRequest.error)
+      const getRequest = store.get(projectId);
       getRequest.onsuccess = () => {
-        const existingProject = getRequest.result
-        if (!existingProject) {
-          reject(new Error('Project not found'))
-          return
+        const existingProject = getRequest.result;
+        if (existingProject) {
+          const updatedProject = {
+            ...existingProject,
+            ...projectData,
+            updatedAt: new Date(),
+            id: projectId,
+          };
+          const putRequest = store.put(updatedProject);
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          reject(new Error(`Project with id ${projectId} not found.`));
         }
-        
-        const updatedProject = {
-          ...existingProject,
-          ...updates,
-          updatedAt: new Date()
-        }
-        
-        const putRequest = store.put(updatedProject)
-        putRequest.onerror = () => reject(putRequest.error)
-        putRequest.onsuccess = () => resolve()
-      }
-    })
-  }
-
-  async getProject(id: string): Promise<SavedProject | null> {
-    if (!this.db) await this.init()
-    
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['projects'], 'readonly')
-      const store = transaction.objectStore('projects')
-      const request = store.get(id)
-      
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => resolve(request.result || null)
-    })
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
   }
 
   async getAllProjects(): Promise<SavedProject[]> {
-    if (!this.db) await this.init()
+    const db = await this.getDB();
+    const transaction = db.transaction(STORE_NAME, "readonly");
+    const store = transaction.objectStore(STORE_NAME);
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['projects'], 'readonly')
-      const store = transaction.objectStore('projects')
-      const index = store.index('updatedAt')
-      const request = index.getAll()
-      
-      request.onerror = () => reject(request.error)
+      const request = store.getAll();
       request.onsuccess = () => {
-        // Sort by updatedAt descending (most recent first)
-        const projects = request.result.sort((a, b) => 
+        const sortedProjects = request.result.sort((a: SavedProject, b: SavedProject) => 
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        )
-        resolve(projects)
-      }
-    })
+        );
+        resolve(sortedProjects);
+      };
+      request.onerror = () => reject(request.error);
+    });
   }
 
-  async deleteProject(id: string): Promise<void> {
-    if (!this.db) await this.init()
+  async deleteProject(projectId: string): Promise<void> {
+    const db = await this.getDB();
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(['projects'], 'readwrite')
-      const store = transaction.objectStore('projects')
-      const request = store.delete(id)
-      
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => resolve()
-    })
-  }
-
-  async searchProjects(query: string): Promise<SavedProject[]> {
-    const allProjects = await this.getAllProjects()
-    
-    return allProjects.filter(project => 
-      project.name.toLowerCase().includes(query.toLowerCase()) ||
-      (project.story && project.story.toLowerCase().includes(query.toLowerCase())) ||
-      (project.musicVideoData?.songTitle && project.musicVideoData.songTitle.toLowerCase().includes(query.toLowerCase())) ||
-      (project.musicVideoData?.artist && project.musicVideoData.artist.toLowerCase().includes(query.toLowerCase()))
-    )
+      const request = store.delete(projectId);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 }
 
-export const projectDB = new ProjectDatabase()
+// Export a single instance. The constructor will run once when the module is imported.
+export const projectDB = new ProjectDBManager();

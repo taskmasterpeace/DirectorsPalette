@@ -1,1472 +1,552 @@
 "use server"
 
-import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
+import { generateObject, generateText } from "ai"
+import { z } from "zod"
+import type { MusicVideoConfig } from "@/lib/indexeddb"
 
-interface Chapter {
-  id: string
-  title: string
-  content: string
-  startPosition: number
-  endPosition: number
-  estimatedDuration: string
-  keyCharacters: string[]
-  primaryLocation: string
-  narrativeBeat: 'setup' | 'rising-action' | 'climax' | 'resolution'
+// Schemas
+const ChapterSchema = z.object({
+  id: z.string().describe("A unique identifier for the chapter (e.g., 'chapter1')."),
+  title: z.string().describe("A concise, descriptive title for the chapter."),
+  content: z.string().describe("The full text content of this chapter."),
+  startPosition: z.number().describe("The starting character index of the chapter in the full story."),
+  endPosition: z.number().describe("The ending character index of the chapter in the full story."),
+  estimatedDuration: z.string().describe("An estimated screen time for this chapter (e.g., '2 minutes 30 seconds')."),
+  keyCharacters: z.array(z.string()).describe("A list of key characters present in this chapter."),
+  primaryLocation: z.string().describe("The main setting or location for this chapter."),
+  narrativeBeat: z.enum(["setup", "rising-action", "climax", "resolution"]).describe("The narrative function of this chapter within the story arc."),
+})
+
+const StoryStructureSchema = z.object({
+  chapters: z.array(ChapterSchema),
+  detectionMethod: z.enum(["existing", "ai-generated", "hybrid"]).describe("How the chapters were identified: 'existing' for predefined markers, 'ai-generated' for purely AI-driven splits, 'hybrid' for a mix."),
+  totalChapters: z.number(),
+  fullStory: z.string(),
+})
+
+const TitleCardSchema = z.object({
+  id: z.string().describe("Unique ID for the title card, e.g., 'title-card-1'"),
+  styleLabel: z.string().describe("A short, evocative label for the title card's style (e.g., 'Minimalist', 'Grunge Text', 'Kinetic Typography')."),
+  description: z.string().describe("A detailed visual description of the title card, including font, animation, and on-screen placement."),
+})
+
+const ChapterBreakdownSchema = z.object({
+  chapterId: z.string(),
+  characterReferences: z.array(z.string()).describe("List of key characters with brief descriptions of their role in this chapter."),
+  locationReferences: z.array(z.string()).describe("List of key locations with brief descriptions of their relevance."),
+  propReferences: z.array(z.string()).describe("List of key props with brief descriptions of their significance."),
+  shots: z.array(z.string()).describe("A detailed shot list for the chapter."),
+  coverageAnalysis: z.string().describe("An analysis of the shot coverage, identifying strengths and potential gaps."),
+  additionalOpportunities: z.array(z.string()).describe("Suggestions for other visual or narrative opportunities in this chapter."),
+  titleCards: z.optional(z.array(TitleCardSchema)).describe("Optional title card designs for this chapter."),
+})
+
+const MusicVideoSectionSchema = z.object({
+  id: z.string().describe("A unique identifier for the section (e.g., 'verse1', 'chorus1')."),
+  title: z.string().describe("The title of the section (e.g., 'Verse 1', 'Chorus')."),
+  type: z.enum(["intro", "verse", "pre-chorus", "chorus", "post-chorus", "bridge", "instrumental", "solo", "refrain", "outro", "hook", "interlude"]).describe("The type of song section."),
+  startTime: z.string().optional().describe("The start time of the section in MM:SS format, if available."),
+  endTime: z.string().optional().describe("The end time of the section in MM:SS format, if available."),
+  lyrics: z.string().describe("The lyrics for this section."),
+  isHook: z.boolean().optional().describe("True if this section is a recurring hook."),
+  repetitionNumber: z.number().optional().describe("The repetition number for this section type (e.g., Chorus 1, Chorus 2)."),
+})
+
+const MusicVideoStructureSchema = z.object({
+  songTitle: z.string().describe("The title of the song."),
+  artist: z.string().describe("The artist of the song."),
+  genre: z.string().describe("The genre of the song."),
+  totalSections: z.number().describe("The total number of sections identified."),
+  sections: z.array(MusicVideoSectionSchema),
+  detectionMethod: z.enum(["timestamp-based", "ai-generated", "hybrid"]).describe("How the sections were identified."),
+})
+
+const TreatmentSchema = z.object({
+  id: z.string().describe("Unique ID for the treatment (e.g., 'treatment-1')."),
+  name: z.string().describe("A short, catchy name for the treatment (e.g., 'Neon Noir', 'Daydream', 'Urban Grit')."),
+  concept: z.string().describe("A one-paragraph summary of the core concept and narrative approach."),
+  visualTheme: z.string().describe("A detailed description of the visual style, including color palette, lighting, camera work, and overall aesthetic."),
+  performanceRatio: z.number().describe("The estimated percentage of the video dedicated to performance shots vs. narrative shots (e.g., 60 for 60% performance)."),
+  hookStrategy: z.string().describe("A description of how repeated sections like the chorus/hook will be handled visually to build energy and avoid repetition."),
+})
+
+const MusicVideoSectionBreakdownSchema = z.object({
+  sectionId: z.string(),
+  shots: z.array(z.string()).describe("A detailed shot list for the section, incorporating the chosen treatment and configuration."),
+  performanceNotes: z.array(z.string()).describe("Specific notes on the artist's performance for this section."),
+  syncPoints: z.array(z.string()).describe("Key moments in the lyrics or music to sync visuals with."),
+  performanceRatio: z.number().describe("The percentage of performance vs. narrative shots in this specific section."),
+})
+
+const LocationConfigSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  name: z.string(),
+  description: z.string(),
+  purpose: z.string(),
+  assignedSections: z.array(z.string()),
+});
+
+const WardrobeConfigSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  name: z.string(),
+  description: z.string(),
+  purpose: z.string(),
+  assignedSections: z.array(z.string()),
+});
+
+const PropConfigSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  name: z.string(),
+  description: z.string(),
+  purpose: z.string(),
+  assignedSections: z.array(z.string()),
+});
+
+const SuggestionsSchema = z.object({
+  locations: z.array(LocationConfigSchema),
+  wardrobe: z.array(WardrobeConfigSchema),
+  props: z.array(PropConfigSchema),
+});
+
+const DirectorProfileSchema = z.object({
+  visualHallmarks: z.string().describe("A comma-separated list of recurring visual tactics—lenses, color, edits, staging, visual effects, camera moves, lighting moods, framing, etc."),
+  narrativeStyle: z.string().describe("The director's typical approach to musical storytelling—linear, abstract, cinematic, docu-style, performance-driven, thematic, ambiguous, etc."),
+  pacingAndEnergy: z.string().describe("The typical pacing and energy of their work—fast, chill, explosive, dreamlike, mysterious, high-tension, celebratory, etc."),
+  genres: z.string().describe("A comma-separated list of music genres the director is most associated with."),
+});
+
+// Helper function to construct comprehensive director style text for Film
+function buildFilmDirectorStyle(d?: {
+  name?: string
+  description?: string
+  visualLanguage?: string
+  visualStyle?: string
+  cameraStyle?: string
+  colorPalette?: string
+  narrativeFocus?: string
+  disciplines?: string[]
+  tags?: string[]
+  category?: string
+}) {
+  if (!d) return "Standard, balanced coverage focusing on clarity and storytelling."
+  
+  const visual = d.visualLanguage || [d.visualStyle, d.cameraStyle].filter(Boolean).join("; ")
+  
+  const styleComponents = [
+    `DIRECTOR: ${d.name || "Unknown"}`,
+    d.description ? `DESCRIPTION: ${d.description}` : null,
+    visual ? `VISUAL LANGUAGE: ${visual}` : null,
+    d.colorPalette ? `COLOR PALETTE: ${d.colorPalette}` : null,
+    d.narrativeFocus ? `NARRATIVE FOCUS: ${d.narrativeFocus}` : null,
+    d.category ? `CATEGORY: ${d.category}` : null,
+    d.disciplines && d.disciplines.length ? `DISCIPLINES: ${d.disciplines.join(", ")}` : null,
+    d.tags && d.tags.length ? `STYLE TAGS: ${d.tags.join(", ")}` : null,
+  ].filter(Boolean)
+  
+  return styleComponents.join("\n")
 }
 
-interface StoryStructure {
-  chapters: Chapter[]
-  detectionMethod: 'existing' | 'ai-generated' | 'hybrid'
-  totalChapters: number
-  fullStory: string
+// Helper function to construct comprehensive style text for Music Video
+function buildMusicDirectorStyle(d?: {
+  name?: string
+  description?: string
+  visualHallmarks?: string
+  narrativeStyle?: string
+  pacingAndEnergy?: string
+  genres?: string[]
+  disciplines?: string[]
+  tags?: string[]
+  category?: string
+}) {
+  if (!d) return "Standard, balanced, and modern music video style."
+  
+  const styleComponents = [
+    `DIRECTOR: ${d.name || "Unknown"}`,
+    d.description ? `DESCRIPTION: ${d.description}` : null,
+    d.visualHallmarks ? `VISUAL HALLMARKS: ${d.visualHallmarks}` : null,
+    d.narrativeStyle ? `NARRATIVE STYLE: ${d.narrativeStyle}` : null,
+    d.pacingAndEnergy ? `PACING & ENERGY: ${d.pacingAndEnergy}` : null,
+    d.genres && d.genres.length ? `GENRES: ${d.genres.join(", ")}` : null,
+    d.category ? `CATEGORY: ${d.category}` : null,
+    d.disciplines && d.disciplines.length ? `DISCIPLINES: ${d.disciplines.join(", ")}` : null,
+    d.tags && d.tags.length ? `STYLE TAGS: ${d.tags.join(", ")}` : null,
+  ].filter(Boolean)
+  
+  return styleComponents.join("\n")
 }
 
-interface TitleCard {
-  id: string
-  chapterId: string
-  style: 'character-focus' | 'location-focus' | 'abstract-thematic'
-  description: string
-  styleLabel: string
+// Default Prompts
+const defaultPrompts = {
+  structureDetection: `Analyze the following text and split it into logical chapters. Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered. Return ONLY the valid JSON object.`,
+  
+  chapterBreakdown: `You are a world-class cinematographer creating a visual breakdown for a story chapter. Generate a detailed shot list that reflects the director's unique style and approach.
+
+DIRECTOR STYLE PROFILE:
+{directorStyle}
+
+Based on this director's specific visual language, color palette, narrative focus, and disciplines, create shots that authentically reflect their style. Consider their typical camera movements, framing preferences, lighting approaches, and storytelling methods.
+
+Also identify key character, location, and prop references. Analyze the shot coverage and suggest additional opportunities. Return ONLY the valid JSON object.`,
+
+  additionalShots: `You are expanding a shot list for a story chapter in the style of a specific director. Generate {shotCount} new, distinct shots that focus on these categories: {categories}.
+
+DIRECTOR STYLE PROFILE:
+{directorStyle}
+
+CUSTOM REQUEST: {customRequest}
+
+The new shots should authentically reflect this director's visual language, camera techniques, and narrative approach. Ensure they complement the existing coverage while adding the director's signature style elements.
+
+Update the coverage analysis based on the new shots. Return ONLY the valid JSON object with 'newShots' and 'coverageAnalysis' keys.`,
+
+  titleCard: `Design {count} unique title card concepts for the chapter titled "{chapterTitle}". For each concept, provide a 'styleLabel' and a detailed 'description' of the visual execution based on these approaches: {approaches}. Return ONLY the valid JSON object.`,
+  
+  musicVideoStructure: `Analyze the provided song lyrics for "{songTitle}" by "{artist}" ({genre}). Break the song down into its structural components. Use only the following section types: "intro", "verse", "pre-chorus", "chorus", "post-chorus", "bridge", "instrumental", "solo", "refrain", "outro", "hook", "interlude". If timestamps [MM:SS] are present, use them for timing. If not, generate a logical structure. Identify recurring hooks. Return ONLY the valid JSON object.`,
+  
+  musicVideoTreatments: `You are creating music video treatments for "{songTitle}" by "{artist}" in the style of a specific director. Generate three distinct and creative treatments that authentically reflect this director's approach.
+
+DIRECTOR STYLE PROFILE:
+{directorStyle}
+
+Each treatment should incorporate the director's visual hallmarks, narrative style, pacing preferences, and genre expertise. Consider their typical use of performance vs. narrative, their signature visual techniques, and their approach to music video storytelling.
+
+For each treatment, provide a unique ID, a catchy name, a core concept, a detailed visual theme, an estimated performance-to-narrative ratio, and a strategy for handling the hook/chorus. Return ONLY the valid JSON object.`,
+  
+  musicVideoBreakdown: `You are creating a detailed shot list for the "{sectionTitle}" section of a music video in a specific director's style.
+
+DIRECTOR STYLE PROFILE:
+{directorStyle}
+
+TREATMENT: "{treatmentName}" - {treatmentConcept}
+VISUAL STYLE: {treatmentVisuals}
+
+PRODUCTION CONFIGURATION:
+LOCATIONS: {locations}
+WARDROBE: {wardrobe}
+PROPS: {props}
+
+Generate shots that authentically reflect this director's visual hallmarks, narrative approach, and pacing style. Ensure shots reference the configured items using their reference IDs (e.g., @location1, @outfit2, @prop3). The shots should feel like they could only come from this specific director.
+
+Also provide performance notes and key sync points. Return ONLY the valid JSON object.`,
+  
+  musicVideoSuggestions: `Based on the song "{songTitle}" by {artist}, its lyrics, and the selected treatment "{treatmentName}" ({treatmentConcept}), generate 2-3 creative suggestions each for locations, wardrobe, and props. For each item, provide a unique id (e.g., 'location1'), a reference (e.g., '@location1'), a name, a description, a purpose, and assign it to relevant song sections from this list: {sectionIds}. Return ONLY the valid JSON object.`,
+  
+  additionalMusicVideoShots: `You are generating additional shots for the "{sectionTitle}" section of a music video in a specific director's style.
+
+DIRECTOR STYLE PROFILE:
+{directorStyle}
+
+CUSTOM REQUEST: "{customRequest}"
+EXISTING SHOTS: {existingShots}
+TREATMENT: {treatmentConcept}
+
+PRODUCTION CONFIGURATION:
+LOCATIONS: {locations}
+WARDROBE: {wardrobe}
+PROPS: {props}
+
+Generate new shots that authentically reflect this director's visual hallmarks and approach while addressing the custom request. The shots should feel distinctly like this director's work and complement the existing coverage.
+
+Ensure new shots reference the configuration items and fit the established visual style. Return ONLY the valid JSON object with a 'newShots' key.`,
+  
+  directorStyleGeneration: `A user wants to create a custom music video director profile. Their starting point is a director named "{name}" with the following idea: "{description}". Based on this, expand it into a full profile. Define their visual hallmarks, narrative style, pacing & energy, and associated genres. Be creative and specific. Return ONLY the valid JSON object.`,
 }
 
-interface TitleCardOptions {
-  enabled: boolean
-  format: 'full' | 'name-only' | 'roman-numerals'
+export function getDefaultPrompts() {
+  return defaultPrompts
 }
 
-interface ChapterBreakdown {
-  chapterId: string
-  characterReferences: string[]
-  locationReferences: string[]
-  propReferences: string[]
-  shots: string[]
-  coverageAnalysis: string
-  additionalOpportunities: string[]
-  titleCards?: TitleCard[]
-}
-
-interface FullBreakdownResult {
-  storyStructure: StoryStructure
-  globalReferences: {
-    characters: string[]
-    locations: string[]
-    props: string[]
-  }
-  chapterBreakdowns: ChapterBreakdown[]
-  overallAnalysis: string
-}
-
-interface AdditionalShotsResult {
-  newShots: string[]
-  coverageAnalysis: string
-}
-
-interface AdditionalShotsRequest {
-  story: string
-  director: string
-  storyStructure: StoryStructure
-  chapterId: string
-  existingBreakdown: ChapterBreakdown
-  existingAdditionalShots: string[]
-  categories: string[]
-  customRequest: string
-}
-
-interface PromptOptions {
-  includeCameraStyle: boolean
-  includeColorPalette: boolean
-}
-
-// Music Video Interfaces
-interface MusicVideoSection {
-  id: string
-  type: 'intro' | 'verse' | 'chorus' | 'bridge' | 'outro' | 'instrumental'
-  title: string
-  lyrics: string
-  startTime?: string
-  endTime?: string
-  duration?: number
-  isHook: boolean
-  repetitionNumber?: number
-  estimatedDuration: string
-}
-
-interface MusicVideoStructure {
-  sections: MusicVideoSection[]
-  detectionMethod: 'timestamp' | 'ai-structure' | 'hybrid'
-  totalSections: number
-  songTitle: string
-  artist: string
-  genre: string
-  hookSections: string[]
-  fullLyrics: string
-}
-
-interface MusicVideoBreakdown {
-  sectionId: string
-  lyrics: string
-  performanceRatio: number // 0-100, percentage of performance vs narrative
-  shots: string[]
-  performanceNotes: string[]
-  syncPoints: string[]
-  transitionNote: string
-  wardrobeNote?: string
-  locationNote?: string
-}
-
-interface MusicVideoTreatment {
-  id: string
-  title: string
-  concept: string
-  visualTheme: string
-  narrativeArc: string
-  performanceRatio: string
-  keyMoments: Array<{
-    section: string
-    description: string
-  }>
-  hookStrategy: {
-    firstChorus: string
-    secondChorus: string
-    finalChorus: string
-  }
-}
-
-interface FullMusicVideoResult {
-  musicVideoStructure: MusicVideoStructure
-  treatments: MusicVideoTreatment[]
-  selectedTreatment?: MusicVideoTreatment
-  sectionBreakdowns: MusicVideoBreakdown[]
-  wardrobePlan: Array<{
-    lookNumber: number
-    sections: string[]
-    description: string
-    purpose: string
-  }>
-  locationProgression: Array<{
-    section: string
-    location: string
-    purpose: string
-    transitionPoint: string
-  }>
-  overallAnalysis: string
-}
-
-const STRUCTURE_DETECTION_PROMPT = `You are a professional story structure analyst. Your job is to detect existing chapter/scene structure in a story and enhance it with AI analysis for optimal visual breakdown.
-
-DETECTION PRIORITIES:
-1. EXISTING MARKERS: Look for "Chapter", "Scene", "ACT", "FADE IN:", "INT./EXT.", time markers
-2. NARRATIVE BEATS: Identify natural story divisions, character arcs, location changes
-3. STORY FLOW: Ensure logical progression and balanced chapter lengths
-
-CHAPTER ANALYSIS REQUIREMENTS:
-- Extract key characters per chapter
-- Identify primary locations
-- Classify narrative beat (setup, rising-action, climax, resolution)
-- Estimate relative duration/importance
-- Create compelling chapter titles if none exist
-
-HYBRID APPROACH:
-- Respect existing structure markers when present
-- Enhance with AI analysis for missing elements
-- Create logical divisions if no structure exists
-- Ensure each chapter has sufficient content for visual breakdown
-
-Return your analysis in this exact JSON format:
-{
-  "detectionMethod": "existing" | "ai-generated" | "hybrid",
-  "chapters": [
-    {
-      "id": "chapter-1",
-      "title": "Chapter title or generated title",
-      "content": "Full text content for this chapter",
-      "startPosition": 0,
-      "endPosition": 500,
-      "estimatedDuration": "Short/Medium/Long",
-      "keyCharacters": ["@character1", "@character2"],
-      "primaryLocation": "@location1",
-      "narrativeBeat": "setup"
-    }
-  ],
-  "totalChapters": 3,
-  "analysisNotes": "Brief explanation of structure detection approach used"
-}`
-
-const CHAPTER_BREAKDOWN_PROMPT = `You are a world-class visual storytelling AI generating comprehensive shot coverage for a SPECIFIC CHAPTER within a larger story. You have full story context but are focusing on this particular chapter's visual needs.
-
-CHAPTER-AWARE GENERATION RULES:
-1. NARRATIVE CONTEXT: Understand where this chapter fits in the overall story arc
-2. CHARACTER DEVELOPMENT: Consider character growth/changes within this chapter
-3. PACING AWARENESS: Adjust shot density based on chapter's narrative importance
-4. LOCATION CONSISTENCY: Focus on this chapter's primary locations while maintaining story continuity
-5. DIRECTOR STYLE: Apply selected director's approach with chapter-specific emphasis
-
-DIRECTOR STYLE SYSTEM:
-**SPIKE LEE STYLE:**
-- Dynamic camera movements, bold colors, social consciousness focus
-- Higher shot density for dialogue-heavy chapters
-- Intimate character work during emotional chapters
-
-**CHRISTOPHER NOLAN STYLE:**
-- IMAX-scale establishing shots, technical precision
-- Complex narrative support for plot-heavy chapters
-- Environmental storytelling emphasis
-
-**WES ANDERSON STYLE:**
-- Symmetrical framing, whimsical details, vintage aesthetics
-- Higher shot count for character-driven chapters
-- Precise composition for intimate moments
-
-**DENIS VILLENEUVE STYLE:**
-- Atmospheric wide shots, environmental mood
-- Contemplative pacing for introspective chapters
-- Epic scale with human vulnerability
-
-RUNWAY ML GEN 4 OPTIMIZATION:
-- Professional film terminology (85mm lens, medium shot, shallow depth of field)
-- Direct visual descriptions optimized for Gen 4
-- Consistent @reference system for character/location continuity
-- NO shot numbers or numeric prefixes in descriptions
-
-CHAPTER-SPECIFIC FOCUS:
-- Generate 8-15 shots depending on chapter length and importance
-- Emphasize this chapter's key narrative moments
-- Ensure smooth transitions from previous chapter context
-- Set up visual continuity for following chapters
-
-Return your response in this exact JSON format:
-{
-  "characterReferences": ["@character1 - description", "@character2 - description"],
-  "locationReferences": ["@location1 - description", "@location2 - description"],
-  "propReferences": ["@prop1 - description", "@prop2 - description"],
-  "shots": ["Shot description without numbers", "Another shot description"],
-  "coverageAnalysis": "Analysis of this chapter's coverage and its role in the overall story",
-  "additionalOpportunities": ["Chapter-specific additional shot opportunities"]
-}`
-
-const ADDITIONAL_CHAPTER_SHOTS_PROMPT = `You are generating ADDITIONAL TARGETED SHOTS for a specific chapter within a larger story. Focus on this chapter's needs while maintaining story continuity.
-
-CONTEXT-AWARE CHAPTER GENERATION:
-1. DO NOT duplicate existing shots within this chapter
-2. Maintain character/location reference consistency across the full story
-3. Focus on the specific chapter's narrative needs and gaps
-4. Consider this chapter's role in the overall story arc
-5. Generate 3-6 additional shots based on requests
-
-SHOT CATEGORY DEFINITIONS (Chapter-Focused):
-- character-reactions: Character development moments specific to this chapter
-- dialogue-coverage: Conversation coverage for this chapter's key scenes
-- environmental-details: Location atmosphere relevant to this chapter
-- transition-shots: Bridges within this chapter or to adjacent chapters
-- action-coverage: Physical moments and movement within this chapter
-- technical-shots: Specialized coverage for this chapter's unique needs
-
-Return response in this exact JSON format:
-{
-  "newShots": ["New shot description without numbers", "Another new shot"],
-  "coverageAnalysis": "Updated analysis of this chapter's coverage including new shots"
-}`
-
-const TITLE_CARD_PROMPT = `You are a professional title card designer specializing in cinematic chapter titles optimized for Runway ML Gen 4 generation. Your job is to create distinct visual approaches for chapter title cards that match the story's tone and selected director style.
-
-TITLE CARD GENERATION RULES:
-1. ALWAYS put the title text in quotes for Runway ML Gen 4 compatibility
-2. Create visual approaches based on the requested categories
-3. Match the selected director's visual style and aesthetic preferences
-4. Use existing character and location references for consistency
-5. Consider the chapter's narrative beat and emotional tone
-6. Ensure text is readable and cinematically composed
-
-VISUAL APPROACH DEFINITIONS:
-
-**Character Focus:**
-- Feature key characters from the chapter in cinematic poses
-- Use dramatic lighting and composition to convey chapter mood
-- Integrate title text naturally into the character composition
-- Consider character emotional state and development
-
-**Location/Object Focus:**
-- Highlight primary locations or significant objects from the chapter
-- Use environmental storytelling and atmospheric details
-- Create mood through lighting, weather, and setting
-- Incorporate symbolic or thematic visual elements
-
-**Abstract/Thematic:**
-- Create conceptual compositions representing chapter themes
-- Use color, texture, and abstract visual elements
-- Focus on emotional tone and narrative significance
-- Employ artistic and stylized visual approaches
-
-RUNWAY ML GEN 4 OPTIMIZATION:
-- Use professional cinematographic terminology
-- Specify lighting conditions, camera angles, and composition details
-- Include color palette and mood descriptors
-- Ensure text placement and typography are clearly described
-- Keep descriptions focused and visually specific
-
-Generate only the requested visual approaches. Return your response in this exact JSON format:
-{
-  "titleCards": [
-    {
-      "id": "approach-id",
-      "style": "approach-style",
-      "styleLabel": "Approach Label",
-      "description": "Detailed visual description with title text in quotes"
-    }
-  ]
-}`
-
-const MUSIC_VIDEO_STRUCTURE_PROMPT = `You are a professional music video director and editor with expertise in song structure analysis. Your job is to analyze lyrics and create a comprehensive section breakdown for music video production.
-
-ANALYSIS PRIORITIES:
-1. TIMESTAMP DETECTION: Look for [00:00] format timestamps if provided
-2. SECTION IDENTIFICATION: Identify verses, choruses, bridges, intro, outro
-3. HOOK DETECTION: Find repeated lyrical phrases (usually the chorus/hook)
-4. STRUCTURE LOGIC: Apply standard song structure knowledge (verse ~30-45s, chorus ~20-30s)
-5. REPETITION TRACKING: Number repeated sections (Chorus 1, Chorus 2, etc.)
-
-SECTION CLASSIFICATION RULES:
-- INTRO: Instrumental or opening lines before first verse
-- VERSE: Narrative sections, usually longer, tell the story
-- CHORUS/HOOK: Repeated sections, usually the most memorable part
-- BRIDGE: Appears once, different from verse/chorus pattern
-- OUTRO: Ending section, may repeat chorus or fade
-
-TIMING COMPENSATION:
-- With timestamps: Use exact timing
-- Without timestamps: Estimate based on typical song structure
-- Hybrid: Use provided timestamps and estimate missing sections
-
-Return your analysis in this exact JSON format:
-{
-  "detectionMethod": "timestamp",
-  "songTitle": "Song title if provided",
-  "artist": "Artist name if provided", 
-  "genre": "Detected or provided genre",
-  "sections": [
-    {
-      "id": "section-1",
-      "type": "intro",
-      "title": "Intro",
-      "lyrics": "Full lyrics for this section",
-      "startTime": "00:00",
-      "endTime": "00:15",
-      "duration": 15,
-      "isHook": false,
-      "repetitionNumber": 1,
-      "estimatedDuration": "Short"
-    }
-  ],
-  "hookSections": ["section-id-1", "section-id-2"],
-  "totalSections": 6,
-  "analysisNotes": "Brief explanation of structure detection approach"
-}`
-
-const MUSIC_VIDEO_TREATMENT_PROMPT = `You are a world-renowned music video director with 20+ years experience directing for artists like Beyoncé, The Weeknd, and Kendrick Lamar. You understand visual storytelling, performance dynamics, and how to create memorable moments that become cultural touchstones.
-
-TASK: Create 3 distinct video treatments for the provided song.
-
-TREATMENT REQUIREMENTS:
-Each treatment must include:
-1. ONE-LINE CONCEPT (the elevator pitch)
-2. VISUAL THEME (the overall aesthetic/mood) 
-3. NARRATIVE ARC (what story unfolds, even if abstract)
-4. PERFORMANCE RATIO (% performance vs % narrative/artistic)
-5. KEY VISUAL MOMENTS (3-5 signature shots that define this video)
-6. HOOK TREATMENT (what we see during repeated sections - MUST be different each repetition)
-
-TREATMENT STYLES TO GENERATE:
-Treatment 1: GENRE-CLASSIC - What fans of this genre expect and love
-Treatment 2: CINEMATIC NARRATIVE - Tell a complete story through the song  
-Treatment 3: AVANT-GARDE/ARTISTIC - Unexpected, visually striking, potentially viral
-
-DIRECTOR STYLE INTEGRATION:
-Apply the selected director's visual approach to each treatment while maintaining music video conventions.
-
-Return your response in this exact JSON format:
-{
-  "treatments": [
-    {
-      "id": "treatment-1",
-      "title": "Genre Classic Treatment",
-      "concept": "One line elevator pitch",
-      "visualTheme": "Aesthetic description",
-      "narrativeArc": "Story progression",
-      "performanceRatio": "70% performance / 30% narrative",
-      "keyMoments": [
-        {
-          "section": "Section name",
-          "description": "Visual description"
-        }
-      ],
-      "hookStrategy": {
-        "firstChorus": "What we see in first chorus",
-        "secondChorus": "How it evolves in second chorus", 
-        "finalChorus": "Climactic final chorus approach"
-      }
-    }
-  ]
-}`
-
-const MUSIC_VIDEO_SECTION_BREAKDOWN_PROMPT = `You are a cinematographer and director creating a shot-by-shot breakdown for a music video section. You must sync visuals PERFECTLY to the lyrics and musical moments.
-
-CRITICAL MUSIC VIDEO RULES:
-1. PERFORMANCE SYNC: When lyrics are being sung, artist must be visible lip-syncing at least 40% of the time
-2. HOOK ESCALATION: Each repetition of chorus/hook must be visually different and more intense
-3. VISUAL PACING: Shot cuts must match the rhythm and energy of the music
-4. PERFORMANCE RATIO: Maintain the specified performance vs narrative balance
-5. SEAMLESS TRANSITIONS: Each section must flow smoothly to the next
-
-RUNWAY ML GEN 4 OPTIMIZATION:
-- Use professional music video terminology
-- Include performance staging details
-- Specify lip-sync moments clearly
-- Describe artist positioning and movement
-- Include lighting and atmosphere for mood
-
-SECTION ANALYSIS:
-- Identify the emotional energy of this section (1-10 scale)
-- Determine primary focus (performance/narrative/artistic)
-- Plan shot count based on lyrical phrasing and musical tempo
-- Consider this section's role in the overall video arc
-
-Return your response in this exact JSON format:
-{
-  "performanceRatio": 70,
-  "shots": ["Shot description with lip-sync and performance notes"],
-  "performanceNotes": ["Specific notes about artist performance and lip-sync timing"],
-  "syncPoints": ["Key lyrical moments that must be perfectly synced"],
-  "transitionNote": "How this section transitions to the next",
-  "wardrobeNote": "Any wardrobe considerations for this section",
-  "locationNote": "Location or set requirements for this section"
-}`
-
-export async function analyzeStoryStructure(story: string): Promise<StoryStructure> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
-
-  const prompt = `${STRUCTURE_DETECTION_PROMPT}
-
-STORY TO ANALYZE:
-${story}
-
-Analyze this story's structure and return the chapter breakdown in the specified JSON format.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.3, // Lower temperature for more consistent structure analysis
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in structure analysis response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    return {
-      chapters: result.chapters || [],
-      detectionMethod: result.detectionMethod || 'ai-generated',
-      totalChapters: result.totalChapters || result.chapters?.length || 0,
-      fullStory: story
-    }
-  } catch (error) {
-    console.error("Error analyzing story structure:", error)
-    throw new Error("Failed to analyze story structure. Please try again.")
-  }
-}
-
-export async function generateTitleCards(
-  chapter: Chapter,
+// Main Actions
+export async function generateBreakdown(
+  story: string,
   director: string,
-  titleFormat: string,
-  characterReferences: string[],
-  locationReferences: string[],
-  selectedApproaches: string[] = ['character-focus', 'location-focus', 'abstract-thematic'],
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<TitleCard[]> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
+  titleCardOptions: { enabled: boolean; format: 'full' | 'name-only' | 'roman-numerals', approaches: string[] },
+  customDirectors: any[],
+  promptOptions: { includeCameraStyle: boolean, includeColorPalette: boolean }
+) {
+  // 1. Generate Story Structure
+  const { object: storyStructure } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: StoryStructureSchema,
+    prompt: defaultPrompts.structureDetection,
+    system: `You are a professional script supervisor and editor. Your task is to analyze a story and break it down into a structured format. The story is: """${story}"""`,
+  })
 
-  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
-  
-  // Format the title based on user preference
-  let formattedTitle = ""
-  const chapterIndex = parseInt(chapter.id.split('-')[1]) || 1
-  
-  switch (titleFormat) {
-    case 'full':
-      formattedTitle = `Chapter ${chapterIndex}: ${chapter.title}`
-      break
-    case 'roman-numerals':
-      const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
-      const romanNumeral = romanNumerals[chapterIndex - 1] || `${chapterIndex}`
-      formattedTitle = `Chapter ${romanNumeral}: ${chapter.title}`
-      break
-    case 'name-only':
-    default:
-      formattedTitle = chapter.title
-      break
-  }
+  // 2. Generate Breakdowns for each chapter
+  const chapterBreakdowns = await Promise.all(
+    storyStructure.chapters.map(async (chapter) => {
+      const selectedDirectorInfo = [...customDirectors].find(d => d.id === director)
+      const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
 
-  const prompt = `${TITLE_CARD_PROMPT}
+      let prompt = defaultPrompts.chapterBreakdown.replace("{directorStyle}", directorStyle)
 
-DIRECTOR SELECTION: ${directorContext}
-
-REQUESTED APPROACHES: ${selectedApproaches.map(approach => {
-  switch(approach) {
-    case 'character-focus': return 'Character Focus'
-    case 'location-focus': return 'Location/Object Focus' 
-    case 'abstract-thematic': return 'Abstract/Thematic'
-    default: return approach
-  }
-}).join(', ')}
-
-CHAPTER DETAILS:
-Title: ${chapter.title}
-Formatted Title for Display: "${formattedTitle}"
-Content: ${chapter.content}
-Narrative Beat: ${chapter.narrativeBeat}
-Key Characters: ${chapter.keyCharacters.join(', ')}
-Primary Location: ${chapter.primaryLocation}
-Estimated Duration: ${chapter.estimatedDuration}
-
-AVAILABLE CHARACTER REFERENCES:
-${characterReferences.join('\n')}
-
-AVAILABLE LOCATION REFERENCES:
-${locationReferences.join('\n')}
-
-Generate title card approaches for the requested categories. Each description must include the formatted title "${formattedTitle}" in quotes. Return only valid JSON.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.8, // Higher creativity for visual design
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in title card response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    return result.titleCards.map((card: any) => ({
-      ...card,
-      chapterId: chapter.id
-    })) || []
-  } catch (error) {
-    console.error("Error generating title cards:", error)
-    throw new Error(`Failed to generate title cards for ${chapter.title}. Please try again.`)
-  }
-}
-
-export async function generateChapterBreakdown(
-  storyStructure: StoryStructure,
-  chapterId: string,
-  director: string,
-  globalReferences?: { characters: string[], locations: string[], props: string[] },
-  titleCardOptions?: TitleCardOptions,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<ChapterBreakdown> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
-
-  const chapter = storyStructure.chapters.find(c => c.id === chapterId)
-  if (!chapter) {
-    throw new Error(`Chapter ${chapterId} not found`)
-  }
-
-  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
-  
-  const globalReferencesText = globalReferences ? `
-EXISTING GLOBAL REFERENCES (maintain consistency):
-Characters: ${globalReferences.characters.join(', ')}
-Locations: ${globalReferences.locations.join(', ')}
-Props: ${globalReferences.props.join(', ')}
-` : ''
-
-  const prompt = `${CHAPTER_BREAKDOWN_PROMPT}
-
-DIRECTOR SELECTION: ${directorContext}
-
-FULL STORY CONTEXT:
-${storyStructure.fullStory}
-
-CURRENT CHAPTER FOCUS:
-Chapter: ${chapter.title}
-Content: ${chapter.content}
-Narrative Beat: ${chapter.narrativeBeat}
-Key Characters: ${chapter.keyCharacters.join(', ')}
-Primary Location: ${chapter.primaryLocation}
-Story Position: Chapter ${storyStructure.chapters.indexOf(chapter) + 1} of ${storyStructure.totalChapters}
-
-${globalReferencesText}
-
-Generate comprehensive visual breakdown for this specific chapter while maintaining story continuity. Return only valid JSON.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.7,
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in chapter breakdown response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    let titleCards: TitleCard[] = []
-    
-    // Generate title cards if enabled
-    if (titleCardOptions?.enabled) {
-      try {
-        titleCards = await generateTitleCards(
-          chapter,
-          director,
-          titleCardOptions.format,
-          globalReferences?.characters || [],
-          globalReferences?.locations || [],
-          undefined,
-          customDirectors,
-          promptOptions
-        )
-      } catch (error) {
-        console.error("Error generating title cards:", error)
-        // Continue without title cards if generation fails
+      if (!promptOptions.includeCameraStyle) {
+        prompt += "\n\nIMPORTANT: Minimize detailed camera movement descriptions in the shots."
       }
-    }
+      if (!promptOptions.includeColorPalette) {
+        prompt += "\n\nIMPORTANT: Minimize detailed color palette and lighting descriptions in the shots."
+      }
 
-    return {
-      chapterId,
-      characterReferences: result.characterReferences || [],
-      locationReferences: result.locationReferences || [],
-      propReferences: result.propReferences || [],
-      shots: result.shots || [],
-      coverageAnalysis: result.coverageAnalysis || "",
-      additionalOpportunities: result.additionalOpportunities || [],
-      titleCards,
-    }
-  } catch (error) {
-    console.error("Error generating chapter breakdown:", error)
-    throw new Error(`Failed to generate breakdown for ${chapter.title}. Please try again.`)
-  }
-}
+      const { object: breakdown } = await generateObject({
+        model: openai("gpt-4o"),
+        schema: ChapterBreakdownSchema,
+        prompt: prompt,
+        system: `You are a world-class cinematographer and director. Your task is to create a visual breakdown for a chapter of a story. The chapter content is: """${chapter.content}"""`,
+      })
 
-export async function generateFullStoryBreakdown(
-  story: string, 
-  director: string, 
-  titleCardOptions?: TitleCardOptions,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<FullBreakdownResult> {
-  // Step 1: Analyze story structure
-  const storyStructure = await analyzeStoryStructure(story)
-  
-  // Step 2: Generate breakdowns for each chapter sequentially
-  const chapterBreakdowns: ChapterBreakdown[] = []
-  let globalReferences = { characters: [], locations: [], props: [] }
+      // Generate title cards if enabled
+      if (titleCardOptions.enabled) {
+        const { object: titleCards } = await generateObject({
+          model: openai("gpt-4o"),
+          schema: z.object({ titleCards: z.array(TitleCardSchema) }),
+          prompt: defaultPrompts.titleCard
+            .replace("{count}", "3")
+            .replace("{chapterTitle}", chapter.title)
+            .replace("{approaches}", titleCardOptions.approaches.join(", ")),
+          system: "You are a creative title sequence designer."
+        })
+        breakdown.titleCards = titleCards.titleCards
+      }
 
-  for (const chapter of storyStructure.chapters) {
-    const chapterBreakdown = await generateChapterBreakdown(
-      storyStructure, 
-      chapter.id, 
-      director, 
-      globalReferences,
-      titleCardOptions,
-      customDirectors,
-      promptOptions
-    )
-    
-    chapterBreakdowns.push(chapterBreakdown)
-    
-    // Update global references for consistency
-    globalReferences = {
-      characters: [...new Set([...globalReferences.characters, ...chapterBreakdown.characterReferences])],
-      locations: [...new Set([...globalReferences.locations, ...chapterBreakdown.locationReferences])],
-      props: [...new Set([...globalReferences.props, ...chapterBreakdown.propReferences])]
-    }
-  }
-
-  // Step 3: Generate overall analysis
-  const totalShots = chapterBreakdowns.reduce((sum, chapter) => sum + chapter.shots.length, 0)
-  const totalTitleCards = titleCardOptions?.enabled ? chapterBreakdowns.reduce((sum, chapter) => sum + (chapter.titleCards?.length || 0), 0) : 0
-  const overallAnalysis = `Complete story breakdown generated with ${storyStructure.totalChapters} chapters, ${totalShots} total shots${totalTitleCards > 0 ? `, and ${totalTitleCards} title card options` : ''}. Structure detection method: ${storyStructure.detectionMethod}. Each chapter maintains narrative continuity while providing comprehensive visual coverage optimized for Runway ML Gen 4.`
+      return breakdown
+    })
+  )
 
   return {
     storyStructure,
-    globalReferences,
     chapterBreakdowns,
-    overallAnalysis
+    overallAnalysis: "Initial breakdown complete.",
   }
 }
 
 export async function generateAdditionalChapterShots(
-  request: AdditionalShotsRequest,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<AdditionalShotsResult> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
+  { story, director, storyStructure, chapterId, existingBreakdown, existingAdditionalShots, categories, customRequest }: any,
+  customDirectors: any[],
+  promptOptions: { includeCameraStyle: boolean, includeColorPalette: boolean }
+) {
+  const chapter = storyStructure.chapters.find((c: any) => c.id === chapterId)
+  if (!chapter) throw new Error("Chapter not found")
+
+  const selectedDirectorInfo = [...customDirectors].find(d => d.id === director)
+  const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
+
+  let prompt = defaultPrompts.additionalShots
+    .replace("{shotCount}", "5")
+    .replace("{categories}", categories.join(", "))
+    .replace("{customRequest}", customRequest)
+    .replace("{directorStyle}", directorStyle)
+
+  if (!promptOptions.includeCameraStyle) {
+    prompt += "\n\nIMPORTANT: Minimize detailed camera movement descriptions in the shots."
+  }
+  if (!promptOptions.includeColorPalette) {
+    prompt += "\n\nIMPORTANT: Minimize detailed color palette and lighting descriptions in the shots."
   }
 
-  const chapter = request.storyStructure.chapters.find(c => c.id === request.chapterId)
-  if (!chapter) {
-    throw new Error(`Chapter ${request.chapterId} not found`)
-  }
+  const { object } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: z.object({
+      newShots: z.array(z.string()),
+      coverageAnalysis: z.string(),
+    }),
+    prompt: prompt,
+    system: `You are a creative cinematographer tasked with expanding a shot list for a specific chapter. The chapter content is: """${chapter.content}""". The existing shots are: """${[...existingBreakdown.shots, ...existingAdditionalShots].join("\n")}"""`,
+  })
 
-  const directorContext = getDirectorContext(request.director, customDirectors, promptOptions)
-  const allExistingShots = [...request.existingBreakdown.shots, ...request.existingAdditionalShots]
-
-  const categoriesText = request.categories.length > 0 
-    ? `REQUESTED CATEGORIES: ${request.categories.join(", ")}`
-    : ""
-
-  const customRequestText = request.customRequest 
-    ? `CUSTOM REQUEST: ${request.customRequest}`
-    : ""
-
-  const prompt = `${ADDITIONAL_CHAPTER_SHOTS_PROMPT}
-
-DIRECTOR SELECTION: ${directorContext}
-
-FULL STORY CONTEXT:
-${request.storyStructure.fullStory}
-
-CURRENT CHAPTER:
-${chapter.title}: ${chapter.content}
-
-EXISTING CHAPTER REFERENCES:
-Characters: ${request.existingBreakdown.characterReferences.join("\n")}
-Locations: ${request.existingBreakdown.locationReferences.join("\n")}
-
-EXISTING CHAPTER SHOTS (DO NOT DUPLICATE):
-${allExistingShots.join("\n")}
-
-CURRENT CHAPTER COVERAGE ANALYSIS:
-${request.existingBreakdown.coverageAnalysis}
-
-${categoriesText}
-
-${customRequestText}
-
-Generate additional shots for this specific chapter based on the requests above. Return only valid JSON.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.7,
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    return {
-      newShots: result.newShots || [],
-      coverageAnalysis: result.coverageAnalysis || "",
-    }
-  } catch (error) {
-    console.error("Error generating additional chapter shots:", error)
-    throw new Error("Failed to generate additional shots for this chapter. Please try again.")
-  }
-}
-
-export async function analyzeMusicVideoStructure(
-  lyrics: string,
-  songTitle?: string,
-  artist?: string,
-  genre?: string
-): Promise<MusicVideoStructure> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
-
-  const prompt = `${MUSIC_VIDEO_STRUCTURE_PROMPT}
-
-SONG INFORMATION:
-Title: ${songTitle || 'Unknown'}
-Artist: ${artist || 'Unknown'}
-Genre: ${genre || 'Unknown'}
-
-LYRICS TO ANALYZE:
-${lyrics}
-
-Analyze this song's structure and return the section breakdown in the specified JSON format.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.3,
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in structure analysis response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    return {
-      sections: result.sections || [],
-      detectionMethod: result.detectionMethod || 'ai-structure',
-      totalSections: result.totalSections || result.sections?.length || 0,
-      songTitle: result.songTitle || songTitle || 'Unknown',
-      artist: result.artist || artist || 'Unknown', 
-      genre: result.genre || genre || 'Unknown',
-      hookSections: result.hookSections || [],
-      fullLyrics: lyrics
-    }
-  } catch (error) {
-    console.error("Error analyzing music video structure:", error)
-    throw new Error("Failed to analyze song structure. Please try again.")
-  }
-}
-
-export async function generateMusicVideoTreatments(
-  musicVideoStructure: MusicVideoStructure,
-  director: string,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<MusicVideoTreatment[]> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
-
-  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
-
-  const prompt = `${MUSIC_VIDEO_TREATMENT_PROMPT}
-
-DIRECTOR SELECTION: ${directorContext}
-
-SONG INFORMATION:
-Title: ${musicVideoStructure.songTitle}
-Artist: ${musicVideoStructure.artist}
-Genre: ${musicVideoStructure.genre}
-Total Sections: ${musicVideoStructure.totalSections}
-
-SONG STRUCTURE:
-${musicVideoStructure.sections.map(section => 
-  `${section.title}: ${section.lyrics.substring(0, 100)}${section.lyrics.length > 100 ? '...' : ''}`
-).join('\n')}
-
-HOOK SECTIONS: ${musicVideoStructure.hookSections.length} repetitions
-${musicVideoStructure.sections
-  .filter(s => musicVideoStructure.hookSections.includes(s.id))
-  .map(s => `${s.title}: "${s.lyrics.substring(0, 50)}..."`)
-  .join('\n')}
-
-Generate 3 distinct treatments that work with this song structure and director style. Return only valid JSON.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.8,
-    })
-
-    // Clean the response to ensure valid JSON
-    let cleanedText = text.trim()
-    
-    // Find the JSON block
-    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in treatment response")
-    }
-
-    let jsonString = jsonMatch[0]
-    
-    // Clean up common JSON issues
-    jsonString = jsonString
-      .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
-      .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Quote unquoted keys
-      .replace(/:\s*'([^']*)'/g, ': "$1"') // Replace single quotes with double quotes
-      .replace(/\n/g, ' ') // Replace newlines with spaces
-      .replace(/\s+/g, ' ') // Normalize whitespace
-
-    const result = JSON.parse(jsonString)
-    return result.treatments || []
-  } catch (error) {
-    console.error("Error generating music video treatments:", error)
-    console.error("Raw response:", text)
-    throw new Error("Failed to generate video treatments. Please try again.")
-  }
-}
-
-export async function generateMusicVideoSectionBreakdown(
-  musicVideoStructure: MusicVideoStructure,
-  sectionId: string,
-  director: string,
-  selectedTreatment: MusicVideoTreatment,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<MusicVideoBreakdown> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
-
-  const section = musicVideoStructure.sections.find(s => s.id === sectionId)
-  if (!section) {
-    throw new Error(`Section ${sectionId} not found`)
-  }
-
-  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
-  const sectionIndex = musicVideoStructure.sections.findIndex(s => s.id === sectionId)
-  const previousSection = sectionIndex > 0 ? musicVideoStructure.sections[sectionIndex - 1] : null
-  const nextSection = sectionIndex < musicVideoStructure.sections.length - 1 ? musicVideoStructure.sections[sectionIndex + 1] : null
-
-  // Determine if this is a hook repetition and which number
-  const isHookRepetition = section.isHook && section.repetitionNumber
-  const hookStrategy = isHookRepetition ? 
-    (section.repetitionNumber === 1 ? selectedTreatment.hookStrategy.firstChorus :
-     section.repetitionNumber === 2 ? selectedTreatment.hookStrategy.secondChorus :
-     selectedTreatment.hookStrategy.finalChorus) : null
-
-  const prompt = `${MUSIC_VIDEO_SECTION_BREAKDOWN_PROMPT}
-
-DIRECTOR SELECTION: ${directorContext}
-
-SELECTED TREATMENT: ${selectedTreatment.title}
-Treatment Concept: ${selectedTreatment.concept}
-Visual Theme: ${selectedTreatment.visualTheme}
-Overall Performance Ratio: ${selectedTreatment.performanceRatio}
-
-CURRENT SECTION:
-Type: ${section.type}
-Title: ${section.title}
-Lyrics: ${section.lyrics}
-Duration: ${section.duration ? `${section.duration}s` : section.estimatedDuration}
-Is Hook: ${section.isHook}
-${isHookRepetition ? `Repetition #: ${section.repetitionNumber}` : ''}
-
-${hookStrategy ? `HOOK STRATEGY FOR THIS REPETITION: ${hookStrategy}` : ''}
-
-CONTEXT:
-Previous Section: ${previousSection ? `${previousSection.title} - "${previousSection.lyrics.substring(0, 50)}..."` : 'None (First section)'}
-Next Section: ${nextSection ? `${nextSection.title} - "${nextSection.lyrics.substring(0, 50)}..."` : 'None (Final section)'}
-
-SONG POSITION: Section ${sectionIndex + 1} of ${musicVideoStructure.totalSections}
-
-Generate comprehensive shot breakdown for this section that maintains perfect sync with lyrics and music. Return only valid JSON.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.7,
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in section breakdown response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    return {
-      sectionId,
-      lyrics: section.lyrics,
-      performanceRatio: result.performanceRatio || 70,
-      shots: result.shots || [],
-      performanceNotes: result.performanceNotes || [],
-      syncPoints: result.syncPoints || [],
-      transitionNote: result.transitionNote || "",
-      wardrobeNote: result.wardrobeNote,
-      locationNote: result.locationNote
-    }
-  } catch (error) {
-    console.error("Error generating section breakdown:", error)
-    throw new Error(`Failed to generate breakdown for ${section.title}. Please try again.`)
-  }
+  return object
 }
 
 export async function generateFullMusicVideoBreakdown(
   lyrics: string,
-  director: string,
-  songTitle?: string,
-  artist?: string,
-  genre?: string,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<FullMusicVideoResult> {
-  // Step 1: Analyze song structure
-  const musicVideoStructure = await analyzeMusicVideoStructure(lyrics, songTitle, artist, genre)
-  
-  // Step 2: Generate treatments
-  const treatments = await generateMusicVideoTreatments(musicVideoStructure, director, customDirectors, promptOptions)
-  
-  // Step 3: Use first treatment as default (user can switch later)
-  const selectedTreatment = treatments[0]
-  
-  // Step 4: Generate breakdowns for each section
-  const sectionBreakdowns: MusicVideoBreakdown[] = []
-  
-  for (const section of musicVideoStructure.sections) {
-    const sectionBreakdown = await generateMusicVideoSectionBreakdown(
+  songTitle: string = "Untitled Song",
+  artist: string = "Unknown Artist",
+  genre: string = "Pop",
+  config?: MusicVideoConfig,
+  selectedMusicVideoDirectorInfo?: any
+) {
+  // Build comprehensive music video director style string
+  const directorStyle = buildMusicDirectorStyle(selectedMusicVideoDirectorInfo)
+  const directorName = selectedMusicVideoDirectorInfo?.name || "the selected style"
+
+  // Always generate structure and treatments to have them available in both steps.
+  const [structureResult, treatmentsResult] = await Promise.all([
+    generateObject({
+      model: openai("gpt-4o"),
+      schema: MusicVideoStructureSchema,
+      prompt: defaultPrompts.musicVideoStructure.replace("{songTitle}", songTitle).replace("{artist}", artist).replace("{genre}", genre),
+      system: `You are an expert music producer and analyst. Your task is to analyze song lyrics and determine the song's structure. The lyrics are: """${lyrics}"""`,
+    }),
+    generateObject({
+      model: openai("gpt-4o"),
+      schema: z.object({ treatments: z.array(TreatmentSchema) }),
+      prompt: defaultPrompts.musicVideoTreatments
+        .replace("{songTitle}", songTitle)
+        .replace("{artist}", artist)
+        .replace("{directorStyle}", directorStyle),
+      system: `You are a visionary music video director. The song lyrics are: """${lyrics}"""`,
+    })
+  ]);
+
+  const musicVideoStructure = structureResult.object;
+  const treatments = treatmentsResult.object.treatments;
+
+  // If it's the first run (no config), return early for the config screen.
+  if (!config || !config.isConfigured) {
+    return {
       musicVideoStructure,
-      section.id,
-      director,
-      selectedTreatment,
-      customDirectors,
-      promptOptions
-    )
-    sectionBreakdowns.push(sectionBreakdown)
+      treatments,
+      selectedTreatment: treatments[0],
+      isConfigured: false,
+    };
   }
 
-  // Step 5: Generate wardrobe and location plans
-  const wardrobePlan = generateWardrobePlan(sectionBreakdowns, selectedTreatment)
-  const locationProgression = generateLocationProgression(sectionBreakdowns, selectedTreatment)
-  
-  // Step 6: Generate overall analysis
-  const totalShots = sectionBreakdowns.reduce((sum, section) => sum + section.shots.length, 0)
-  const avgPerformanceRatio = sectionBreakdowns.reduce((sum, section) => sum + section.performanceRatio, 0) / sectionBreakdowns.length
-  
-  const overallAnalysis = `Complete music video breakdown generated with ${musicVideoStructure.totalSections} sections, ${totalShots} total shots. Average performance ratio: ${Math.round(avgPerformanceRatio)}% performance / ${Math.round(100 - avgPerformanceRatio)}% narrative. Structure detection: ${musicVideoStructure.detectionMethod}. Treatment: "${selectedTreatment.title}" - ${selectedTreatment.concept}. All shots optimized for Runway ML Gen 4 with perfect lyric synchronization.`
+  // If it's the second run (config is provided), proceed with the breakdown.
+  let selectedTreatment = config.customTreatment || treatments.find(t => t.id === config.selectedTreatmentId);
+  if (!selectedTreatment) {
+    console.warn("Selected treatment ID from config not found, falling back to the first generated treatment.");
+    selectedTreatment = treatments[0];
+  }
+
+  const locationString = config.locations.map(l => `${l.reference}: ${l.name} - ${l.description}`).join("\n");
+  const wardrobeString = config.wardrobe.map(w => `${w.reference}: ${w.name} - ${w.description}`).join("\n");
+  const propString = config.props.map(p => `${p.reference}: ${p.name} - ${p.description}`).join("\n");
+
+  const sectionBreakdowns = await Promise.all(
+    musicVideoStructure.sections.map(async (section) => {
+      const { object: breakdown } = await generateObject({
+        model: openai("gpt-4o"),
+        schema: MusicVideoSectionBreakdownSchema,
+        prompt: defaultPrompts.musicVideoBreakdown
+          .replace("{sectionTitle}", section.title)
+          .replace("{songTitle}", songTitle)
+          .replace("{treatmentName}", selectedTreatment.name)
+          .replace("{treatmentConcept}", selectedTreatment.concept)
+          .replace("{treatmentVisuals}", selectedTreatment.visualTheme)
+          .replace("{directorStyle}", directorStyle)
+          .replace("{locations}", locationString || "None")
+          .replace("{wardrobe}", wardrobeString || "None")
+          .replace("{props}", propString || "None"),
+        system: `You are a world-class music video director creating a shot list for a song section. The lyrics for this section are: """${section.lyrics}"""`,
+      });
+      return breakdown;
+    })
+  );
 
   return {
     musicVideoStructure,
     treatments,
     selectedTreatment,
     sectionBreakdowns,
-    wardrobePlan,
-    locationProgression,
-    overallAnalysis
-  }
+    overallAnalysis: "Full music video breakdown complete.",
+    isConfigured: true,
+  };
 }
 
-function generateWardrobePlan(sectionBreakdowns: MusicVideoBreakdown[], treatment: MusicVideoTreatment): Array<{
-  lookNumber: number
-  sections: string[]
-  description: string
-  purpose: string
-}> {
-  // Simple wardrobe plan generation - can be enhanced
-  const looks = []
-  const sectionsPerLook = Math.ceil(sectionBreakdowns.length / 3)
-  
-  for (let i = 0; i < 3; i++) {
-    const startIndex = i * sectionsPerLook
-    const endIndex = Math.min(startIndex + sectionsPerLook, sectionBreakdowns.length)
-    const sections = sectionBreakdowns.slice(startIndex, endIndex).map(s => s.sectionId)
-    
-    looks.push({
-      lookNumber: i + 1,
-      sections,
-      description: `Look ${i + 1} - ${treatment.visualTheme} inspired outfit`,
-      purpose: i === 0 ? 'Establish character' : i === 1 ? 'Build intensity' : 'Climactic finale'
-    })
-  }
-  
-  return looks
+export async function generateAdditionalMusicVideoShots(
+  { lyrics, musicVideoStructure, sectionId, existingBreakdown, existingAdditionalShots, customRequest, config, selectedMusicVideoDirectorInfo }: any
+) {
+  const section = musicVideoStructure.sections.find((s: any) => s.id === sectionId);
+  if (!section) throw new Error("Section not found");
+
+  const directorStyle = buildMusicDirectorStyle(selectedMusicVideoDirectorInfo)
+
+  const { object: treatmentsData } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: z.object({ treatments: z.array(TreatmentSchema) }),
+    prompt: defaultPrompts.musicVideoTreatments
+      .replace("{songTitle}", musicVideoStructure.songTitle)
+      .replace("{artist}", musicVideoStructure.artist)
+      .replace("{directorStyle}", directorStyle),
+    system: `You are a visionary music video director. The song lyrics are: """${lyrics}"""`,
+  });
+
+  const selectedTreatment = config.customTreatment || treatmentsData.treatments.find(t => t.id === config.selectedTreatmentId);
+  if (!selectedTreatment) throw new Error("Selected treatment not found.");
+
+  const locationString = config.locations.map(l => `${l.reference}: ${l.name} - ${l.description}`).join("\n");
+  const wardrobeString = config.wardrobe.map(w => `${w.reference}: ${w.name} - ${w.description}`).join("\n");
+  const propString = config.props.map(p => `${p.reference}: ${p.name} - ${p.description}`).join("\n");
+
+  const allExistingShots = [...existingBreakdown.shots, ...existingAdditionalShots];
+
+  const { object } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: z.object({
+      newShots: z.array(z.string()),
+    }),
+    prompt: defaultPrompts.additionalMusicVideoShots
+      .replace("{sectionTitle}", section.title)
+      .replace("{songTitle}", musicVideoStructure.songTitle)
+      .replace("{customRequest}", customRequest)
+      .replace("{existingShots}", allExistingShots.join("\n"))
+      .replace("{treatmentConcept}", selectedTreatment.concept)
+      .replace("{directorStyle}", directorStyle)
+      .replace("{locations}", locationString || "None")
+      .replace("{wardrobe}", wardrobeString || "None")
+      .replace("{props}", propString || "None"),
+    system: `You are a creative music video director brainstorming additional shots for a specific section. The lyrics for this section are: """${section.lyrics}"""`,
+  });
+
+  return object;
 }
 
-function generateLocationProgression(sectionBreakdowns: MusicVideoBreakdown[], treatment: MusicVideoTreatment): Array<{
-  section: string
-  location: string
-  purpose: string
-  transitionPoint: string
-}> {
-  // Simple location progression - can be enhanced
-  return sectionBreakdowns.map((breakdown, index) => ({
-    section: breakdown.sectionId,
-    location: breakdown.locationNote || `Location ${index + 1}`,
-    purpose: `Support ${treatment.visualTheme} aesthetic`,
-    transitionPoint: breakdown.transitionNote || 'Smooth cut'
-  }))
+export async function generateMusicVideoSuggestions({
+  lyrics,
+  songTitle,
+  artist,
+  genre,
+  treatment,
+  sections,
+}: {
+  lyrics: string;
+  songTitle: string;
+  artist: string;
+  genre: string;
+  treatment: { id: string; name: string; concept: string };
+  sections: Array<{ id: string; title: string }>;
+}) {
+  const sectionInfo = sections.map(s => `${s.id} (${s.title})`).join(", ");
+
+  // Reuse the SuggestionsSchema already declared earlier in this file
+  const { object } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: SuggestionsSchema,
+    prompt: defaultPrompts.musicVideoSuggestions
+      .replace("{songTitle}", songTitle || "the song")
+      .replace("{artist}", artist || "the artist")
+      .replace("{treatmentName}", treatment.name)
+      .replace("{treatmentConcept}", treatment.concept)
+      .replace("{sectionIds}", sectionInfo),
+    system: `You are a creative director brainstorming for a music video. The lyrics are: """${lyrics}""". The genre is ${genre}.`,
+  });
+
+  // Ensure assignedSections are valid IDs
+  const validSectionIds = sections.map(s => s.id);
+  object.locations.forEach(item => {
+    item.assignedSections = item.assignedSections.filter(id => validSectionIds.includes(id));
+  });
+  object.wardrobe.forEach(item => {
+    item.assignedSections = item.assignedSections.filter(id => validSectionIds.includes(id));
+  });
+  object.props.forEach(item => {
+    item.assignedSections = item.assignedSections.filter(id => validSectionIds.includes(id));
+  });
+
+  return object;
 }
 
-function getDirectorContext(
-  director: string, 
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): string {
-  // Check for custom directors first
-  if (customDirectors) {
-    const customDirector = customDirectors.find(d => d.id === director)
-    if (customDirector) {
-      let context = `Apply ${customDirector.name} style: ${customDirector.description}.`
-      
-      if (customDirector.visualStyle) {
-        context += `\nVisual Style: ${customDirector.visualStyle}`
-      }
-      
-      if (promptOptions?.includeCameraStyle && customDirector.cameraStyle) {
-        context += `\nCamera Style: ${customDirector.cameraStyle}`
-      }
-      
-      if (promptOptions?.includeColorPalette && customDirector.colorPalette) {
-        context += `\nColor Palette: ${customDirector.colorPalette}`
-      }
-      
-      if (customDirector.narrativeFocus) {
-        context += `\nNarrative Focus: ${customDirector.narrativeFocus}`
-      }
-      
-      return context
-    }
-  }
-
-  // Base director context without optional elements
-  let baseContext = ""
-  let cameraContext = ""
-  let colorContext = ""
-
-  switch (director) {
-    case "taskmasterpeace":
-      baseContext = "Apply Taskmasterpeace style with emotionally-driven visual storytelling. Focus on authentic human moments following traditional storytelling rules, multiple establishing shots to ground the audience, intimate emotional captures with atmospheric lighting that reveals the complete emotional journey."
-      cameraContext = "Use handheld intimate movements, dynamic motion that matches scene energy, over-the-shoulder dialogue coverage, essential establishing shots."
-      colorContext = "Apply cool blues and teals for aspirational stories, desaturated tones for distancing/realism, strategic color temperature shifts."
-      break
-    case "roger-deakins":
-      baseContext = "Apply Roger Deakins style with cinematic silhouettes and natural drama. Focus on environmental storytelling, mood over dialogue, visual metaphors."
-      cameraContext = "Use steady controlled movements, low angles, wide establishing shots, dramatic backlighting, silhouette work, atmospheric haze, natural light sources."
-      colorContext = "Apply high contrast, deep blues, golden hour warmth, stark blacks with dramatic lighting contrasts."
-      break
-    case "emmanuel-lubezki":
-      baseContext = "Apply Emmanuel Lubezki style with flowing natural light poetry. Focus on human connection with nature, spiritual journeys, raw emotion."
-      cameraContext = "Use fluid steadicam, 360-degree movements, following action naturally, golden hour magic, long continuous takes, immersive environments."
-      colorContext = "Apply warm golden tones, natural earth colors, soft highlights with natural lighting."
-      break
-    case "rian-johnson":
-      baseContext = "Apply Rian Johnson style with genre-blending creative storytelling. Focus on genre deconstruction, mystery elements, character subversion."
-      cameraContext = "Use inventive movements, POV shots, playful framing, creative angles, color coding, genre visual language mixing."
-      colorContext = "Apply bold primary colors, genre-specific palettes, symbolic color use."
-      break
-    case "spike-lee":
-      baseContext = "Apply Spike Lee style with social consciousness focus and cultural authenticity. Emphasize character reactions and dynamic storytelling."
-      cameraContext = "Use dynamic camera movements, Dutch angles, and dolly shots with vibrant urban aesthetics."
-      colorContext = "Apply bold saturated colors with high contrast and vibrant urban color schemes."
-      break
-    case "christopher-nolan":
-      baseContext = "Apply Christopher Nolan style with IMAX-scale mind-bending epics. Focus on time manipulation, complex narratives, intellectual puzzles."
-      cameraContext = "Use handheld action, sweeping aerials, rotating perspectives, large format cinematography, practical effects, architectural framing."
-      colorContext = "Apply cool blues, steel grays, minimal saturation, stark contrasts."
-      break
-    case "wes-anderson":
-      baseContext = "Apply Wes Anderson style with whimsical symmetrical storytelling. Focus on character quirks, nostalgic themes, ensemble storytelling."
-      cameraContext = "Use static shots, precise dollies, symmetrical framing, perfectly centered compositions, dollhouse-like sets, meticulous production design."
-      colorContext = "Apply pastel pinks, mint greens, warm yellows, cream whites with vintage aesthetics."
-      break
-    case "denis-villeneuve":
-      baseContext = "Apply Denis Villeneuve style with epic atmospheric sci-fi realism. Focus on philosophical themes, isolation, humanity vs technology."
-      cameraContext = "Use sweeping crane shots, slow push-ins, static wide shots, massive scale compositions."
-      colorContext = "Apply muted earth tones, orange/teal contrast, desaturated colors with environmental storytelling."
-      break
-    case "quentin-tarantino":
-      baseContext = "Apply Quentin Tarantino style with pop culture saturated genre mashup. Focus on character dialogue, revenge stories, pop culture references."
-      cameraContext = "Use Dutch angles, crash zooms, trunk shots, unconventional framing, retro aesthetic, bold graphic compositions."
-      colorContext = "Apply saturated primary colors, vintage film stocks, high contrast."
-      break
-    case "david-fincher":
-      baseContext = "Apply David Fincher style with precise psychological darkness. Focus on psychological tension, obsession, dark human nature."
-      cameraContext = "Use slow methodical push-ins, locked-off precision shots, controlled artificial lighting, sharp focus, clinical cleanliness meets urban grit."
-      colorContext = "Apply green/yellow sickly tones, deep blacks, minimal warm colors."
-      break
-    case "ridley-scott":
-      baseContext = "Apply Ridley Scott style with epic cinematic world-building. Focus on historical epics, survival stories, moral complexity."
-      cameraContext = "Use sweeping movements, multiple cameras, dynamic angles, atmospheric smoke and haze, epic scale, detailed production design."
-      colorContext = "Apply warm amber tones, deep shadows, rich earth colors."
-      break
-    case "martin-scorsese":
-      baseContext = "Apply Martin Scorsese style with kinetic energy and character-driven intensity. Focus on human drama and cultural authenticity with dynamic pacing."
-      cameraContext = "Use tracking shots, handheld camera work, and urban grit cinematography."
-      colorContext = "Apply warm color tones with rich, saturated palettes and authentic lighting."
-      break
-    case "terrence-malick":
-      baseContext = "Apply Terrence Malick style with poetic naturalism and philosophical depth. Emphasize spiritual themes and connection to nature."
-      cameraContext = "Use flowing camera movements, natural environments, and contemplative pacing."
-      colorContext = "Apply golden hour lighting with natural color palettes and organic tones."
-      break
-    case "jordan-peele":
-      baseContext = "Apply Jordan Peele style with social horror through unconventional framing. Focus on social commentary through horror, racial themes, family dynamics."
-      cameraContext = "Use static uncomfortable framing, slow reveals, POV perspectives, uncomfortable compositions, suburban uncanny valley."
-      colorContext = "Apply suburban pastels hiding darkness, high contrast day/night with hidden symbols."
-      break
-    case "coen-brothers":
-      baseContext = "Apply Coen Brothers style with dark comedy and americana aesthetics. Emphasize absurdist moments and character eccentricities."
-      cameraContext = "Use symmetrical compositions, deadpan framing, and regional authenticity."
-      colorContext = "Apply quirky character details with authentic regional color palettes."
-      break
-    case "ari-aster":
-      baseContext = "Apply Ari Aster style with symmetrical horror compositions and slow-building dread. Focus on psychological unease and visual symbolism."
-      cameraContext = "Use precise geometric framing, disturbing pastoral imagery, and meticulous composition."
-      colorContext = "Apply unsettling beauty with carefully controlled color palettes and symbolic lighting."
-      break
-    default:
-      return "No specific director style - use standard comprehensive coverage with professional cinematographic techniques"
-  }
-
-  // Handle minimal mode (both options disabled)
-  if (promptOptions && !promptOptions.includeCameraStyle && !promptOptions.includeColorPalette) {
-    return baseContext + " Focus on basic composition, subject matter, and essential visual elements without technical camera specifications or detailed color descriptions."
-  }
-
-  // Build the final context based on prompt options
-  let finalContext = baseContext
-
-  if (promptOptions?.includeCameraStyle && cameraContext) {
-    finalContext += ` ${cameraContext}`
-  }
-
-  if (promptOptions?.includeColorPalette && colorContext) {
-    finalContext += ` ${colorContext}`
-  }
-
-  return finalContext
-}
-
-// Legacy function for backward compatibility
-export async function generateBreakdown(
-  story: string, 
-  director: string, 
-  titleCardOptions?: TitleCardOptions,
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<any> {
-  const fullResult = await generateFullStoryBreakdown(story, director, titleCardOptions, customDirectors, promptOptions)
-  
-  // Flatten for backward compatibility
-  const allShots = fullResult.chapterBreakdowns.flatMap(chapter => chapter.shots)
-  const allAnalysis = fullResult.chapterBreakdowns.map(chapter => 
-    `${fullResult.storyStructure.chapters.find(c => c.id === chapter.chapterId)?.title}: ${chapter.coverageAnalysis}`
-  ).join('\n\n')
-  
-  return {
-    characterReferences: fullResult.globalReferences.characters,
-    locationReferences: fullResult.globalReferences.locations,
-    propReferences: fullResult.globalReferences.locations,
-    shots: allShots,
-    coverageAnalysis: allAnalysis,
-    additionalOpportunities: fullResult.chapterBreakdowns.flatMap(chapter => chapter.additionalOpportunities),
-    // New chapter-aware data
-    storyStructure: fullResult.storyStructure,
-    chapterBreakdowns: fullResult.chapterBreakdowns,
-    overallAnalysis: fullResult.overallAnalysis
-  }
-}
-
-export async function generateAdditionalShots(
-  request: any, 
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions
-): Promise<AdditionalShotsResult> {
-  // For backward compatibility, if no chapterId provided, use first chapter
-  if (!request.chapterId && request.existingBreakdown.storyStructure) {
-    request.chapterId = request.existingBreakdown.storyStructure.chapters[0]?.id
-  }
-  
-  return generateAdditionalChapterShots({
-    ...request, 
-    director: request.director, 
-    storyStructure: request.existingBreakdown.storyStructure, 
-    chapterId: request.chapterId, 
-    existingBreakdown: request.existingBreakdown, 
-    existingAdditionalShots: request.existingBreakdown.additionalOpportunities, 
-    categories: [], 
-    customRequest: ""
-  }, customDirectors, promptOptions)
-}
-
-export function getDefaultPrompts() {
-  return {
-    structureDetection: STRUCTURE_DETECTION_PROMPT,
-    chapterBreakdown: CHAPTER_BREAKDOWN_PROMPT,
-    additionalShots: ADDITIONAL_CHAPTER_SHOTS_PROMPT,
-    titleCard: TITLE_CARD_PROMPT
-  }
-}
-
-export async function generateStandaloneTitleCards(
-  chapterTitle: string,
-  director: string,
-  titleFormat: string,
-  selectedApproaches: string[] = ['character-focus', 'location-focus', 'abstract-thematic'],
-  customDirectors?: Array<{
-    id: string
-    name: string
-    description: string
-    visualStyle: string
-    cameraStyle: string
-    colorPalette: string
-    narrativeFocus: string
-  }>,
-  promptOptions?: PromptOptions,
-  customPrompt?: string
-): Promise<TitleCard[]> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.")
-  }
-
-  const directorContext = getDirectorContext(director, customDirectors, promptOptions)
-  
-  // Create a mock chapter for standalone generation
-  const mockChapter: Chapter = {
-    id: "standalone-1",
-    title: chapterTitle,
-    content: `This is a standalone title card generation for "${chapterTitle}".`,
-    startPosition: 0,
-    endPosition: 100,
-    estimatedDuration: "Medium",
-    keyCharacters: [],
-    primaryLocation: "",
-    narrativeBeat: "setup"
-  }
-  
-  // Format the title based on user preference
-  let formattedTitle = ""
-  
-  switch (titleFormat) {
-    case 'full':
-      formattedTitle = `Chapter 1: ${chapterTitle}`
-      break
-    case 'roman-numerals':
-      formattedTitle = `Chapter I: ${chapterTitle}`
-      break
-    case 'name-only':
-    default:
-      formattedTitle = chapterTitle
-      break
-  }
-
-  const prompt = customPrompt || `${TITLE_CARD_PROMPT}
-
-DIRECTOR SELECTION: ${directorContext}
-
-CHAPTER DETAILS:
-Title: ${chapterTitle}
-Formatted Title for Display: "${formattedTitle}"
-Content: Standalone title card generation
-Narrative Beat: setup
-Key Characters: N/A
-Primary Location: N/A
-Estimated Duration: N/A
-
-AVAILABLE CHARACTER REFERENCES:
-N/A - Standalone generation
-
-AVAILABLE LOCATION REFERENCES:
-N/A - Standalone generation
-
-Generate three distinct title card approaches for this standalone title. Each description must include the formatted title "${formattedTitle}" in quotes. Return only valid JSON.`
-
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt,
-      temperature: 0.8,
-    })
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error("No valid JSON found in title card response")
-    }
-
-    const result = JSON.parse(jsonMatch[0])
-
-    return result.titleCards.map((card: any) => ({
-      ...card,
-      chapterId: "standalone-1"
-    })) || []
-  } catch (error) {
-    console.error("Error generating standalone title cards:", error)
-    throw new Error(`Failed to generate title cards for "${chapterTitle}". Please try again.`)
-  }
+export async function generateDirectorStyleDetails(name: string, description: string) {
+  const { object } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: DirectorProfileSchema,
+    prompt: defaultPrompts.directorStyleGeneration
+      .replace("{name}", name)
+      .replace("{description}", description),
+    system: "You are a knowledgeable film and music video historian with a knack for distilling a director's style into its key components."
+  });
+  return object;
 }
