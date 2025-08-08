@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import Link from "next/link"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,21 +9,22 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
-import { BookOpen, PlayCircle, FolderOpen, ChevronDown, ChevronUp, Copy, Plus, Wand2, Settings, FilmIcon, Sparkles, Target, Palette, Camera, Eye, X, Menu } from 'lucide-react'
-import { ProjectManager } from "@/components/project-manager"
+import { BookOpen, PlayCircle, ChevronDown, ChevronUp, Copy, Plus, Wand2, Settings, Target, Palette, Camera, Eye, FolderOpen, Sparkles } from 'lucide-react'
 import { MusicVideoConfig } from "@/components/music-video-config"
 import { LibraryPicker } from "@/components/library-picker"
-import { 
-  generateBreakdown, 
-  generateAdditionalChapterShots, 
-  generateFullMusicVideoBreakdown, 
-  generateAdditionalMusicVideoShots,
-  generateDirectorStyleDetails
-} from "./actions"
-import { useToast } from "@/components/ui/use-toast"
-import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
+import { AppShellLeftNav } from "@/components/app-shell-left-nav"
+import { ProjectManagerModal } from "@/components/project-manager-modal"
+import { generateBreakdown, generateAdditionalChapterShots, generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots, generateStoryEntities } from "./actions"
+import { useToast } from "@/hooks/use-toast"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
 import { directorDB } from "@/lib/director-db"
+import { projectDB, type SavedProject } from "@/lib/indexeddb"
+import { DirectorFilmForm } from "@/components/director-film-form"
+import { DirectorMusicForm } from "@/components/director-music-form"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TopActionsMenu } from "@/components/top-actions-menu"
+import { EmptyState } from "@/components/empty-state"
+import { StoryEntitiesConfig, type StoryEntities } from "@/components/story-entities-config"
 
 type Mode = "story" | "music-video"
 
@@ -54,74 +55,79 @@ interface CustomMusicVideoDirector {
   disciplines?: string[]
 }
 
+function withTimeout<T>(p: Promise<T>, ms = 120000): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error("Request timed out. Please try again.")), ms)),
+  ]) as Promise<T>;
+}
+
 export default function Home() {
   const { toast } = useToast()
-  
-  // Mode and UI state
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Mode and inputs
   const [mode, setMode] = useState<Mode>("story")
   const [story, setStory] = useState("")
   const [lyrics, setLyrics] = useState("")
   const [songTitle, setSongTitle] = useState("")
   const [artist, setArtist] = useState("")
   const [genre, setGenre] = useState("")
-  
-  // Director selection
-  const [selectedDirector, setSelectedDirector] = useState("nolan")
-  const [selectedMusicVideoDirector, setSelectedMusicVideoDirector] = useState("hype-williams")
+
+  // Directors
+  const [selectedDirector, setSelectedDirector] = useState("")
+  const [selectedMusicVideoDirector, setSelectedMusicVideoDirector] = useState("")
   const [customDirectors, setCustomDirectors] = useState<CustomDirector[]>([])
   const [customMusicVideoDirectors, setCustomMusicVideoDirectors] = useState<CustomMusicVideoDirector[]>([])
-  
-  // Custom director creation
-  const [showCustomDirectorForm, setShowCustomDirectorForm] = useState(false)
-  const [customDirectorName, setCustomDirectorName] = useState("")
-  const [customDirectorDescription, setCustomDirectorDescription] = useState("")
-  const [isGeneratingDirectorStyle, setIsGeneratingDirectorStyle] = useState(false)
-  
+
+  // Create Director modal
+  const [createOpen, setCreateOpen] = useState(false)
+
   // Results
   const [breakdown, setBreakdown] = useState<any>(null)
   const [musicVideoBreakdown, setMusicVideoBreakdown] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [additionalShots, setAdditionalShots] = useState<{[key: string]: string[]}>({})
-  const [additionalMusicVideoShots, setAdditionalMusicVideoShots] = useState<{[key: string]: string[]}>({})
-  
+  const [additionalShots, setAdditionalShots] = useState<{ [key: string]: string[] }>({})
+  const [additionalMusicVideoShots, setAdditionalMusicVideoShots] = useState<{ [key: string]: string[] }>({})
+
   // Options
   const [titleCardOptions, setTitleCardOptions] = useState({
     enabled: false,
-    format: 'full' as 'full' | 'name-only' | 'roman-numerals',
-    approaches: [] as string[]
+    format: "full" as "full" | "name-only" | "roman-numerals",
+    approaches: [] as string[],
   })
   const [promptOptions, setPromptOptions] = useState({
     includeCameraStyle: true,
-    includeColorPalette: true
+    includeColorPalette: true,
   })
-  
-  // Music video specific
+
+  // Music video config
   const [musicVideoConfig, setMusicVideoConfig] = useState<any>(null)
   const [showMusicVideoConfig, setShowMusicVideoConfig] = useState(false)
-  
-  // Expanded sections
-  const [expandedChapters, setExpandedChapters] = useState<{[key: string]: boolean}>({})
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({})
 
-  // Project Manager State
-  const [showProjectManager, setShowProjectManager] = useState(false)
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
+  // Expanded UI
+  const [expandedChapters, setExpandedChapters] = useState<{ [key: string]: boolean }>({})
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({})
+
+  // Projects
+  const [showProjects, setShowProjects] = useState(false)
+  const [currentProjectId, setCurrentProjectId] = useState<string>("")
   const [selectedChapter, setSelectedChapter] = useState("")
   const [selectedMusicVideoSection, setSelectedMusicVideoSection] = useState("")
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Load directors from IndexedDB on mount
+  // Story entities
+  const [storyEntities, setStoryEntities] = useState<StoryEntities | null>(null)
+  const [isExtractingEntities, setIsExtractingEntities] = useState(false)
+
+  // Load directors on mount
   useEffect(() => {
     const loadDirectors = async () => {
       try {
         await directorDB.ensureSeeded()
-        const [filmDirectors, musicDirectors] = await Promise.all([
-          directorDB.getAllFilm(),
-          directorDB.getAllMusic()
-        ])
-        
-        // Convert to the format expected by the UI
-        const customFilm = filmDirectors.map(d => ({
+        const [filmDirectors, musicDirectors] = await Promise.all([directorDB.getAllFilm(), directorDB.getAllMusic()])
+
+        const customFilm = filmDirectors.map((d) => ({
           id: d.id,
           name: d.name,
           description: d.description || "",
@@ -132,55 +138,214 @@ export default function Home() {
           narrativeFocus: d.narrativeFocus,
           category: d.category,
           tags: d.tags,
-          disciplines: d.disciplines
+          disciplines: d.disciplines,
         }))
-        
-        const customMusic = musicDirectors.map(d => ({
+
+        const customMusic = musicDirectors.map((d) => ({
           id: d.id,
           name: d.name,
           description: d.description || "",
           visualHallmarks: d.visualHallmarks,
           narrativeStyle: d.narrativeStyle,
           pacingAndEnergy: d.pacingAndEnergy,
-          genres: d.genres,
+          genres: Array.isArray(d.genres)
+            ? d.genres
+            : typeof d.genres === "string"
+            ? d.genres.split(",").map((g) => g.trim()).filter(Boolean)
+            : [],
           category: d.category,
           tags: d.tags,
-          disciplines: d.disciplines
+          disciplines: d.disciplines,
         }))
-        
-        setCustomDirectors(customFilm)
-        setCustomMusicVideoDirectors(customMusic)
+
+        const dedupeById = <T extends { id: string }>(arr: T[]) => Array.from(new Map(arr.map((a) => [a.id, a])).values())
+
+        setCustomDirectors(dedupeById(customFilm))
+        setCustomMusicVideoDirectors(dedupeById(customMusic))
       } catch (error) {
         console.error("Failed to load directors:", error)
       }
     }
-    
     loadDirectors()
   }, [])
 
-  const allDirectors = [...curatedFilmDirectors, ...customDirectors]
-  const allMusicVideoDirectors = [...curatedMusicVideoDirectors, ...customMusicVideoDirectors]
+  // Load project from ?project=
+  useEffect(() => {
+    const loadFromQuery = async () => {
+      const id = searchParams.get("project")
+      if (!id) return
+      try {
+        const project = await projectDB.getProject(id)
+        if (project) {
+          applyLoadedProject(project)
+          setCurrentProjectId(project.id)
+          toast({ title: "Loaded", description: `Project "${project.name}" opened.` })
+        }
+      } catch (e) {
+        console.error("Failed to load project from query:", e)
+      } finally {
+        router.replace("/")
+      }
+    }
+    loadFromQuery()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
-  const selectedDirectorInfo = allDirectors.find(d => d.id === selectedDirector)
-  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find(d => d.id === selectedMusicVideoDirector)
+  const allDirectors = customDirectors
+  const allMusicVideoDirectors = customMusicVideoDirectors
+  const selectedDirectorInfo = allDirectors.find((d) => d.id === selectedDirector)
+  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find((d) => d.id === selectedMusicVideoDirector)
+
+  const currentProject: any = {
+    name: mode === "music-video" ? songTitle || "Untitled MV Project" : "Story Project",
+    isMusicVideoMode: mode === "music-video",
+    story,
+    breakdown,
+    additionalShots,
+    selectedDirector,
+    musicVideoData: { songTitle, artist, genre, lyrics },
+    musicVideoBreakdown,
+    musicVideoConfig,
+    additionalMusicVideoShots,
+    selectedMusicVideoDirector,
+    selectedMusicVideoSection,
+    customDirectors,
+    customMusicVideoDirectors,
+    promptOptions,
+    titleCardOptions,
+    selectedChapter,
+    expandedChapters,
+    expandedSections,
+    storyEntities,
+  }
+
+  const applyLoadedProject = (project: SavedProject) => {
+    setMode(project.isMusicVideoMode ? "music-video" : "story")
+    setStory(project.story || "")
+    setBreakdown(project.breakdown || null)
+    setAdditionalShots(project.additionalShots || {})
+    setSelectedDirector(project.selectedDirector ?? "")
+
+    setLyrics(project.musicVideoData?.lyrics || "")
+    setSongTitle(project.musicVideoData?.songTitle || "")
+    setArtist(project.musicVideoData?.artist || "")
+    setGenre(project.musicVideoData?.genre || "")
+    setMusicVideoBreakdown(project.musicVideoBreakdown || null)
+    setAdditionalMusicVideoShots(project.additionalMusicVideoShots || {})
+    setSelectedMusicVideoDirector(project.selectedMusicVideoDirector ?? "")
+    setSelectedMusicVideoSection(project.selectedMusicVideoSection || "")
+
+    setMusicVideoConfig(project.musicVideoConfig ? project.musicVideoConfig : null)
+
+    setSelectedChapter(project.selectedChapter || "")
+    setExpandedChapters(project.expandedChapters || {})
+    setExpandedSections(project.expandedSections || {})
+    setStoryEntities(project.storyEntities || null)
+  }
+
+  const handleLoadProject = (project: SavedProject) => {
+    applyLoadedProject(project)
+    setCurrentProjectId(project.id)
+    setShowProjects(false)
+  }
+
+  const handleNewProject = () => {
+    setMode("story")
+    setStory("")
+    setBreakdown(null)
+    setAdditionalShots({})
+    setLyrics("")
+    setSongTitle("")
+    setArtist("")
+    setGenre("")
+    setMusicVideoBreakdown(null)
+    setMusicVideoConfig(null)
+    setAdditionalMusicVideoShots({})
+    setSelectedChapter("")
+    setSelectedMusicVideoSection("")
+    setCurrentProjectId("")
+    setShowProjects(false)
+    setSelectedDirector("")
+    setSelectedMusicVideoDirector("")
+    setStoryEntities(null)
+  }
+
+  const handleProjectSaved = (projectId: string) => setCurrentProjectId(projectId)
+
+  const handleCreateFilmDirector = async (director: FilmDirector) => {
+    try {
+      await directorDB.upsertFilm(director)
+      setCreateOpen(false)
+      setSelectedDirector(director.id)
+      setCustomDirectors((prev) => (prev.some((d) => d.id === director.id) ? prev : [...prev, {
+        id: director.id,
+        name: director.name,
+        description: director.description || "",
+        visualLanguage: director.visualLanguage,
+        colorPalette: director.colorPalette,
+        narrativeFocus: director.narrativeFocus,
+        category: director.category,
+        tags: director.tags,
+        disciplines: director.disciplines,
+      }]))
+      toast({ title: "Created", description: "Film director added to your library." })
+    } catch (e) {
+      console.error(e)
+      toast({ variant: "destructive", title: "Save failed", description: "Unable to create director." })
+    }
+  }
+
+  const handleCreateMusicDirector = async (director: MusicVideoDirector) => {
+    try {
+      await directorDB.upsertMusic(director)
+      setCreateOpen(false)
+      setSelectedMusicVideoDirector(director.id)
+      setCustomMusicVideoDirectors((prev) => (prev.some((d) => d.id === director.id) ? prev : [...prev, {
+        id: director.id,
+        name: director.name,
+        description: director.description || "",
+        visualHallmarks: director.visualHallmarks,
+        narrativeStyle: director.narrativeStyle,
+        pacingAndEnergy: director.pacingAndEnergy,
+        genres: Array.isArray(director.genres) ? director.genres : [],
+        category: director.category,
+        tags: director.tags,
+        disciplines: director.disciplines,
+      }]))
+      toast({ title: "Created", description: "Music video director added to your library." })
+    } catch (e) {
+      console.error(e)
+      toast({ variant: "destructive", title: "Save failed", description: "Unable to create director." })
+    }
+  }
 
   const handleGenerateBreakdown = async () => {
     if (!story.trim()) {
       toast({ variant: "destructive", title: "Error", description: "Please enter a story first." })
       return
     }
-
     setIsLoading(true)
     try {
-      const result = await generateBreakdown(
-        story, 
-        selectedDirector, 
-        titleCardOptions, 
-        allDirectors,
-        promptOptions
+      const result = await withTimeout(
+        generateBreakdown(
+          story,
+          selectedDirector,
+          titleCardOptions,
+          allDirectors,
+          promptOptions
+        ),
+        180000
       )
       setBreakdown(result)
+      console.log("Story breakdown result:", result)
+      setStoryEntities(result.entities || null)
       setAdditionalShots({})
+
+      if (result?.storyStructure?.chapters?.length) {
+        const first = result.storyStructure.chapters[0];
+        setExpandedChapters(prev => ({ ...prev, [first.id]: true }));
+      }
+
       toast({ title: "Success", description: "Story breakdown generated!" })
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to generate breakdown" })
@@ -194,18 +359,20 @@ export default function Home() {
       toast({ variant: "destructive", title: "Error", description: "Please enter song lyrics first." })
       return
     }
-
     setIsLoading(true)
     try {
-      const result = await generateFullMusicVideoBreakdown(
-        lyrics,
-        songTitle || "Untitled Song",
-        artist || "Unknown Artist", 
-        genre || "Pop",
-        musicVideoConfig,
-        selectedMusicVideoDirectorInfo
+      const result = await withTimeout(
+        generateFullMusicVideoBreakdown(
+          lyrics,
+          songTitle || "Untitled Song",
+          artist || "Unknown Artist",
+          genre || "Pop",
+          musicVideoConfig,
+          selectedMusicVideoDirectorInfo
+        ),
+        180000
       )
-      
+
       if (!result.isConfigured) {
         setMusicVideoBreakdown(result)
         setShowMusicVideoConfig(true)
@@ -213,6 +380,12 @@ export default function Home() {
         setMusicVideoBreakdown(result)
         setShowMusicVideoConfig(false)
         setAdditionalMusicVideoShots({})
+
+        if (result?.musicVideoStructure?.sections?.length && result.isConfigured) {
+          const first = result.musicVideoStructure.sections[0];
+          setExpandedSections(prev => ({ ...prev, [first.id]: true }));
+        }
+
         toast({ title: "Success", description: "Music video breakdown generated!" })
       }
     } catch (error: any) {
@@ -224,29 +397,31 @@ export default function Home() {
 
   const handleGenerateAdditionalShots = async (chapterId: string, categories: string[], customRequest: string) => {
     if (!breakdown) return
-
     setIsLoading(true)
     try {
-      const result = await generateAdditionalChapterShots(
-        {
-          story,
-          director: selectedDirector,
-          storyStructure: breakdown.storyStructure,
-          chapterId,
-          existingBreakdown: breakdown.chapterBreakdowns.find((cb: any) => cb.chapterId === chapterId),
-          existingAdditionalShots: additionalShots[chapterId] || [],
-          categories,
-          customRequest
-        },
-        allDirectors,
-        promptOptions
+      const result = await withTimeout(
+        generateAdditionalChapterShots(
+          {
+            story,
+            director: selectedDirector,
+            storyStructure: breakdown.storyStructure,
+            chapterId,
+            existingBreakdown: breakdown.chapterBreakdowns.find((cb: any) => cb.chapterId === chapterId),
+            existingAdditionalShots: additionalShots[chapterId] || [],
+            categories,
+            customRequest,
+          },
+          allDirectors,
+          promptOptions
+        ),
+        120000
       )
-      
-      setAdditionalShots(prev => ({
+
+      setAdditionalShots((prev) => ({
         ...prev,
-        [chapterId]: [...(prev[chapterId] || []), ...result.newShots]
+        [chapterId]: [...(prev[chapterId] || []), ...result.newShots],
       }))
-      
+
       toast({ title: "Success", description: `Generated ${result.newShots.length} additional shots!` })
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to generate additional shots" })
@@ -257,106 +432,32 @@ export default function Home() {
 
   const handleGenerateAdditionalMusicVideoShots = async (sectionId: string, customRequest: string) => {
     if (!musicVideoBreakdown) return
-
     setIsLoading(true)
     try {
-      const result = await generateAdditionalMusicVideoShots({
-        lyrics,
-        musicVideoStructure: musicVideoBreakdown.musicVideoStructure,
-        sectionId,
-        existingBreakdown: musicVideoBreakdown.sectionBreakdowns.find((sb: any) => sb.sectionId === sectionId),
-        existingAdditionalShots: additionalMusicVideoShots[sectionId] || [],
-        customRequest,
-        config: musicVideoConfig,
-        selectedMusicVideoDirectorInfo
-      })
-      
-      setAdditionalMusicVideoShots(prev => ({
+      const result = await withTimeout(
+        generateAdditionalMusicVideoShots({
+          lyrics,
+          musicVideoStructure: musicVideoBreakdown.musicVideoStructure,
+          sectionId,
+          existingBreakdown: musicVideoBreakdown.sectionBreakdowns.find((sb: any) => sb.sectionId === sectionId),
+          existingAdditionalShots: additionalMusicVideoShots[sectionId] || [],
+          customRequest,
+          config: musicVideoConfig,
+          selectedMusicVideoDirectorInfo,
+        }),
+        120000
+      )
+
+      setAdditionalMusicVideoShots((prev) => ({
         ...prev,
-        [sectionId]: [...(prev[sectionId] || []), ...result.newShots]
+        [sectionId]: [...(prev[sectionId] || []), ...result.newShots],
       }))
-      
+
       toast({ title: "Success", description: `Generated ${result.newShots.length} additional shots!` })
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to generate additional shots" })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleCreateCustomDirector = async () => {
-    if (!customDirectorName.trim() || !customDirectorDescription.trim()) {
-      toast({ variant: "destructive", title: "Error", description: "Please fill in both name and description." })
-      return
-    }
-
-    setIsGeneratingDirectorStyle(true)
-    try {
-      if (mode === "story") {
-        const styleDetails = await generateDirectorStyleDetails(customDirectorName, customDirectorDescription)
-        
-        const newDirector: CustomDirector = {
-          id: `custom-${Date.now()}`,
-          name: customDirectorName,
-          description: customDirectorDescription,
-          visualLanguage: `${styleDetails.visualHallmarks}. ${styleDetails.narrativeStyle}`,
-          colorPalette: "Varied based on project needs",
-          narrativeFocus: styleDetails.narrativeStyle,
-          category: "Custom",
-          tags: [],
-          disciplines: []
-        }
-        
-        // Save to IndexedDB
-        const filmDirector: FilmDirector = {
-          ...newDirector,
-          domain: "film",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isCustom: true
-        }
-        await directorDB.upsertFilm(filmDirector)
-        
-        setCustomDirectors(prev => [...prev, newDirector])
-        setSelectedDirector(newDirector.id)
-      } else {
-        const styleDetails = await generateDirectorStyleDetails(customDirectorName, customDirectorDescription)
-        
-        const newDirector: CustomMusicVideoDirector = {
-          id: `custom-mv-${Date.now()}`,
-          name: customDirectorName,
-          description: customDirectorDescription,
-          visualHallmarks: styleDetails.visualHallmarks,
-          narrativeStyle: styleDetails.narrativeStyle,
-          pacingAndEnergy: styleDetails.pacingAndEnergy,
-          genres: styleDetails.genres.split(',').map(g => g.trim()),
-          category: "Custom",
-          tags: [],
-          disciplines: []
-        }
-        
-        // Save to IndexedDB
-        const musicDirector: MusicVideoDirector = {
-          ...newDirector,
-          domain: "music-video",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isCustom: true
-        }
-        await directorDB.upsertMusic(musicDirector)
-        
-        setCustomMusicVideoDirectors(prev => [...prev, newDirector])
-        setSelectedMusicVideoDirector(newDirector.id)
-      }
-      
-      setShowCustomDirectorForm(false)
-      setCustomDirectorName("")
-      setCustomDirectorDescription("")
-      toast({ title: "Success", description: "Custom director created!" })
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to create custom director" })
-    } finally {
-      setIsGeneratingDirectorStyle(false)
     }
   }
 
@@ -366,95 +467,59 @@ export default function Home() {
   }
 
   const toggleChapterExpansion = (chapterId: string) => {
-    setExpandedChapters(prev => ({ ...prev, [chapterId]: !prev[chapterId] }))
+    setExpandedChapters((prev) => ({ ...prev, [chapterId]: !prev[chapterId] }))
   }
 
   const toggleSectionExpansion = (sectionId: string) => {
-    setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }))
+    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }))
+  }
+
+  const handleAutoGenerateEntities = async () => {
+    if (!story.trim() || !breakdown?.storyStructure) return
+    setIsExtractingEntities(true)
+    try {
+      const result = await generateStoryEntities(story, breakdown.storyStructure, selectedDirectorInfo)
+      setStoryEntities(result)
+      toast({ title: "Updated", description: "Entities extracted from story." })
+    } catch (e: any) {
+      console.error(e)
+      toast({ variant: "destructive", title: "Error", description: e?.message || "Failed to extract entities" })
+    } finally {
+      setIsExtractingEntities(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <div className="bg-slate-800/50 border-b border-slate-700 px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Left side - Mode Toggle and Title */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-1 sm:gap-2 bg-slate-800/50 rounded-lg p-1">
-              <Button 
-                size="sm" 
-                variant={mode === "story" ? "default" : "ghost"}
-                onClick={() => setMode("story")}
-                className={mode === "story" ? "bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm" : "text-slate-300 hover:bg-slate-700 text-xs sm:text-sm"}
-              >
-                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="hidden xs:inline">Story Mode</span>
-                <span className="xs:hidden">Story</span>
-              </Button>
-              <Button asChild size="sm" variant="ghost" className="text-slate-300 hover:bg-slate-700 text-xs sm:text-sm">
-                <Link href="/director-library">
-                  <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                  <span className="hidden xs:inline">Director Library</span>
-                  <span className="xs:hidden">Library</span>
-                </Link>
-              </Button>
-              <Button 
-                size="sm" 
-                variant={mode === "music-video" ? "default" : "ghost"}
-                onClick={() => setMode("music-video")}
-                className={mode === "music-video" ? "bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm" : "text-slate-300 hover:bg-slate-700 text-xs sm:text-sm"}
-              >
-                <PlayCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="hidden xs:inline">Music Video Mode</span>
-                <span className="xs:hidden">Music</span>
-              </Button>
-            </div>
-            <FilmIcon className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400" />
-            <h1 className="text-lg sm:text-xl font-bold text-white hidden sm:block">Visual Story Breakdown</h1>
-            <h1 className="text-base font-bold text-white sm:hidden">Breakdown</h1>
-          </div>
+      <TopActionsMenu
+        mode={mode}
+        onOpenProjects={() => {
+          setShowProjects(true)
+          setSelectedChapter("")
+          setSelectedMusicVideoSection("")
+        }}
+        onNewProject={handleNewProject}
+        onGenerate={mode === "story" ? handleGenerateBreakdown : handleGenerateMusicVideoBreakdown}
+        canGenerate={mode === "story" ? Boolean(story.trim()) : Boolean(lyrics.trim())}
+      />
+      <AppShellLeftNav
+        active={mode === "music-video" ? "music" : "story"}
+        onStory={() => setMode("story")}
+        onMusic={() => setMode("music-video")}
+        libraryHref="/director-library"
+        projectsHref="/"
+        onOpenProjects={() => {
+          setShowProjects(true)
+          setSelectedChapter("")
+          setSelectedMusicVideoSection("")
+        }}
+        currentProjectId={currentProjectId || null}
+      />
 
-          {/* Right side - Actions */}
-          <div className="flex items-center gap-2">
-            {currentProjectId && (
-              <Badge variant="secondary" className="bg-green-600/20 text-green-300 border-green-700/30 hidden sm:block">
-                Saved
-              </Badge>
-            )}
-
-            {/* Always-visible Projects button (all screen sizes) */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setShowProjectManager(true)
-                setSelectedChapter("")
-                setSelectedMusicVideoSection("")
-              }}
-              className="text-slate-400 hover:text-white"
-            >
-              Projects
-            </Button>
-
-            {/* Mobile menu toggle */}
-            {(breakdown?.storyStructure || musicVideoBreakdown?.musicVideoStructure) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden text-slate-400 hover:text-white"
-              >
-                {sidebarOpen ? <X className="h-4 w-4 sm:h-5 sm:w-5" /> : <Menu className="h-4 w-4 sm:h-5 sm:w-5" />}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:pl-64">
         {mode === "story" ? (
           <div className="space-y-6">
-            {/* Story Input Section */}
+            {/* Story Input */}
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
@@ -470,21 +535,21 @@ export default function Home() {
                   className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
                 />
 
-                {/* Director Selection */}
+                {/* Director selection */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-white">Director Style</label>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setShowCustomDirectorForm(!showCustomDirectorForm)}
+                      onClick={() => setCreateOpen(true)}
                       className="border-slate-600 text-slate-300 hover:bg-slate-700"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Sparkles className="h-4 w-4 mr-1" />
                       Create Custom
                     </Button>
                   </div>
-                  
+
                   <LibraryPicker
                     value={selectedDirector}
                     onValueChange={setSelectedDirector}
@@ -497,12 +562,10 @@ export default function Home() {
                     <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
                       <div className="text-sm text-slate-300">
                         <div className="font-medium text-white mb-1">{selectedDirectorInfo.name}</div>
-                        {selectedDirectorInfo.description && (
-                          <div className="mb-2">{selectedDirectorInfo.description}</div>
-                        )}
+                        {selectedDirectorInfo.description && <div className="mb-2">{selectedDirectorInfo.description}</div>}
                         {selectedDirectorInfo.visualLanguage && (
                           <div className="text-xs text-slate-400">
-                            <span className="text-slate-300 font-medium">Visual Language: </span>
+                            <span className="text-slate-300 font-medium">Visual Language: </span> 
                             {selectedDirectorInfo.visualLanguage}
                           </div>
                         )}
@@ -511,63 +574,7 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Custom Director Form */}
-                {showCustomDirectorForm && (
-                  <Card className="bg-slate-900/50 border-slate-600">
-                    <CardHeader>
-                      <CardTitle className="text-white text-base">Create Custom Director</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-white mb-1 block">Name</label>
-                        <input
-                          placeholder="e.g., Innovative Storyteller"
-                          value={customDirectorName}
-                          onChange={(e) => setCustomDirectorName(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-white mb-1 block">Description/Concept</label>
-                        <Textarea
-                          placeholder="Describe the director's style, approach, or key characteristics..."
-                          value={customDirectorDescription}
-                          onChange={(e) => setCustomDirectorDescription(e.target.value)}
-                          className="bg-slate-800/50 border-slate-600 text-white text-sm"
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleCreateCustomDirector}
-                          disabled={isGeneratingDirectorStyle}
-                          className="bg-amber-600 hover:bg-amber-700 text-white"
-                        >
-                          {isGeneratingDirectorStyle ? (
-                            <>
-                              <Wand2 className="h-4 w-4 mr-1 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-1" />
-                              Create Director
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowCustomDirectorForm(false)}
-                          className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Options */}
+                {/* Advanced options */}
                 <Collapsible>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="text-slate-300 hover:bg-slate-700 p-0">
@@ -577,15 +584,12 @@ export default function Home() {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-4 mt-4">
-                    {/* Title Card Options */}
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id="title-cards"
                           checked={titleCardOptions.enabled}
-                          onCheckedChange={(checked) => 
-                            setTitleCardOptions(prev => ({ ...prev, enabled: !!checked }))
-                          }
+                          onCheckedChange={(checked) => setTitleCardOptions((prev) => ({ ...prev, enabled: !!checked }))}
                         />
                         <label htmlFor="title-cards" className="text-sm text-white">
                           Generate Title Cards
@@ -593,7 +597,6 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Prompt Options */}
                     <div className="space-y-3">
                       <div className="text-sm font-medium text-white">Generation Options</div>
                       <div className="space-y-2">
@@ -601,8 +604,8 @@ export default function Home() {
                           <Checkbox
                             id="camera-style"
                             checked={promptOptions.includeCameraStyle}
-                            onCheckedChange={(checked) => 
-                              setPromptOptions(prev => ({ ...prev, includeCameraStyle: !!checked }))
+                            onCheckedChange={(checked) =>
+                              setPromptOptions((prev) => ({ ...prev, includeCameraStyle: !!checked }))
                             }
                           />
                           <label htmlFor="camera-style" className="text-sm text-slate-300 flex items-center gap-1">
@@ -614,8 +617,8 @@ export default function Home() {
                           <Checkbox
                             id="color-palette"
                             checked={promptOptions.includeColorPalette}
-                            onCheckedChange={(checked) => 
-                              setPromptOptions(prev => ({ ...prev, includeColorPalette: !!checked }))
+                            onCheckedChange={(checked) =>
+                              setPromptOptions((prev) => ({ ...prev, includeColorPalette: !!checked }))
                             }
                           />
                           <label htmlFor="color-palette" className="text-sm text-slate-300 flex items-center gap-1">
@@ -628,7 +631,7 @@ export default function Home() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Button 
+                <Button
                   onClick={handleGenerateBreakdown}
                   disabled={isLoading || !story.trim()}
                   className="w-full bg-amber-600 hover:bg-amber-700 text-white"
@@ -648,11 +651,68 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Story Results */}
+            {breakdown && (
+              <StoryEntitiesConfig
+                chapters={breakdown.storyStructure.chapters.map((c: any) => ({ id: c.id, title: c.title }))}
+                initial={storyEntities}
+                onChange={setStoryEntities}
+                onAutoGenerate={handleAutoGenerateEntities}
+                isGenerating={isExtractingEntities}
+              />
+            )}
+
+            {breakdown && Array.isArray(breakdown?.storyStructure?.chapters) && breakdown.storyStructure.chapters.length === 0 && (
+              <EmptyState
+                title="No chapters detected"
+                description="The generator returned no chapters for this story. Try a longer excerpt, include clearer paragraph breaks, or retry."
+                primaryAction={{ label: "Retry Generation", onClick: handleGenerateBreakdown, disabled: isLoading || !story.trim() }}
+                secondaryAction={{
+                  label: "Show Debug JSON",
+                  onClick: () => {
+                    // simple inline toggle via query param to avoid extra state
+                    const e = document.getElementById("debug-breakdown")
+                    if (e) e.classList.toggle("hidden")
+                  },
+                }}
+                icon={<BookOpen className="h-12 w-12" />}
+                className="border-slate-700/80 bg-slate-900/50"
+              />
+            )}
+
+            {/* Debug JSON (toggle via 'Show Debug JSON') */}
+            {breakdown && (
+              <pre
+                id="debug-breakdown"
+                className="hidden whitespace-pre-wrap break-words rounded-md border border-slate-700 bg-slate-900/60 p-4 text-xs text-slate-300"
+                aria-label="Debug breakdown JSON"
+              >
+                {JSON.stringify(breakdown, null, 2)}
+              </pre>
+            )}
+
+            {!breakdown && (
+              <EmptyState
+                title="No chapters yet"
+                description="Paste your story and generate a breakdown to see chapters with shot lists and coverage notes."
+                primaryAction={{ label: "Generate Story Breakdown", onClick: handleGenerateBreakdown, disabled: !story.trim() }}
+                secondaryAction={{
+                  label: "Open Projects",
+                  onClick: () => {
+                    setShowProjects(true)
+                    setSelectedChapter("")
+                    setSelectedMusicVideoSection("")
+                  },
+                }}
+                icon={<BookOpen className="h-12 w-12" />}
+                className="border-slate-700/80 bg-slate-900/50"
+              />
+            )}
+
+            {/* Results */}
             {breakdown && (
               <div className="space-y-6">
                 {breakdown.storyStructure.chapters.map((chapter: any, index: number) => {
-                  const chapterBreakdown = breakdown.chapterBreakdowns[index]
+                  const chapterBreakdown = breakdown?.chapterBreakdowns?.[index]
                   const isExpanded = expandedChapters[chapter.id]
                   const chapterAdditionalShots = additionalShots[chapter.id] || []
 
@@ -669,16 +729,32 @@ export default function Home() {
                                   {chapter.estimatedDuration}
                                 </Badge>
                               </CardTitle>
-                              {isExpanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                              {isExpanded ? (
+                                <ChevronUp className="h-5 w-5 text-slate-400" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5 text-slate-400" />
+                              )}
                             </div>
                           </CardHeader>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <CardContent className="space-y-4">
+                            {!chapterBreakdown || !Array.isArray(chapterBreakdown.shots) ? (
+                              <div className="p-3 bg-red-900/20 border border-red-700/40 rounded-md text-red-200 text-sm">
+                                {"This chapter breakdown could not be generated. Try regenerating or adjusting the story."}
+                              </div>
+                            ) : null}
+
                             <div className="text-sm text-slate-300">
-                              <div className="mb-2"><strong>Location:</strong> {chapter.primaryLocation}</div>
-                              <div className="mb-2"><strong>Characters:</strong> {chapter.keyCharacters.join(", ")}</div>
-                              <div className="mb-4"><strong>Narrative Beat:</strong> {chapter.narrativeBeat}</div>
+                              <div className="mb-2">
+                                <strong>Location:</strong> {chapter.primaryLocation}
+                              </div>
+                              <div className="mb-2">
+                                <strong>Characters:</strong> {chapter.keyCharacters.join(", ")}
+                              </div>
+                              <div className="mb-4">
+                                <strong>Narrative Beat:</strong> {chapter.narrativeBeat}
+                              </div>
                             </div>
 
                             <Separator className="bg-slate-600" />
@@ -688,11 +764,15 @@ export default function Home() {
                               <div className="flex items-center justify-between mb-3">
                                 <h4 className="font-medium text-white flex items-center gap-2">
                                   <Eye className="h-4 w-4 text-amber-400" />
-                                  Shot List ({chapterBreakdown.shots.length + chapterAdditionalShots.length} shots)
+                                  Shot List {(chapterBreakdown?.shots?.length || 0) + chapterAdditionalShots.length > 0
+                                    ? `(${(chapterBreakdown?.shots?.length || 0) + chapterAdditionalShots.length} shots)`
+                                    : ""}
                                 </h4>
                                 <Button
                                   size="sm"
-                                  onClick={() => copyToClipboard([...chapterBreakdown.shots, ...chapterAdditionalShots].join('\n'))}
+                                  onClick={() =>
+                                    copyToClipboard([...(chapterBreakdown?.shots || []), ...(chapterAdditionalShots || [])].join("\n"))
+                                  }
                                   className="bg-slate-700 hover:bg-slate-600 text-white"
                                 >
                                   <Copy className="h-4 w-4 mr-1" />
@@ -700,13 +780,13 @@ export default function Home() {
                                 </Button>
                               </div>
                               <div className="space-y-2">
-                                {chapterBreakdown.shots.map((shot: string, shotIndex: number) => (
-                                  <div key={shotIndex} className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
+                                {(chapterBreakdown?.shots || []).map((shot: string, i: number) => (
+                                  <div key={i} className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
                                     <div className="text-sm text-slate-300">{shot}</div>
                                   </div>
                                 ))}
-                                {chapterAdditionalShots.map((shot: string, shotIndex: number) => (
-                                  <div key={`additional-${shotIndex}`} className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30">
+                                {chapterAdditionalShots.map((shot: string, i: number) => (
+                                  <div key={`additional-${i}`} className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30">
                                     <div className="text-sm text-slate-300">{shot}</div>
                                     <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
                                       Additional Shot
@@ -722,7 +802,7 @@ export default function Home() {
                               <div className="space-y-3">
                                 <div className="flex flex-wrap gap-2">
                                   {["Close-ups", "Wide shots", "Action", "Emotional", "Atmospheric"].map((category) => (
-                                    <Badge key={category} variant="outline" className="border-slate-600 text-slate-300 cursor-pointer hover:bg-slate-700">
+                                    <Badge key={category} variant="outline" className="border-slate-600 text-slate-300">
                                       {category}
                                     </Badge>
                                   ))}
@@ -731,7 +811,7 @@ export default function Home() {
                                   placeholder="Custom request (optional)..."
                                   className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
+                                    if (e.key === "Enter") {
                                       handleGenerateAdditionalShots(chapter.id, ["Close-ups", "Wide shots"], e.currentTarget.value)
                                       e.currentTarget.value = ""
                                     }
@@ -750,12 +830,14 @@ export default function Home() {
                             </div>
 
                             {/* Coverage Analysis */}
-                            <div>
-                              <h4 className="font-medium text-white mb-2">Coverage Analysis</h4>
-                              <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
-                                <div className="text-sm text-slate-300">{chapterBreakdown.coverageAnalysis}</div>
+                            {chapterBreakdown?.coverageAnalysis ? (
+                              <div>
+                                <h4 className="font-medium text-white mb-2">Coverage Analysis</h4>
+                                <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
+                                  <div className="text-sm text-slate-300">{chapterBreakdown.coverageAnalysis}</div>
+                                </div>
                               </div>
-                            </div>
+                            ) : null}
                           </CardContent>
                         </CollapsibleContent>
                       </Collapsible>
@@ -767,7 +849,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Music Video Input Section */}
+            {/* Music Video Input */}
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
@@ -776,7 +858,6 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Song Details */}
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium text-white mb-1 block">Song Title</label>
@@ -814,21 +895,20 @@ export default function Home() {
                   className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
                 />
 
-                {/* Director Selection */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-white">Director Style</label>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setShowCustomDirectorForm(!showCustomDirectorForm)}
+                      onClick={() => setCreateOpen(true)}
                       className="border-slate-600 text-slate-300 hover:bg-slate-700"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Sparkles className="h-4 w-4 mr-1" />
                       Create Custom
                     </Button>
                   </div>
-                  
+
                   <LibraryPicker
                     value={selectedMusicVideoDirector}
                     onValueChange={setSelectedMusicVideoDirector}
@@ -844,80 +924,12 @@ export default function Home() {
                         {selectedMusicVideoDirectorInfo.description && (
                           <div className="mb-2">{selectedMusicVideoDirectorInfo.description}</div>
                         )}
-                        {selectedMusicVideoDirectorInfo.visualHallmarks && (
-                          <div className="text-xs text-slate-400 mb-1">
-                            <span className="text-slate-300 font-medium">Visual Hallmarks: </span>
-                            {selectedMusicVideoDirectorInfo.visualHallmarks}
-                          </div>
-                        )}
-                        {selectedMusicVideoDirectorInfo.genres && selectedMusicVideoDirectorInfo.genres.length > 0 && (
-                          <div className="text-xs text-slate-400">
-                            <span className="text-slate-300 font-medium">Genres: </span>
-                            {selectedMusicVideoDirectorInfo.genres.join(", ")}
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Custom Director Form */}
-                {showCustomDirectorForm && (
-                  <Card className="bg-slate-900/50 border-slate-600">
-                    <CardHeader>
-                      <CardTitle className="text-white text-base">Create Custom Music Video Director</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-white mb-1 block">Name</label>
-                        <input
-                          placeholder="e.g., Cinematic Storyteller"
-                          value={customDirectorName}
-                          onChange={(e) => setCustomDirectorName(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-white mb-1 block">Description/Concept</label>
-                        <Textarea
-                          placeholder="Describe the director's music video style, visual approach, or key characteristics..."
-                          value={customDirectorDescription}
-                          onChange={(e) => setCustomDirectorDescription(e.target.value)}
-                          className="bg-slate-800/50 border-slate-600 text-white text-sm"
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleCreateCustomDirector}
-                          disabled={isGeneratingDirectorStyle}
-                          className="bg-purple-600 hover:bg-purple-700 text-white"
-                        >
-                          {isGeneratingDirectorStyle ? (
-                            <>
-                              <Wand2 className="h-4 w-4 mr-1 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-1" />
-                              Create Director
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowCustomDirectorForm(false)}
-                          className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <Button 
+                <Button
                   onClick={handleGenerateMusicVideoBreakdown}
                   disabled={isLoading || !lyrics.trim()}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
@@ -937,19 +949,45 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Music Video Config */}
-            {showMusicVideoConfig && musicVideoBreakdown && (
-              <MusicVideoConfig
-                musicVideoBreakdown={musicVideoBreakdown}
-                onConfigComplete={(config) => {
-                  setMusicVideoConfig(config)
-                  setShowMusicVideoConfig(false)
-                  handleGenerateMusicVideoBreakdown()
+            {!musicVideoBreakdown && (
+              <EmptyState
+                title="No sections yet"
+                description="Enter lyrics and generate a music video breakdown to see sections with shot lists and performance notes."
+                primaryAction={{
+                  label: "Generate Music Video Breakdown",
+                  onClick: handleGenerateMusicVideoBreakdown,
+                  disabled: !lyrics.trim(),
                 }}
+                secondaryAction={{
+                  label: "Open Projects",
+                  onClick: () => {
+                    setShowProjects(true)
+                    setSelectedChapter("")
+                    setSelectedMusicVideoSection("")
+                  },
+                }}
+                icon={<PlayCircle className="h-12 w-12" />}
+                className="border-slate-700/80 bg-slate-900/50"
               />
             )}
 
-            {/* Music Video Results */}
+            {showMusicVideoConfig && musicVideoBreakdown && (
+              <MusicVideoConfig
+                treatments={musicVideoBreakdown.treatments}
+                selectedTreatment={musicVideoBreakdown.selectedTreatment}
+                musicVideoStructure={musicVideoBreakdown.musicVideoStructure}
+                lyrics={lyrics}
+                onTreatmentChange={() => {}}
+                onBack={() => setShowMusicVideoConfig(false)}
+                onConfigurationComplete={(config) => {
+                  setMusicVideoConfig({ ...config, isConfigured: true })
+                  setShowMusicVideoConfig(false)
+                  handleGenerateMusicVideoBreakdown()
+                }}
+                initialConfig={musicVideoConfig || undefined}
+              />
+            )}
+
             {musicVideoBreakdown && musicVideoBreakdown.isConfigured && (
               <div className="space-y-6">
                 {musicVideoBreakdown.musicVideoStructure.sections.map((section: any, index: number) => {
@@ -970,31 +1008,35 @@ export default function Home() {
                                   {section.type}
                                 </Badge>
                               </CardTitle>
-                              {isExpanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                              {isExpanded ? (
+                                <ChevronUp className="h-5 w-5 text-slate-400" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5 text-slate-400" />
+                              )}
                             </div>
                           </CardHeader>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <CardContent className="space-y-4">
                             <div className="text-sm text-slate-300">
-                              <div className="mb-4"><strong>Lyrics:</strong></div>
-                              <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700 mb-4">
-                                {section.lyrics}
+                              <div className="mb-4">
+                                <strong>Lyrics:</strong>
                               </div>
+                              <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700 mb-4">{section.lyrics}</div>
                             </div>
 
                             <Separator className="bg-slate-600" />
 
-                            {/* Shots */}
                             <div>
                               <div className="flex items-center justify-between mb-3">
                                 <h4 className="font-medium text-white flex items-center gap-2">
                                   <Eye className="h-4 w-4 text-purple-400" />
-                                  Shot List ({sectionBreakdown.shots.length + sectionAdditionalShots.length} shots)
+                                  Shot List {(sectionBreakdown.shots.length + sectionAdditionalShots.length) > 0
+                                    ? `(${sectionBreakdown.shots.length + sectionAdditionalShots.length} shots)` : ""}
                                 </h4>
                                 <Button
                                   size="sm"
-                                  onClick={() => copyToClipboard([...sectionBreakdown.shots, ...sectionAdditionalShots].join('\n'))}
+                                  onClick={() => copyToClipboard([...sectionBreakdown.shots, ...sectionAdditionalShots].join("\n"))}
                                   className="bg-slate-700 hover:bg-slate-600 text-white"
                                 >
                                   <Copy className="h-4 w-4 mr-1" />
@@ -1002,13 +1044,13 @@ export default function Home() {
                                 </Button>
                               </div>
                               <div className="space-y-2">
-                                {sectionBreakdown.shots.map((shot: string, shotIndex: number) => (
-                                  <div key={shotIndex} className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
+                                {sectionBreakdown.shots.map((shot: string, i: number) => (
+                                  <div key={i} className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
                                     <div className="text-sm text-slate-300">{shot}</div>
                                   </div>
                                 ))}
-                                {sectionAdditionalShots.map((shot: string, shotIndex: number) => (
-                                  <div key={`additional-${shotIndex}`} className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30">
+                                {sectionAdditionalShots.map((shot: string, i: number) => (
+                                  <div key={`additional-${i}`} className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30">
                                     <div className="text-sm text-slate-300">{shot}</div>
                                     <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
                                       Additional Shot
@@ -1018,7 +1060,6 @@ export default function Home() {
                               </div>
                             </div>
 
-                            {/* Additional Shots Generator */}
                             <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
                               <h5 className="font-medium text-white mb-3">Generate Additional Shots</h5>
                               <div className="space-y-3">
@@ -1026,7 +1067,7 @@ export default function Home() {
                                   placeholder="Describe what kind of shots you want..."
                                   className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
+                                    if (e.key === "Enter") {
                                       handleGenerateAdditionalMusicVideoShots(section.id, e.currentTarget.value)
                                       e.currentTarget.value = ""
                                     }
@@ -1044,19 +1085,18 @@ export default function Home() {
                               </div>
                             </div>
 
-                            {/* Performance Notes */}
-                            {sectionBreakdown.performanceNotes && sectionBreakdown.performanceNotes.length > 0 && (
+                            {sectionBreakdown.performanceNotes?.length > 0 ? (
                               <div>
                                 <h4 className="font-medium text-white mb-2">Performance Notes</h4>
                                 <div className="space-y-2">
-                                  {sectionBreakdown.performanceNotes.map((note: string, noteIndex: number) => (
-                                    <div key={noteIndex} className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
+                                  {sectionBreakdown.performanceNotes.map((note: string, i: number) => (
+                                    <div key={i} className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
                                       <div className="text-sm text-slate-300">{note}</div>
                                     </div>
                                   ))}
                                 </div>
                               </div>
-                            )}
+                            ) : null}
                           </CardContent>
                         </CollapsibleContent>
                       </Collapsible>
@@ -1068,15 +1108,36 @@ export default function Home() {
           </div>
         )}
       </main>
-      {showProjectManager && (
-        <ProjectManager
-          isOpen={showProjectManager}
-          onClose={() => setShowProjectManager(false)}
-          onProjectSelect={(projectId) => {
-            setCurrentProjectId(projectId)
-          }}
-        />
-      )}
+
+      {/* Projects Overlay */}
+      <ProjectManagerModal
+        open={showProjects}
+        onOpenChange={setShowProjects}
+        currentProject={currentProject}
+        onLoadProject={handleLoadProject}
+        onNewProject={handleNewProject}
+        currentProjectId={currentProjectId}
+        onProjectSaved={handleProjectSaved}
+      />
+
+      {/* Creation Modal */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="z-50 flex h-screen w-screen flex-col bg-slate-950 border border-slate-800 p-0 sm:h-[85vh] sm:w-[92vw] sm:max-w-3xl sm:rounded-xl">
+          <DialogHeader className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950 px-4 py-3 sm:px-6">
+            <DialogTitle className="text-white">
+              {mode === "music-video" ? "New Music Video Director" : "New Film Director"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-6">
+            {mode === "music-video" ? (
+              <DirectorMusicForm onCancel={() => setCreateOpen(false)} onSave={handleCreateMusicDirector} />
+            ) : (
+              <DirectorFilmForm onCancel={() => setCreateOpen(false)} onSave={handleCreateFilmDirector} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

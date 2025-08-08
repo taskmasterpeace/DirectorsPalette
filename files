@@ -1,0 +1,165 @@
+/// app/page.tsx
+import { useState } from 'react';
+import { toast } from 'react-toastify';
+import Textarea from './components/Textarea';
+
+const Page = () => {
+  const [chapterBreakdown, setChapterBreakdown] = useState({ shots: [] });
+  const [chapterAdditionalShots, setChapterAdditionalShots] = useState([]);
+  const [story, setStory] = useState('');
+  const [sectionBreakdown, setSectionBreakdown] = useState({ shots: [] });
+  const [sectionAdditionalShots, setSectionAdditionalShots] = useState([]);
+  const [lyrics, setLyrics] = useState('');
+
+  const copyToClipboard = (text: string) => {
+    const doToast = (title: string, description: string, variant?: "destructive") => {
+      toast({ title, description, ...(variant ? { variant } : {}) });
+    }
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => doToast("Copied", "Content copied to clipboard!"))
+        .catch(() => {
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+            if (ok) doToast("Copied", "Content copied to clipboard!");
+            else doToast("Copy failed", "Please select and copy manually.", "destructive");
+          } catch {
+            doToast("Copy failed", "Please select and copy manually.", "destructive");
+          }
+        });
+    } else {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) doToast("Copied", "Content copied to clipboard!");
+        else doToast("Copy failed", "Please select and copy manually.", "destructive");
+      } catch {
+        doToast("Copy failed", "Please select and copy manually.", "destructive");
+      }
+    }
+  };
+
+  return (
+    <div>
+      <Textarea
+        autoFocus={!story}
+        onClick={() => copyToClipboard([...chapterBreakdown.shots, ...chapterAdditionalShots].join('\n'))}
+        value={story}
+        onChange={(e) => setStory(e.target.value)}
+      />
+      <Textarea
+        autoFocus={!lyrics}
+        onClick={() => copyToClipboard([...sectionBreakdown.shots, ...sectionAdditionalShots].join('\n'))}
+        value={lyrics}
+        onChange={(e) => setLyrics(e.target.value)}
+      />
+    </div>
+  );
+};
+
+export default Page;
+
+// components/project-manager-modal.tsx
+import { useState } from 'react';
+import Input from './Input';
+
+const ProjectManagerModal = () => {
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = () => {
+    // save logic here
+  };
+
+  return (
+    <div>
+      <Input
+        autoFocus
+        placeholder="Project name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && name.trim()) {
+            e.preventDefault();
+            if (!saving) handleSave();
+          }
+        }}
+      />
+    </div>
+  );
+};
+
+export default ProjectManagerModal;
+
+// components/director-film-form.tsx
+import { useState } from 'react';
+
+const DirectorFilmForm = () => {
+  const [name, setName] = useState('');
+
+  const save = () => {
+    // save logic here
+  };
+
+  return (
+    <div>
+      <input
+        placeholder="e.g., Christopher Nolan"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && name.trim()) {
+            e.preventDefault();
+            save();
+          }
+        }}
+        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
+      />
+    </div>
+  );
+};
+
+export default DirectorFilmForm;
+
+// components/director-music-form.tsx
+import { useState } from 'react';
+
+const DirectorMusicForm = () => {
+  const [name, setName] = useState('');
+
+  const save = () => {
+    // save logic here
+  };
+
+  return (
+    <div>
+      <input
+        placeholder="e.g., Hype Williams"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && name.trim()) {
+            e.preventDefault();
+            save();
+          }
+        }}
+        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
+      />
+    </div>
+  );
+};
+
+export default DirectorMusicForm;

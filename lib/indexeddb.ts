@@ -48,7 +48,7 @@ export interface SavedProject {
   name: string;
   updatedAt: Date;
   isMusicVideoMode: boolean;
-  
+
   // Story mode data
   story?: string;
   selectedDirector?: string;
@@ -58,7 +58,7 @@ export interface SavedProject {
   titleCardApproaches?: string[];
   selectedChapter?: string;
   expandedChapters?: { [chapterId: string]: boolean };
-  
+
   // Music video mode data
   musicVideoData?: {
     lyrics: string;
@@ -71,8 +71,8 @@ export interface SavedProject {
   selectedMusicVideoSection?: string;
   musicVideoConfig?: MusicVideoConfig;
   additionalMusicVideoShots?: { [sectionId:string]: string[] };
-  selectedMusicVideoDirector?: string; // Added line
-  customMusicVideoDirectors?: any[]; // Added line
+  selectedMusicVideoDirector?: string;
+  customMusicVideoDirectors?: any[];
 
   // Shared data
   customDirectors?: any[];
@@ -87,7 +87,6 @@ class ProjectDBManager {
   private dbPromise: Promise<IDBDatabase>;
 
   constructor() {
-    // This check ensures that IndexedDB is only accessed in the browser.
     if (typeof window !== 'undefined') {
       this.dbPromise = new Promise((resolve, reject) => {
         const request = window.indexedDB.open(DB_NAME, DB_VERSION);
@@ -109,13 +108,11 @@ class ProjectDBManager {
         };
       });
     } else {
-      // On the server, create a dummy promise. Methods will throw an error.
       this.dbPromise = Promise.reject(new Error("IndexedDB is not available on the server."));
     }
   }
 
   private async getDB(): Promise<IDBDatabase> {
-    // This will either return the resolved DB promise or the rejected one from the constructor.
     return this.dbPromise;
   }
 
@@ -123,14 +120,14 @@ class ProjectDBManager {
     const db = await this.getDB();
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
-    
+
     const id = crypto.randomUUID();
     const projectToSave: SavedProject = {
       ...project,
       id,
       updatedAt: new Date(),
     };
-    
+
     return new Promise((resolve, reject) => {
       const request = store.add(projectToSave);
       request.onsuccess = () => resolve(id);
@@ -146,9 +143,9 @@ class ProjectDBManager {
     return new Promise((resolve, reject) => {
       const getRequest = store.get(projectId);
       getRequest.onsuccess = () => {
-        const existingProject = getRequest.result;
+        const existingProject = getRequest.result as SavedProject | undefined;
         if (existingProject) {
-          const updatedProject = {
+          const updatedProject: SavedProject = {
             ...existingProject,
             ...projectData,
             updatedAt: new Date(),
@@ -169,15 +166,27 @@ class ProjectDBManager {
     const db = await this.getDB();
     const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
-    
+
     return new Promise((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        const sortedProjects = request.result.sort((a: SavedProject, b: SavedProject) => 
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        const sortedProjects = (request.result as SavedProject[]).sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
         resolve(sortedProjects);
       };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getProject(projectId: string): Promise<SavedProject | undefined> {
+    const db = await this.getDB();
+    const transaction = db.transaction(STORE_NAME, "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+
+    return new Promise((resolve, reject) => {
+      const request = store.get(projectId);
+      request.onsuccess = () => resolve(request.result as SavedProject | undefined);
       request.onerror = () => reject(request.error);
     });
   }
@@ -186,14 +195,43 @@ class ProjectDBManager {
     const db = await this.getDB();
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
-    
+
     return new Promise((resolve, reject) => {
       const request = store.delete(projectId);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
   }
+
+  // Optional helpers if needed elsewhere:
+  async exportProject(projectId: string): Promise<{ schema: "director-project"; version: 1; exportedAt: string; project: SavedProject } | null> {
+    const project = await this.getProject(projectId)
+    if (!project) return null
+    return {
+      schema: "director-project",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      project,
+    }
+  }
+
+  async importProject(data: unknown): Promise<string> {
+    const obj = data as any
+    let project: SavedProject | undefined
+    if (obj?.schema === "director-project" && typeof obj?.version === "number" && obj?.project) {
+      project = obj.project as SavedProject
+    } else if (obj && obj.name && (obj.isMusicVideoMode === true || obj.isMusicVideoMode === false)) {
+      project = obj as SavedProject
+    }
+    if (!project) {
+      throw new Error("Unrecognized project format")
+    }
+
+    // Strip id/updatedAt and save new
+    const { id: _ignore, updatedAt: _ignore2, ...rest } = project as any
+    return await this.saveProject(rest)
+  }
 }
 
-// Export a single instance. The constructor will run once when the module is imported.
+// Export a single instance
 export const projectDB = new ProjectDBManager();

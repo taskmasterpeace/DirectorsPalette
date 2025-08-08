@@ -161,7 +161,6 @@ export function DirectorCard({ director, onEdit, onDelete, compact }: Props) {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-slate-600 text-slate-300 hover:bg-slate-700"
                 onClick={() => onEdit?.(director.id)}
               >
                 <Pencil className="h-4 w-4 mr-1" />
@@ -172,7 +171,6 @@ export function DirectorCard({ director, onEdit, onDelete, compact }: Props) {
               <Button
                 size="sm"
                 variant="destructive"
-                className="bg-red-600 hover:bg-red-700"
                 onClick={() => onDelete?.(director.id)}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
