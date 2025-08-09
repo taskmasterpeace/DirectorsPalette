@@ -1,14 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, ChevronRight } from "lucide-react"
 import { artistDB } from "@/lib/artist-db"
 import type { ArtistProfile } from "@/lib/artist-types"
 import ArtistProfileForm from "@/components/artist-profile-form"
 import { ArtistCard } from "@/components/artist-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useArtistStore } from "@/lib/artist-store"
 
 export default function ArtistBankPage() {
@@ -68,11 +66,11 @@ export default function ArtistBankPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px,1fr] gap-6">
           {/* Sidebar */}
-          <aside className="lg:sticky lg:top-4 self-start space-y-3 z-0">
-            <div className="p-3 rounded border border-slate-700 bg-slate-900 shadow-sm">
-              <div className="text-slate-300 text-sm mb-2">Search</div>
+          <aside className="space-y-4">
+            <div className="p-4 rounded-lg border border-slate-700 bg-slate-900/50 backdrop-blur-sm">
+              <div className="text-slate-300 text-sm mb-3 font-medium">Search Artists</div>
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -81,48 +79,24 @@ export default function ArtistBankPage() {
               />
             </div>
 
-            <Collapsible open={activeArtistOpen} onOpenChange={setActiveArtistOpen}>
-              <div className="rounded border border-slate-700 bg-slate-900 shadow-sm">
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left hover:bg-slate-800/50">
-                  <div className="text-slate-300 text-sm">Active Artist</div>
-                  {activeArtistOpen ? (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  )}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-3 pb-3">
-                  {activeArtist ? (
-                    <ArtistCard artist={activeArtist} active onClick={() => selectForEdit(activeArtist)} />
-                  ) : (
-                    <div className="text-slate-500 text-sm">None selected</div>
-                  )}
-                </CollapsibleContent>
+            {activeArtist && (
+              <div className="p-4 rounded-lg border border-slate-700 bg-slate-900/50 backdrop-blur-sm">
+                <div className="text-slate-300 text-sm mb-3 font-medium">Active Artist</div>
+                <ArtistCard artist={activeArtist} active onClick={() => selectForEdit(activeArtist)} />
               </div>
-            </Collapsible>
+            )}
 
-            <Collapsible open={allArtistsOpen} onOpenChange={setAllArtistsOpen}>
-              <div className="rounded border border-slate-700 bg-slate-900 shadow-sm">
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left hover:bg-slate-800/50">
-                  <div className="text-slate-300 text-sm">All Artists ({filtered.length})</div>
-                  {allArtistsOpen ? (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  )}
-                </CollapsibleTrigger>
-                <CollapsibleContent className="px-3 pb-3">
-                  <div className="space-y-2 max-h-[60vh] overflow-auto pr-1">
-                    {filtered.map((a) => (
-                      <div key={a.artist_id} onClick={() => selectForEdit(a)}>
-                        <ArtistCard artist={a} active={activeArtist?.artist_id === a.artist_id} />
-                      </div>
-                    ))}
-                    {filtered.length === 0 && <div className="text-slate-500 text-sm">No artists found.</div>}
+            <div className="p-4 rounded-lg border border-slate-700 bg-slate-900/50 backdrop-blur-sm">
+              <div className="text-slate-300 text-sm mb-3 font-medium">All Artists ({filtered.length})</div>
+              <div className="space-y-2 max-h-[60vh] overflow-auto">
+                {filtered.map((a) => (
+                  <div key={a.artist_id} onClick={() => selectForEdit(a)}>
+                    <ArtistCard artist={a} active={activeArtist?.artist_id === a.artist_id} />
                   </div>
-                </CollapsibleContent>
+                ))}
+                {filtered.length === 0 && <div className="text-slate-500 text-sm">No artists found.</div>}
               </div>
-            </Collapsible>
+            </div>
           </aside>
 
           {/* Editor */}

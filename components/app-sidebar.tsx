@@ -51,7 +51,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="bg-slate-900">
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-slate-300">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
