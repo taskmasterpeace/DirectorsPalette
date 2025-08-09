@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import { directorDB } from "@/lib/director-db"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
 import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
@@ -9,59 +8,19 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Download, Upload } from 'lucide-react'
+import { Search, Plus } from "lucide-react"
 import { DirectorCard } from "@/components/director-card"
 import { DirectorFilmForm } from "@/components/director-film-form"
 import { DirectorMusicForm } from "@/components/director-music-form"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { AppShellLeftNav } from "@/components/app-shell-left-nav"
-import { ProjectManagerModal } from "@/components/project-manager-modal"
-import { type SavedProject } from "@/lib/indexeddb"
 
 type Source = "curated" | "library"
 type FilmListItem = FilmDirector & { source: Source }
 type MusicListItem = MusicVideoDirector & { source: Source }
 
-type LibraryExportV1 = {
-  schema: "director-library"
-  version: 1
-  exportedAt: string
-  film: FilmDirector[]
-  music: MusicVideoDirector[]
-}
-
-function downloadJSON(filename: string, data: unknown) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-}
-
-function reviveDirectorDates<T extends { createdAt?: any; updatedAt?: any }>(arr: T[]): T[] {
-  return (arr || []).map((d) => {
-    const createdAt =
-      d.createdAt && typeof d.createdAt === "string" ? new Date(d.createdAt) : d.createdAt
-    const updatedAt =
-      d.updatedAt && typeof d.updatedAt === "string" ? new Date(d.updatedAt) : d.updatedAt
-    return { ...d, createdAt, updatedAt }
-  })
-}
-
 export default function DirectorLibraryPage() {
   const { toast } = useToast()
-  const router = useRouter()
 
   // Data
   const [film, setFilm] = useState<FilmDirector[]>([])
@@ -76,12 +35,6 @@ export default function DirectorLibraryPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [editingFilm, setEditingFilm] = useState<FilmDirector | null>(null)
   const [editingMusic, setEditingMusic] = useState<MusicVideoDirector | null>(null)
-
-  // Projects modal state
-  const [showProjects, setShowProjects] = useState(false)
-
-  // Import input
-  const importInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -225,106 +178,45 @@ export default function DirectorLibraryPage() {
     }
   }
 
-  // When selecting a project from the Library's Projects overlay, jump to Home and load it.
-  const handleLoadProjectFromLibrary = (project: SavedProject) => {
-    setShowProjects(false)
-    router.push(`/?project=${project.id}`)
-  }
-
-  const exportLibrary = async () => {
-    try {
-      const { film, music } = await directorDB.exportData()
-      const payload: LibraryExportV1 = {
-        schema: "director-library",
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        film,
-        music,
-      }
-      downloadJSON(`director-library.json`, payload)
-      toast({ title: "Exported", description: "Director Library JSON downloaded." })
-    } catch (e) {
-      console.error("Export failed:", e)
-      toast({ variant: "destructive", title: "Export failed", description: "Unable to export library." })
-    }
-  }
-
-  const handleImportClick = () => importInputRef.current?.click()
-
-  const importLibraryFromFile = async (file: File) => {
-    try {
-      const text = await file.text()
-      const obj = JSON.parse(text)
-
-      // Accept both wrapped and bare forms
-      let filmArr: FilmDirector[] | undefined
-      let musicArr: MusicVideoDirector[] | undefined
-
-      if (obj?.schema === "director-library" && typeof obj?.version === "number") {
-        filmArr = obj.film
-        musicArr = obj.music
-      } else if (obj && (obj.film || obj.music)) {
-        filmArr = obj.film
-        musicArr = obj.music
-      }
-
-      if (!filmArr && !musicArr) {
-        toast({ variant: "destructive", title: "Import failed", description: "Unrecognized library file format." })
-        return
-      }
-
-      const revivedFilm = filmArr ? reviveDirectorDates(filmArr) : []
-      const revivedMusic = musicArr ? reviveDirectorDates(musicArr) : []
-
-      await directorDB.importData({ film: revivedFilm, music: revivedMusic })
-      await reload()
-      toast({ title: "Imported", description: "Director Library imported and merged." })
-    } catch (e) {
-      console.error("Import failed:", e)
-      toast({ variant: "destructive", title: "Import failed", description: "Unable to import library." })
-    } finally {
-      if (importInputRef.current) importInputRef.current.value = ""
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <AppShellLeftNav
-        active="library"
-        storyHref="/"
-        libraryHref="/director-library"
-        musicHref="/"
-        projectsHref="/"
-        onOpenProjects={() => setShowProjects(true)}
-      />
-
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:pl-64">
-        {/* Header actions: Tabs + Export/Import */}
+    <div className="min-h-screen">
+      <main className="mx-auto max-w-7xl">
+        {/* Tabs + Filters */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2">
             <Button
               variant={tab === "film" ? "default" : "outline"}
               onClick={() => setTab("film")}
+              className={
+                tab === "film"
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+              }
               size="sm"
             >
               Film Directors
-              <Badge variant="secondary" className="ml-2 bg-slate-600/30 text-slate-200">
+              <Badge variant="secondary" className="ml-2 bg-slate-600/20 text-slate-300">
                 {filmList.length}
               </Badge>
             </Button>
             <Button
               variant={tab === "music" ? "default" : "outline"}
               onClick={() => setTab("music")}
+              className={
+                tab === "music"
+                  ? "bg-purple-600 hover:bg-purple-700"
+                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+              }
               size="sm"
             >
               Music Video Directors
-              <Badge variant="secondary" className="ml-2 bg-slate-600/30 text-slate-200">
+              <Badge variant="secondary" className="ml-2 bg-slate-600/20 text-slate-300">
                 {musicList.length}
               </Badge>
             </Button>
           </div>
 
-          {/* Search + Category + Export/Import */}
+          {/* Search + Category */}
           <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center md:justify-end">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -332,7 +224,7 @@ export default function DirectorLibraryPage() {
                 placeholder={tab === "film" ? "Search film directors..." : "Search music video directors..."}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-8 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
+                className="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-400"
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -342,31 +234,15 @@ export default function DirectorLibraryPage() {
                   size="sm"
                   variant={category === c ? "default" : "outline"}
                   onClick={() => setCategory(c)}
-                  className="h-8"
+                  className={`h-8 ${
+                    category === c
+                      ? "bg-cyan-600 hover:bg-cyan-700"
+                      : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
                 >
                   {c}
                 </Button>
               ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={exportLibrary}>
-                <Download className="h-4 w-4 mr-1" />
-                Export Library
-              </Button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept="application/json"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) importLibraryFromFile(file)
-                }}
-              />
-              <Button size="sm" variant="outline" onClick={handleImportClick}>
-                <Upload className="h-4 w-4 mr-1" />
-                Import Library
-              </Button>
             </div>
           </div>
         </div>
@@ -375,7 +251,7 @@ export default function DirectorLibraryPage() {
 
         {/* Results */}
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-8 text-center text-slate-300">
+          <div className="rounded-lg border border-slate-700 bg-slate-900 p-8 text-center text-slate-300">
             No directors match your filters.
           </div>
         ) : (
@@ -396,6 +272,7 @@ export default function DirectorLibraryPage() {
                       <Button
                         size="sm"
                         onClick={() => addCuratedToLibrary(item.id)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Add to Library
@@ -418,6 +295,7 @@ export default function DirectorLibraryPage() {
                       <Button
                         size="sm"
                         onClick={() => addCuratedToLibrary(item.id)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Add to Library
@@ -432,55 +310,24 @@ export default function DirectorLibraryPage() {
 
         {/* Edit Dialog */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent
-            // Mobile: full screen and scrollable; Desktop: contained window, scrollable
-            className="z-50 flex h-screen w-screen flex-col bg-slate-950 border border-slate-800 p-0 sm:h-[85vh] sm:w-[92vw] sm:max-w-3xl sm:rounded-xl"
-          >
-            <DialogHeader className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950 px-4 py-3 sm:px-6">
+          <DialogContent className="max-w-2xl bg-slate-900 border-slate-700">
+            <DialogHeader>
               <DialogTitle className="text-white">
                 {editingFilm ? "Edit Film Director" : "Edit Music Video Director"}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-6">
-              {editingFilm && (
-                <DirectorFilmForm
-                  initial={editingFilm}
-                  onCancel={() => setEditOpen(false)}
-                  onSave={saveFilm}
-                />
-              )}
+            {editingFilm && (
+              <DirectorFilmForm initial={editingFilm} onCancel={() => setEditOpen(false)} onSave={saveFilm} />
+            )}
 
-              {editingMusic && (
-                <DirectorMusicForm
-                  initial={editingMusic}
-                  onCancel={() => setEditOpen(false)}
-                  onSave={saveMusic}
-                />
-              )}
-            </div>
+            {editingMusic && (
+              <DirectorMusicForm initial={editingMusic} onCancel={() => setEditOpen(false)} onSave={saveMusic} />
+            )}
 
-            <DialogFooter className="border-t border-slate-800 bg-slate-950 px-4 py-3 sm:px-6">
-              <Button variant="outline" onClick={() => setEditOpen(false)} className="w-full sm:w-auto">
-                Close
-              </Button>
-            </DialogFooter>
+            <DialogFooter />
           </DialogContent>
         </Dialog>
-
-        {/* Projects Overlay (routing back to Home on load) */}
-        <ProjectManagerModal
-          open={showProjects}
-          onOpenChange={setShowProjects}
-          currentProject={{}} // No active editing context here
-          onLoadProject={handleLoadProjectFromLibrary}
-          onNewProject={() => {
-            setShowProjects(false)
-            router.push("/") // new project starts on Home
-          }}
-          currentProjectId={""}
-          onProjectSaved={() => {}}
-        />
       </main>
     </div>
   )
