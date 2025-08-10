@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { BookOpen, PlayCircle, Trash2, Download, Search, Plus, Calendar, Clock, Film, Music } from "lucide-react"
-import { projectDB, type SavedProject } from "@/lib/indexeddb"
+import type { SavedProject } from "@/lib/indexeddb"
 import { useArtistStore } from "@/lib/artist-store"
 
 interface ProjectManagerProps {
@@ -36,6 +36,7 @@ export function ProjectManager({
 
   const loadProjects = async () => {
     try {
+      const { projectDB } = await import("@/lib/indexeddb")
       const allProjects = await projectDB.getAllProjects()
       setProjects(allProjects)
     } catch (error) {
@@ -60,6 +61,8 @@ export function ProjectManager({
         activeArtist: activeArtist || undefined,
       }
 
+      const { projectDB } = await import("@/lib/indexeddb")
+      
       if (currentProjectId) {
         // Update existing project
         await projectDB.updateProject(currentProjectId, projectData)
@@ -85,6 +88,7 @@ export function ProjectManager({
   const handleDeleteProject = async (projectId: string) => {
     if (confirm("Are you sure you want to delete this project?")) {
       try {
+        const { projectDB } = await import("@/lib/indexeddb")
         await projectDB.deleteProject(projectId)
         await loadProjects()
       } catch (error) {

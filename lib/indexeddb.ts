@@ -132,13 +132,15 @@ class ProjectDBManager {
         }
       })
     } else {
-      // On the server, create a dummy promise. Methods will throw an error.
-      this.dbPromise = Promise.reject(new Error("IndexedDB is not available on the server."))
+      // On the server, create a dummy promise that we can handle gracefully
+      this.dbPromise = Promise.resolve(null as any)
     }
   }
 
   private async getDB(): Promise<IDBDatabase> {
-    // This will either return the resolved DB promise or the rejected one from the constructor.
+    if (typeof window === 'undefined') {
+      throw new Error("IndexedDB is not available on the server")
+    }
     return this.dbPromise
   }
 
