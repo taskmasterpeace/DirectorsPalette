@@ -8,9 +8,7 @@ import { ProjectHeader } from "@/components/shared/ProjectHeader"
 import { StoryMode } from "@/components/story/StoryMode"
 import { MusicVideoMode } from "@/components/music-video/MusicVideoMode"
 import { AsyncBoundary } from "@/components/shared/AsyncBoundary"
-import { generateBreakdown, generateAdditionalChapterShots } from "./actions-story"
-import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from "./actions-mv"
-import { generateDirectorStyleDetails } from "./actions-shared"
+import { StoryService, MusicVideoService, DirectorService, type TitleCardOptions, type PromptOptions } from "@/services"
 import { useToast } from "@/components/ui/use-toast"
 import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
@@ -195,7 +193,7 @@ export default function Home() {
 
     setIsLoading(true)
     try {
-      const result = await generateBreakdown(
+      const result = await StoryService.generateBreakdown(
         story,
         selectedDirector,
         titleCardOptions,
@@ -225,7 +223,7 @@ export default function Home() {
 
     setIsLoading(true)
     try {
-      const result = await generateFullMusicVideoBreakdown(
+      const result = await MusicVideoService.generateFullBreakdown(
         lyrics,
         songTitle || "Untitled Song",
         artist || "Unknown Artist",
@@ -265,7 +263,7 @@ export default function Home() {
 
     setIsLoading(true)
     try {
-      const result = await generateAdditionalChapterShots(
+      const result = await StoryService.generateAdditionalShots(
         {
           story,
           director: selectedDirector,
@@ -300,7 +298,7 @@ export default function Home() {
 
     setIsLoading(true)
     try {
-      const result = await generateAdditionalMusicVideoShots({
+      const result = await MusicVideoService.generateAdditionalShots({
         lyrics,
         musicVideoStructure: musicVideoBreakdown.musicVideoStructure,
         sectionId,
@@ -337,7 +335,7 @@ export default function Home() {
     setIsGeneratingDirectorStyle(true)
     try {
       if (mode === "story") {
-        const styleDetails = await generateDirectorStyleDetails(customDirectorName, customDirectorDescription)
+        const styleDetails = await DirectorService.generateStyleDetails(customDirectorName, customDirectorDescription)
 
         const newDirector: CustomDirector = {
           id: `custom-${Date.now()}`,
@@ -364,7 +362,7 @@ export default function Home() {
         addCustomDirector(newDirector)
         setSelectedDirector(newDirector.id)
       } else {
-        const styleDetails = await generateDirectorStyleDetails(customDirectorName, customDirectorDescription)
+        const styleDetails = await DirectorService.generateStyleDetails(customDirectorName, customDirectorDescription)
 
         const newDirector: CustomMusicVideoDirector = {
           id: `custom-mv-${Date.now()}`,

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, Settings, Plus, X, MapPin, Palette, Target, PlayCircle, Eye, Sparkles } from "lucide-react"
 import type { LocationConfig, WardrobeConfig, PropConfig } from "@/lib/indexeddb"
-import { generateMusicVideoSuggestions } from "@/app/actions-mv"
+import { MusicVideoService } from "@/services"
 
 interface Treatment {
   id: string
@@ -98,7 +98,7 @@ export function MusicVideoConfig({
   const generateSuggestions = async () => {
     setIsGeneratingSuggestions(true)
     try {
-      const suggestions = await generateMusicVideoSuggestions({
+      const suggestions = await MusicVideoService.generateSuggestions({
         lyrics,
         songTitle: musicVideoStructure.songTitle,
         artist: musicVideoStructure.artist,
