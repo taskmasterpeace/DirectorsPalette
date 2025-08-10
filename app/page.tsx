@@ -187,15 +187,10 @@ export default function Home() {
 
   // ===== Handlers =====
   const handleGenerateBreakdown = async () => {
-    console.log('🎬 Generate Story Breakdown clicked!', { storyLength: story.length, selectedDirector })
-    
     if (!story.trim()) {
-      console.log('❌ No story entered')
       toast({ variant: "destructive", title: "Error", description: "Please enter a story first." })
       return
     }
-
-    console.log('🚀 Starting story generation...')
     setIsLoading(true)
     try {
       const response = await generateStoryBreakdown({
@@ -212,7 +207,6 @@ export default function Home() {
       }
       
       const result = response.data
-      console.log('✅ Story generation successful!', { chapters: result?.storyStructure?.chapters?.length })
       setBreakdown(result)
       setAdditionalShots({})
       if (result?.storyStructure?.chapters?.length) {
@@ -221,7 +215,6 @@ export default function Home() {
       }
       toast({ title: "Success", description: "Story breakdown generated!" })
     } catch (error: any) {
-      console.error('❌ Story generation failed:', error)
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to generate breakdown" })
     } finally {
       setIsLoading(false)

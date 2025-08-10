@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
 import { useToast } from "@/components/ui/use-toast"
+import { ProgressBar } from "@/components/ui/progress-bar"
 import type { FilmDirector } from "@/lib/director-types"
 
 interface StoryModeProps {
@@ -202,10 +203,7 @@ export function StoryMode({
           </Collapsible>
 
           <Button
-            onClick={() => {
-              console.log('🔄 Generate button clicked in StoryMode', { isLoading, storyTrimmed: !!story.trim() })
-              onGenerateBreakdown()
-            }}
+            onClick={onGenerateBreakdown}
             disabled={isLoading || !story.trim()}
             className="w-full bg-amber-600 hover:bg-amber-700 text-white"
           >
@@ -223,6 +221,19 @@ export function StoryMode({
           </Button>
         </CardContent>
       </Card>
+
+      {/* Progress Bar */}
+      {isLoading && (
+        <Card className="bg-slate-900/60 border-slate-800">
+          <CardContent className="pt-6">
+            <ProgressBar 
+              isActive={isLoading} 
+              duration={34000} // 34 seconds based on actual timing
+              showPercentage={true}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Story Results */}
       {breakdown && (
