@@ -1,7 +1,6 @@
 /**
  * Base service configuration and utilities
  */
-"use server"
 
 import { openai } from "@ai-sdk/openai"
 import { configService, ensureInitialized } from "@/config/config-service"
