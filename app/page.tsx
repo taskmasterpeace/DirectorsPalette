@@ -8,7 +8,8 @@ import { ProjectHeader } from "@/components/shared/ProjectHeader"
 import { StoryMode } from "@/components/story/StoryMode"
 import { MusicVideoMode } from "@/components/music-video/MusicVideoMode"
 import { AsyncBoundary } from "@/components/shared/AsyncBoundary"
-import { StoryService, MusicVideoService, DirectorService, type TitleCardOptions, type PromptOptions } from "@/services"
+import { MusicVideoService, DirectorService, type TitleCardOptions, type PromptOptions } from "@/services"
+import { generateStoryBreakdown, generateAdditionalShots } from "@/app/actions/story-actions"
 import { useToast } from "@/components/ui/use-toast"
 import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
@@ -197,14 +198,20 @@ export default function Home() {
     console.log('🚀 Starting story generation...')
     setIsLoading(true)
     try {
-      const result = await StoryService.generateBreakdown(
+      const response = await generateStoryBreakdown({
         story,
         selectedDirector,
         titleCardOptions,
         allDirectors,
         promptOptions,
         storyDirectorNotes,
-      )
+      })
+      
+      if (!response.success) {
+        throw new Error(response.error)
+      }
+      
+      const result = response.data
       console.log('✅ Story generation successful!', { chapters: result?.storyStructure?.chapters?.length })
       setBreakdown(result)
       setAdditionalShots({})
@@ -269,7 +276,7 @@ export default function Home() {
 
     setIsLoading(true)
     try {
-      const result = await StoryService.generateAdditionalShots(
+      const response = await generateAdditionalShots(
         {
           story,
           director: selectedDirector,
@@ -284,7 +291,12 @@ export default function Home() {
         promptOptions,
         storyDirectorNotes,
       )
-
+      
+      if (!response.success) {
+        throw new Error(response.error)
+      }
+      
+      const result = response.data
       addAdditionalShots(chapterId, result.newShots)
 
       toast({ title: "Success", description: `Generated ${result.newShots.length} additional shots!` })
