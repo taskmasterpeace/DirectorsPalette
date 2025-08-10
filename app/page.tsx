@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, Wand2 } from "lucide-react"
 import { ProjectManager } from "@/components/project-manager"
@@ -16,8 +16,10 @@ import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
 import { directorDB } from "@/lib/director-db"
 import type { ArtistProfile } from "@/lib/artist-types"
-
-type Mode = "story" | "music-video"
+import { useAppStore } from "@/stores/app-store"
+import { useStoryStore } from "@/stores/story-store"
+import { useMusicVideoStore } from "@/stores/music-video-store"
+import { useDirectorStore } from "@/stores/director-store"
 
 interface CustomDirector {
   id: string
@@ -46,73 +48,63 @@ interface CustomMusicVideoDirector {
   disciplines?: string[]
 }
 
-const SESSION_KEY = "dsvb:session:v3"
+type Mode = "story" | "music-video"
 
 export default function Home() {
   const { toast } = useToast()
 
-  // Mode and UI state (controlled by left sidebar)
-  const [mode, setMode] = useState<Mode>("story")
-  const [story, setStory] = useState("")
-  const [storyDirectorNotes, setStoryDirectorNotes] = useState("")
+  // Store selectors
+  const {
+    mode, setMode,
+    isLoading, setIsLoading,
+    showProjectManager, setShowProjectManager,
+    currentProjectId, setCurrentProjectId,
+    showCustomDirectorForm, setShowCustomDirectorForm,
+    customDirectorName, setCustomDirectorName,
+    customDirectorDescription, setCustomDirectorDescription,
+    isGeneratingDirectorStyle, setIsGeneratingDirectorStyle
+  } = useAppStore()
 
-  const [lyrics, setLyrics] = useState("")
-  const [songTitle, setSongTitle] = useState("")
-  const [artist, setArtist] = useState("")
-  const [genre, setGenre] = useState("")
-  const [mvConcept, setMvConcept] = useState("")
-  const [mvDirectorNotes, setMvDirectorNotes] = useState("")
+  const {
+    story, setStory,
+    storyDirectorNotes, setStoryDirectorNotes,
+    selectedDirector, setSelectedDirector,
+    titleCardOptions, setTitleCardOptions,
+    promptOptions, setPromptOptions,
+    breakdown, setBreakdown,
+    additionalShots, setAdditionalShots, addAdditionalShots,
+    expandedChapters, setExpandedChapters, toggleChapterExpansion,
+    selectedChapter, setSelectedChapter
+  } = useStoryStore()
 
-  // Artist selection
-  const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null)
-  const [selectedArtistProfile, setSelectedArtistProfile] = useState<ArtistProfile | undefined>(undefined)
+  const {
+    lyrics, setLyrics,
+    songTitle, setSongTitle,
+    artist, setArtist,
+    genre, setGenre,
+    mvConcept, setMvConcept,
+    mvDirectorNotes, setMvDirectorNotes,
+    selectedArtistId, setSelectedArtistId,
+    selectedArtistProfile, setSelectedArtistProfile,
+    selectedMusicVideoDirector, setSelectedMusicVideoDirector,
+    musicVideoConfig, setMusicVideoConfig,
+    showMusicVideoConfig, setShowMusicVideoConfig,
+    musicVideoBreakdown, setMusicVideoBreakdown,
+    additionalMusicVideoShots, setAdditionalMusicVideoShots, addAdditionalMusicVideoShots,
+    expandedSections, setExpandedSections, toggleSectionExpansion,
+    selectedMusicVideoSection, setSelectedMusicVideoSection
+  } = useMusicVideoStore()
 
-  // Director selection
-  const [selectedDirector, setSelectedDirector] = useState("nolan")
-  const [selectedMusicVideoDirector, setSelectedMusicVideoDirector] = useState("hype-williams")
-  const [customDirectors, setCustomDirectors] = useState<CustomDirector[]>([])
-  const [customMusicVideoDirectors, setCustomMusicVideoDirectors] = useState<CustomMusicVideoDirector[]>([])
-
-  // Custom director creation
-  const [showCustomDirectorForm, setShowCustomDirectorForm] = useState(false)
-  const [customDirectorName, setCustomDirectorName] = useState("")
-  const [customDirectorDescription, setCustomDirectorDescription] = useState("")
-  const [isGeneratingDirectorStyle, setIsGeneratingDirectorStyle] = useState(false)
-
-  // Results
-  const [breakdown, setBreakdown] = useState<any>(null)
-  const [musicVideoBreakdown, setMusicVideoBreakdown] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [additionalShots, setAdditionalShots] = useState<{ [key: string]: string[] }>({})
-  const [additionalMusicVideoShots, setAdditionalMusicVideoShots] = useState<{ [key: string]: string[] }>({})
-
-  // Options
-  const [titleCardOptions, setTitleCardOptions] = useState({
-    enabled: false,
-    format: "full" as "full" | "name-only" | "roman-numerals",
-    approaches: [] as string[],
-  })
-  const [promptOptions, setPromptOptions] = useState({
-    includeCameraStyle: true,
-    includeColorPalette: true,
-  })
-
-  // Music video specific
-  const [musicVideoConfig, setMusicVideoConfig] = useState<any>(null)
-  const [showMusicVideoConfig, setShowMusicVideoConfig] = useState(false)
-
-  // Expanded sections
-  const [expandedChapters, setExpandedChapters] = useState<{ [key: string]: boolean }>({})
-  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({})
-
-  // Project Manager State
-  const [showProjectManager, setShowProjectManager] = useState(false)
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
-  const [selectedChapter, setSelectedChapter] = useState("")
-  const [selectedMusicVideoSection, setSelectedMusicVideoSection] = useState("")
+  const {
+    customDirectors, setCustomDirectors, addCustomDirector,
+    customMusicVideoDirectors, setCustomMusicVideoDirectors, addCustomMusicVideoDirector,
+    directorsLoaded, setDirectorsLoaded
+  } = useDirectorStore()
 
   // Load directors from IndexedDB on mount
   useEffect(() => {
+    if (directorsLoaded) return
+    
     const loadDirectors = async () => {
       try {
         await directorDB.ensureSeeded()
@@ -154,78 +146,21 @@ export default function Home() {
 
         setCustomDirectors(customFilm)
         setCustomMusicVideoDirectors(customMusic)
+        setDirectorsLoaded(true)
       } catch (error) {
         console.error("Failed to load directors:", error)
       }
     }
 
     loadDirectors()
-  }, [])
+  }, [directorsLoaded, setCustomDirectors, setCustomMusicVideoDirectors, setDirectorsLoaded])
 
   const allDirectors = customDirectors.length > 0 ? customDirectors : curatedFilmDirectors
   const allMusicVideoDirectors =
     customMusicVideoDirectors.length > 0 ? customMusicVideoDirectors : curatedMusicVideoDirectors
 
-  const selectedDirectorInfo = allDirectors.find((d: any) => d.id === selectedDirector)
-  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find((d: any) => d.id === selectedMusicVideoDirector)
-
-  // ----- Session + Mode Persistence: Restore on mount -----
-  const loadedRef = useRef(false)
-  useEffect(() => {
-    if (loadedRef.current) return
-    try {
-      const raw = localStorage.getItem(SESSION_KEY)
-      if (raw) {
-        const s = JSON.parse(raw)
-        setMode(s.mode ?? "story")
-        setStory(s.story ?? "")
-        setStoryDirectorNotes(s.storyDirectorNotes ?? "")
-        setLyrics(s.lyrics ?? "")
-        setSongTitle(s.songTitle ?? "")
-        setArtist(s.artist ?? "")
-        setGenre(s.genre ?? "")
-        setMvConcept(s.mvConcept ?? "")
-        setMvDirectorNotes(s.mvDirectorNotes ?? "")
-        setSelectedDirector(s.selectedDirector ?? "nolan")
-        setSelectedMusicVideoDirector(s.selectedMusicVideoDirector ?? "hype-williams")
-        setSelectedArtistId(s.selectedArtistId ?? null)
-        setSelectedArtistProfile(s.selectedArtistProfile ?? undefined)
-        setBreakdown(s.breakdown ?? null)
-        setMusicVideoBreakdown(s.musicVideoBreakdown ?? null)
-        setAdditionalShots(s.additionalShots ?? {})
-        setAdditionalMusicVideoShots(s.additionalMusicVideoShots ?? {})
-        setTitleCardOptions(s.titleCardOptions ?? { enabled: false, format: "full", approaches: [] })
-        setPromptOptions(s.promptOptions ?? { includeCameraStyle: true, includeColorPalette: true })
-        setMusicVideoConfig(s.musicVideoConfig ?? null)
-        setShowMusicVideoConfig(s.showMusicVideoConfig ?? false)
-        setExpandedChapters(s.expandedChapters ?? {})
-        setExpandedSections(s.expandedSections ?? {})
-        setSelectedChapter(s.selectedChapter ?? "")
-        setSelectedMusicVideoSection(s.selectedMusicVideoSection ?? "")
-      }
-
-      // Apply mode requested from sidebar if present
-      try {
-        const sidebarMode = localStorage.getItem("dsvb:mode")
-        if (sidebarMode === "story" || sidebarMode === "music-video") {
-          setMode(sidebarMode)
-        }
-      } catch {}
-
-      // Navigate-to-project bridge (from /projects)
-      try {
-        const navProjectId = localStorage.getItem("dsvb:navigateToProjectId")
-        if (navProjectId) {
-          setCurrentProjectId(navProjectId)
-          localStorage.removeItem("dsvb:navigateToProjectId")
-        }
-      } catch {}
-    } catch (e) {
-      console.warn("Failed to restore session:", e)
-    } finally {
-      loadedRef.current = true
-    }
-  }, [])
+  const selectedDirectorInfo = allDirectors.find((d) => d.id === selectedDirector)
+  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find((d) => d.id === selectedMusicVideoDirector)
 
   // Live mode updates from sidebar
   useEffect(() => {
@@ -238,81 +173,18 @@ export default function Home() {
     }
     window.addEventListener("dsvb:mode-change", onModeChange as EventListener)
     return () => window.removeEventListener("dsvb:mode-change", onModeChange as EventListener)
-  }, [])
+  }, [setMode])
 
-  // ----- Session Persistence: Auto-save (debounced) -----
-  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const snapshot = useMemo(
-    () => ({
-      mode,
-      story,
-      storyDirectorNotes,
-      lyrics,
-      songTitle,
-      artist,
-      genre,
-      mvConcept,
-      mvDirectorNotes,
-      selectedDirector,
-      selectedMusicVideoDirector,
-      selectedArtistId,
-      selectedArtistProfile,
-      breakdown,
-      musicVideoBreakdown,
-      additionalShots,
-      additionalMusicVideoShots,
-      titleCardOptions,
-      promptOptions,
-      musicVideoConfig,
-      showMusicVideoConfig,
-      expandedChapters,
-      expandedSections,
-      selectedChapter,
-      selectedMusicVideoSection,
-    }),
-    [
-      mode,
-      story,
-      storyDirectorNotes,
-      lyrics,
-      songTitle,
-      artist,
-      genre,
-      mvConcept,
-      mvDirectorNotes,
-      selectedDirector,
-      selectedMusicVideoDirector,
-      selectedArtistId,
-      selectedArtistProfile,
-      breakdown,
-      musicVideoBreakdown,
-      additionalShots,
-      additionalMusicVideoShots,
-      titleCardOptions,
-      promptOptions,
-      musicVideoConfig,
-      showMusicVideoConfig,
-      expandedChapters,
-      expandedSections,
-      selectedChapter,
-      selectedMusicVideoSection,
-    ],
-  )
-
+  // Navigate-to-project bridge (from /projects)
   useEffect(() => {
-    if (!loadedRef.current) return
-    if (saveTimeout.current) clearTimeout(saveTimeout.current)
-    saveTimeout.current = setTimeout(() => {
-      try {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot))
-      } catch (e) {
-        console.warn("Failed to persist session:", e)
+    try {
+      const navProjectId = localStorage.getItem("dsvb:navigateToProjectId")
+      if (navProjectId) {
+        setCurrentProjectId(navProjectId)
+        localStorage.removeItem("dsvb:navigateToProjectId")
       }
-    }, 400)
-    return () => {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current)
-    }
-  }, [snapshot])
+    } catch {}
+  }, [setCurrentProjectId])
 
   // ===== Handlers =====
   const handleGenerateBreakdown = async () => {
@@ -335,7 +207,7 @@ export default function Home() {
       setAdditionalShots({})
       if (result?.storyStructure?.chapters?.length) {
         const first = result.storyStructure.chapters[0]
-        setExpandedChapters((prev) => ({ ...prev, [first.id]: true }))
+        setExpandedChapters({ ...expandedChapters, [first.id]: true })
       }
       toast({ title: "Success", description: "Story breakdown generated!" })
     } catch (error: any) {
@@ -373,7 +245,7 @@ export default function Home() {
         setAdditionalMusicVideoShots({})
         if (result?.musicVideoStructure?.sections?.length) {
           const first = result.musicVideoStructure.sections[0]
-          setExpandedSections((prev) => ({ ...prev, [first.id]: true }))
+          setExpandedSections({ ...expandedSections, [first.id]: true })
         }
         toast({ title: "Success", description: "Music video breakdown generated!" })
       }
@@ -409,10 +281,7 @@ export default function Home() {
         storyDirectorNotes,
       )
 
-      setAdditionalShots((prev) => ({
-        ...prev,
-        [chapterId]: [...(prev[chapterId] || []), ...result.newShots],
-      }))
+      addAdditionalShots(chapterId, result.newShots)
 
       toast({ title: "Success", description: `Generated ${result.newShots.length} additional shots!` })
     } catch (error: any) {
@@ -444,10 +313,7 @@ export default function Home() {
         artistProfile: selectedArtistProfile,
       })
 
-      setAdditionalMusicVideoShots((prev) => ({
-        ...prev,
-        [sectionId]: [...(prev[sectionId] || []), ...result.newShots],
-      }))
+      addAdditionalMusicVideoShots(sectionId, result.newShots)
 
       toast({ title: "Success", description: `Generated ${result.newShots.length} additional shots!` })
     } catch (error: any) {
@@ -482,7 +348,7 @@ export default function Home() {
           narrativeFocus: styleDetails.narrativeStyle,
           category: "Custom",
           tags: [],
-          disciplines: [] as any,
+          disciplines: [],
         }
 
         const filmDirector: FilmDirector = {
@@ -495,7 +361,7 @@ export default function Home() {
         }
         await directorDB.upsertFilm(filmDirector)
 
-        setCustomDirectors((prev) => [...prev, newDirector])
+        addCustomDirector(newDirector)
         setSelectedDirector(newDirector.id)
       } else {
         const styleDetails = await generateDirectorStyleDetails(customDirectorName, customDirectorDescription)
@@ -510,7 +376,7 @@ export default function Home() {
           genres: styleDetails.genres.split(",").map((g: string) => g.trim()),
           category: "Custom",
           tags: [],
-          disciplines: [] as any,
+          disciplines: [],
         }
 
         const musicDirector: MusicVideoDirector = {
@@ -523,7 +389,7 @@ export default function Home() {
         }
         await directorDB.upsertMusic(musicDirector)
 
-        setCustomMusicVideoDirectors((prev) => [...prev, newDirector])
+        addCustomMusicVideoDirector(newDirector)
         setSelectedMusicVideoDirector(newDirector.id)
       }
 
