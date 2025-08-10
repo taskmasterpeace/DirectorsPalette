@@ -6,6 +6,8 @@
 import { generateObject } from "ai"
 import { z } from "zod"
 import { assertAIEnv, getAIConfig, getPrompt, ServiceError } from "./base"
+import { validateServerInput } from "@/lib/validation/validator"
+import { CustomDirectorSchema } from "@/lib/validation/schemas"
 
 const DirectorStyleSchema = z.object({
   visualHallmarks: z.string().describe("Key visual hallmarks as a sentence or short paragraph."),
@@ -24,11 +26,18 @@ export class DirectorService {
     try {
       assertAIEnv()
       
+      // Validate and sanitize input
+      const validatedInput = validateServerInput(
+        CustomDirectorSchema,
+        { name, description },
+        { sanitize: true, moderate: true, rateLimit: { key: 'director-generation', limit: 5, windowMs: 600000 } }
+      )
+      
       const aiConfig = await getAIConfig()
       const systemPrompt = await getPrompt('director-prompts', 'systemPrompts.styleGeneration')
       const promptTemplate = await getPrompt('director-prompts', 'styleGenerationPrompt', {
-        name,
-        description
+        name: validatedInput.name,
+        description: validatedInput.description
       })
       
       const { object } = await generateObject({

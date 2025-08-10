@@ -6,6 +6,9 @@
 import { generateObject } from "ai"
 import { z } from "zod"
 import { assertAIEnv, getAIConfig, getPrompt, ServiceError } from "./base"
+import { validateServerInput } from "@/lib/validation/validator"
+import { StoryInputSchema, AdditionalShotsRequestSchema } from "@/lib/validation/schemas"
+import { storyRateLimiter } from "@/lib/security/rate-limiter"
 
 // ===== Schemas =====
 const ChapterSchema = z.object({
@@ -118,11 +121,22 @@ export class StoryService {
     try {
       assertAIEnv()
       
+      // Validate and sanitize input
+      const validatedInput = validateServerInput(
+        StoryInputSchema,
+        { story, selectedDirector: director, directorNotes },
+        { sanitize: true, moderate: true, rateLimit: { key: 'story-generation', limit: 10, windowMs: 300000 } }
+      )
+      
+      // Use validated input
+      const sanitizedStory = validatedInput.story
+      const sanitizedDirectorNotes = validatedInput.directorNotes || ""
+      
       const aiConfig = await getAIConfig()
 
       // Generate story structure
       const structurePrompt = await getPrompt('story-prompts', 'storyStructureDetection')
-      const structureSystemPrompt = await getPrompt('story-prompts', 'systemPrompts.structureAnalysis', { story })
+      const structureSystemPrompt = await getPrompt('story-prompts', 'systemPrompts.structureAnalysis', { story: sanitizedStory })
 
       const { object: storyStructure } = await generateObject({
         model: aiConfig.model,
