@@ -5,7 +5,7 @@
 
 import { generateObject } from "ai"
 import { z } from "zod"
-import { assertAIEnv, AI_MODEL, ServiceError } from "./base"
+import { assertAIEnv, getAIConfig, getPrompt, ServiceError } from "./base"
 
 // ===== Schemas =====
 const ChapterSchema = z.object({
@@ -100,34 +100,7 @@ function buildFilmDirectorStyle(d?: DirectorInfo): string {
     .join("\n")
 }
 
-// ===== Prompts =====
-const prompts = {
-  structureDetection: `Analyze the following text and split it into logical chapters. Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered. Return ONLY JSON.`,
-  
-  chapterBreakdown: `You are a world-class cinematographer creating a visual breakdown for a story chapter.
-
-DIRECTOR STYLE PROFILE:
-{directorStyle}
-
-CREATIVE DIRECTION NOTES:
-{directorNotes}
-
-Generate a shot list that authentically reflects this director's style (framing, movement, lighting, pacing). Identify character/location/prop references and provide coverage analysis and additional opportunities. Ensure references begin with "@" handles if applicable. Return ONLY JSON.`,
-
-  additionalShots: `Expand a shot list with distinct new shots for categories: {categories}.
-
-DIRECTOR STYLE PROFILE:
-{directorStyle}
-
-CREATIVE DIRECTION NOTES:
-{directorNotes}
-
-CUSTOM REQUEST: {customRequest}
-
-Return ONLY JSON with 'newShots' and 'coverageAnalysis'.`,
-
-  titleCard: `Design {count} unique title card concepts for the chapter "{chapterTitle}". For each, provide 'styleLabel' and a detailed 'description'. Approaches: {approaches}. Return ONLY JSON.`,
-}
+// Prompts are now loaded from configuration files
 
 // ===== Service =====
 export class StoryService {
@@ -144,13 +117,20 @@ export class StoryService {
   ) {
     try {
       assertAIEnv()
+      
+      const aiConfig = await getAIConfig()
 
       // Generate story structure
+      const structurePrompt = await getPrompt('story-prompts', 'storyStructureDetection')
+      const structureSystemPrompt = await getPrompt('story-prompts', 'systemPrompts.structureAnalysis', { story })
+
       const { object: storyStructure } = await generateObject({
-        model: AI_MODEL,
+        model: aiConfig.model,
         schema: StoryStructureSchema,
-        prompt: prompts.structureDetection,
-        system: `You are a professional script supervisor and editor. STORY: """${story}"""`,
+        prompt: structurePrompt,
+        system: structureSystemPrompt,
+        maxTokens: aiConfig.maxTokens,
+        temperature: aiConfig.temperature,
       })
 
       // Generate chapter breakdowns
@@ -159,9 +139,10 @@ export class StoryService {
           const selectedDirectorInfo = customDirectors.find((d) => d.name === director || (d as any).id === director)
           const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
 
-          let prompt = prompts.chapterBreakdown
-            .replace("{directorStyle}", directorStyle)
-            .replace("{directorNotes}", directorNotes || "None")
+          let prompt = await getPrompt('story-prompts', 'chapterBreakdown', {
+            directorStyle,
+            directorNotes: directorNotes || "None"
+          })
 
           // Apply prompt options
           if (!promptOptions.includeCameraStyle) {
@@ -171,23 +152,36 @@ export class StoryService {
             prompt += `\nIMPORTANT: Minimize detailed color palette and lighting descriptions.`
           }
 
+          const systemPrompt = await getPrompt('story-prompts', 'systemPrompts.chapterBreakdown', {
+            chapterContent: chapter.content
+          })
+
           const { object: breakdown } = await generateObject({
-            model: AI_MODEL,
+            model: aiConfig.model,
             schema: ChapterBreakdownSchema,
             prompt,
-            system: `Create a visual breakdown. CHAPTER CONTENT: """${chapter.content}"""`,
+            system: systemPrompt,
+            maxTokens: aiConfig.maxTokens,
+            temperature: aiConfig.temperature,
           })
 
           // Generate title cards if enabled
           if (titleCardOptions.enabled) {
+            const titleCardPrompt = await getPrompt('story-prompts', 'titleCard', {
+              count: "3",
+              chapterTitle: chapter.title,
+              approaches: (titleCardOptions.approaches || []).join(", ")
+            })
+            
+            const titleSystemPrompt = await getPrompt('story-prompts', 'systemPrompts.titleDesigner')
+
             const { object: tc } = await generateObject({
-              model: AI_MODEL,
+              model: aiConfig.model,
               schema: z.object({ titleCards: z.array(TitleCardSchema) }),
-              prompt: prompts.titleCard
-                .replace("{count}", "3")
-                .replace("{chapterTitle}", chapter.title)
-                .replace("{approaches}", (titleCardOptions.approaches || []).join(", ")),
-              system: "You are a creative title designer.",
+              prompt: titleCardPrompt,
+              system: titleSystemPrompt,
+              maxTokens: aiConfig.maxTokens,
+              temperature: aiConfig.temperature,
             })
             ;(breakdown as any).titleCards = tc.titleCards
           }
@@ -245,6 +239,8 @@ export class StoryService {
         customRequest,
       } = args
 
+      const aiConfig = await getAIConfig()
+      
       const selectedDirectorInfo = customDirectors.find((d) => d.name === director || (d as any).id === director)
       const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
       const chapter = storyStructure.chapters?.find((c) => c.id === chapterId)
@@ -253,11 +249,12 @@ export class StoryService {
         throw new ServiceError("Chapter not found", 'CHAPTER_NOT_FOUND', { chapterId })
       }
 
-      let prompt = prompts.additionalShots
-        .replace("{categories}", categories.join(", "))
-        .replace("{directorStyle}", directorStyle)
-        .replace("{directorNotes}", directorNotes || "None")
-        .replace("{customRequest}", customRequest || "General shot variety")
+      let prompt = await getPrompt('story-prompts', 'additionalShots', {
+        categories: categories.join(", "),
+        directorStyle,
+        directorNotes: directorNotes || "None",
+        customRequest: customRequest || "General shot variety"
+      })
 
       // Apply prompt options
       if (!promptOptions.includeCameraStyle) {
@@ -267,15 +264,19 @@ export class StoryService {
         prompt += `\nIMPORTANT: Minimize detailed color palette and lighting descriptions.`
       }
 
-      const systemPrompt = `You are generating additional shots for a chapter. Avoid duplicating these existing shots:
-EXISTING: ${[...existingBreakdown.shots, ...existingAdditionalShots].join(", ")}
-CHAPTER: "${chapter.title}" - ${chapter.content.substring(0, 200)}...`
+      const systemPrompt = await getPrompt('story-prompts', 'systemPrompts.additionalShots', {
+        existingShots: [...existingBreakdown.shots, ...existingAdditionalShots].join(", "),
+        chapterTitle: chapter.title,
+        chapterContent: chapter.content.substring(0, 200) + "..."
+      })
 
       const { object } = await generateObject({
-        model: AI_MODEL,
+        model: aiConfig.model,
         schema: AdditionalShotsSchema,
         prompt,
         system: systemPrompt,
+        maxTokens: aiConfig.maxTokens,
+        temperature: aiConfig.temperature,
       })
 
       return object

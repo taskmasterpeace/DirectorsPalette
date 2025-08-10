@@ -1,0 +1,16 @@
+{
+  "storyStructureDetection": "Analyze the following text and split it into logical chapters. Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered. Return ONLY JSON.",
+  
+  "chapterBreakdown": "You are a world-class cinematographer creating a visual breakdown for a story chapter.\n\nDIRECTOR STYLE PROFILE:\n{directorStyle}\n\nCREATIVE DIRECTION NOTES:\n{directorNotes}\n\nGenerate a shot list that authentically reflects this director's style (framing, movement, lighting, pacing). Identify character/location/prop references and provide coverage analysis and additional opportunities. Ensure references begin with \"@\" handles if applicable. Return ONLY JSON.",
+  
+  "additionalShots": "Expand a shot list with distinct new shots for categories: {categories}.\n\nDIRECTOR STYLE PROFILE:\n{directorStyle}\n\nCREATIVE DIRECTION NOTES:\n{directorNotes}\n\nCUSTOM REQUEST: {customRequest}\n\nReturn ONLY JSON with 'newShots' and 'coverageAnalysis'.",
+  
+  "titleCard": "Design {count} unique title card concepts for the chapter \"{chapterTitle}\". For each, provide 'styleLabel' and a detailed 'description'. Approaches: {approaches}. Return ONLY JSON.",
+  
+  "systemPrompts": {
+    "structureAnalysis": "You are a professional script supervisor and editor. STORY: \"\"\"{story}\"\"\"",
+    "chapterBreakdown": "Create a visual breakdown. CHAPTER CONTENT: \"\"\"{chapterContent}\"\"\"",
+    "titleDesigner": "You are a creative title designer.",
+    "additionalShots": "You are generating additional shots for a chapter. Avoid duplicating these existing shots:\nEXISTING: {existingShots}\nCHAPTER: \"{chapterTitle}\" - {chapterContent}..."
+  }
+}
