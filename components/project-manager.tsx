@@ -357,7 +357,7 @@ export function ProjectManager({
                         <>
                           {project.musicVideoData?.songTitle && project.musicVideoData?.artist && (
                             <div>
-                              "{project.musicVideoData.songTitle}" by {project.musicVideoData.artist}
+                              &quot;{project.musicVideoData.songTitle}&quot; by {project.musicVideoData.artist}
                             </div>
                           )}
                           {project.musicVideoData?.lyrics && (

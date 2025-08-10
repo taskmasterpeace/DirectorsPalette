@@ -2,29 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  BookOpen,
-  PlayCircle,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  Plus,
-  Wand2,
-  Settings,
-  Target,
-  Palette,
-  Camera,
-  Eye,
-} from "lucide-react"
+import { Plus, Wand2 } from "lucide-react"
 import { ProjectManager } from "@/components/project-manager"
-import { MusicVideoConfig } from "@/components/music-video-config"
-import { LibraryPicker } from "@/components/library-picker"
+import { ProjectHeader } from "@/components/shared/ProjectHeader"
+import { StoryMode } from "@/components/story/StoryMode"
+import { MusicVideoMode } from "@/components/music-video/MusicVideoMode"
 import { generateBreakdown, generateAdditionalChapterShots } from "./actions-story"
 import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from "./actions-mv"
 import { generateDirectorStyleDetails } from "./actions-shared"
@@ -32,7 +14,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
 import { directorDB } from "@/lib/director-db"
-import ArtistPicker from "@/components/artist-picker"
 import type { ArtistProfile } from "@/lib/artist-types"
 
 type Mode = "story" | "music-video"
@@ -162,7 +143,7 @@ export default function Home() {
             : typeof d.genres === "string"
               ? d.genres
                   .split(",")
-                  .map((g) => g.trim())
+                  .map((g: string) => g.trim())
                   .filter(Boolean)
               : [],
           category: d.category,
@@ -184,8 +165,8 @@ export default function Home() {
   const allMusicVideoDirectors =
     customMusicVideoDirectors.length > 0 ? customMusicVideoDirectors : curatedMusicVideoDirectors
 
-  const selectedDirectorInfo = allDirectors.find((d) => d.id === selectedDirector)
-  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find((d) => d.id === selectedMusicVideoDirector)
+  const selectedDirectorInfo = allDirectors.find((d: any) => d.id === selectedDirector)
+  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find((d: any) => d.id === selectedMusicVideoDirector)
 
   // ----- Session + Mode Persistence: Restore on mount -----
   const loadedRef = useRef(false)
@@ -500,7 +481,7 @@ export default function Home() {
           narrativeFocus: styleDetails.narrativeStyle,
           category: "Custom",
           tags: [],
-          disciplines: [],
+          disciplines: [] as any,
         }
 
         const filmDirector: FilmDirector = {
@@ -509,6 +490,7 @@ export default function Home() {
           createdAt: new Date(),
           updatedAt: new Date(),
           isCustom: true,
+          category: "Custom" as const,
         }
         await directorDB.upsertFilm(filmDirector)
 
@@ -527,7 +509,7 @@ export default function Home() {
           genres: styleDetails.genres.split(",").map((g: string) => g.trim()),
           category: "Custom",
           tags: [],
-          disciplines: [],
+          disciplines: [] as any,
         }
 
         const musicDirector: MusicVideoDirector = {
@@ -536,6 +518,7 @@ export default function Home() {
           createdAt: new Date(),
           updatedAt: new Date(),
           isCustom: true,
+          category: "Custom" as const,
         }
         await directorDB.upsertMusic(musicDirector)
 
@@ -563,653 +546,91 @@ export default function Home() {
     toast({ title: "Copied", description: "Content copied to clipboard!" })
   }
 
-  const toggleChapterExpansion = (chapterId: string) => {
-    setExpandedChapters((prev) => ({ ...prev, [chapterId]: !prev[chapterId] }))
-  }
-
-  const toggleSectionExpansion = (sectionId: string) => {
-    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }))
-  }
-
   // UI
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Top navigation removed. Sidebar controls the mode. */}
       <main className="mx-auto max-w-7xl px-4 py-6">
-        {/* Small mode indicator for clarity */}
-        <div className="mb-4">
-          <span className="inline-flex items-center gap-2 rounded-md bg-slate-800/60 px-2 py-1 text-xs text-slate-300">
-            {mode === "story" ? (
-              <>
-                <BookOpen className="h-3.5 w-3.5 text-amber-400" /> Story Mode
-              </>
-            ) : (
-              <>
-                <PlayCircle className="h-3.5 w-3.5 text-purple-400" /> Music Video Mode
-              </>
-            )}
-          </span>
-        </div>
+        <ProjectHeader 
+          mode={mode} 
+          currentProjectId={currentProjectId}
+          onProjectSelect={(projectId) => setCurrentProjectId(projectId)}
+        />
 
         {mode === "story" ? (
-          <div className="space-y-6">
-            {/* Story Input Section */}
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-amber-400" />
-                  Story Input
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Enter your story here..."
-                  value={story}
-                  onChange={(e) => setStory(e.target.value)}
-                  className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-                />
-
-                {/* Director Selection */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-white">Director Style</label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowCustomDirectorForm(!showCustomDirectorForm)}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Create Custom
-                    </Button>
-                  </div>
-
-                  <LibraryPicker
-                    value={selectedDirector}
-                    onValueChange={setSelectedDirector}
-                    directors={allDirectors}
-                    placeholder="Select a director style..."
-                    domain="film"
-                  />
-
-                  {selectedDirectorInfo && (
-                    <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
-                      <div className="text-sm text-slate-300">
-                        <div className="font-medium text-white mb-1">{selectedDirectorInfo.name}</div>
-                        {selectedDirectorInfo.description && (
-                          <div className="mb-2">{selectedDirectorInfo.description}</div>
-                        )}
-                        {selectedDirectorInfo.visualLanguage && (
-                          <div className="text-xs text-slate-400">
-                            <span className="text-slate-300 font-medium">Visual Language: </span>
-                            {selectedDirectorInfo.visualLanguage}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Director Notes (Story) */}
-                <div>
-                  <label className="text-sm font-medium text-white mb-1 block">Director's Notes (optional)</label>
-                  <Textarea
-                    placeholder="Overall creative direction, themes, pacing, references..."
-                    value={storyDirectorNotes}
-                    onChange={(e) => setStoryDirectorNotes(e.target.value)}
-                    rows={3}
-                    className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-                  />
-                </div>
-
-                {/* Options */}
-                <Collapsible>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="text-slate-300 hover:bg-slate-700 p-0">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Advanced Options
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4 mt-4">
-                    {/* Title Card Options */}
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="title-cards"
-                          checked={titleCardOptions.enabled}
-                          onCheckedChange={(checked) =>
-                            setTitleCardOptions((prev) => ({ ...prev, enabled: !!checked }))
-                          }
-                        />
-                        <label htmlFor="title-cards" className="text-sm text-white">
-                          Generate Title Cards
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Prompt Options */}
-                    <div className="space-y-3">
-                      <div className="text-sm font-medium text-white">Generation Options</div>
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="camera-style"
-                            checked={promptOptions.includeCameraStyle}
-                            onCheckedChange={(checked) =>
-                              setPromptOptions((prev) => ({ ...prev, includeCameraStyle: !!checked }))
-                            }
-                          />
-                          <label htmlFor="camera-style" className="text-sm text-slate-300 flex items-center gap-1">
-                            <Camera className="h-3 w-3" />
-                            Include Camera Movement Details
-                          </label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="color-palette"
-                            checked={promptOptions.includeColorPalette}
-                            onCheckedChange={(checked) =>
-                              setPromptOptions((prev) => ({ ...prev, includeColorPalette: !!checked }))
-                            }
-                          />
-                          <label htmlFor="color-palette" className="text-sm text-slate-300 flex items-center gap-1">
-                            <Palette className="h-3 w-3" />
-                            Include Color & Lighting Details
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-
-                <Button
-                  onClick={handleGenerateBreakdown}
-                  disabled={isLoading || !story.trim()}
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  {isLoading ? (
-                    <>
-                      <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Breakdown...
-                    </>
-                  ) : (
-                    <>
-                      <Target className="h-4 w-4 mr-2" />
-                      Generate Story Breakdown
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Story Results */}
-            {breakdown && (
-              <div className="space-y-6">
-                {breakdown.storyStructure.chapters.map((chapter: any, index: number) => {
-                  const chapterBreakdown = breakdown.chapterBreakdowns[index]
-                  const isExpanded = expandedChapters[chapter.id]
-                  const chapterAdditionalShots = additionalShots[chapter.id] || []
-
-                  return (
-                    <Card key={chapter.id} className="bg-slate-800/50 border-slate-700">
-                      <Collapsible open={isExpanded} onOpenChange={() => toggleChapterExpansion(chapter.id)}>
-                        <CollapsibleTrigger asChild>
-                          <CardHeader className="cursor-pointer hover:bg-slate-700/30 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-white flex items-center gap-2">
-                                <BookOpen className="h-5 w-5 text-amber-400" />
-                                {chapter.title}
-                                <Badge variant="secondary" className="bg-slate-600/20 text-slate-300">
-                                  {chapter.estimatedDuration}
-                                </Badge>
-                              </CardTitle>
-                              {isExpanded ? (
-                                <ChevronUp className="h-5 w-5 text-slate-400" />
-                              ) : (
-                                <ChevronDown className="h-5 w-5 text-slate-400" />
-                              )}
-                            </div>
-                          </CardHeader>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <CardContent className="space-y-4">
-                            <div className="text-sm text-slate-300">
-                              <div className="mb-2">
-                                <strong>Location:</strong> {chapter.primaryLocation}
-                              </div>
-                              <div className="mb-2">
-                                <strong>Characters:</strong> {chapter.keyCharacters.join(", ")}
-                              </div>
-                              <div className="mb-4">
-                                <strong>Narrative Beat:</strong> {chapter.narrativeBeat}
-                              </div>
-                            </div>
-
-                            <Separator className="bg-slate-600" />
-
-                            {/* Shots */}
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-white flex items-center gap-2">
-                                  <Eye className="h-4 w-4 text-amber-400" />
-                                  Shot List ({chapterBreakdown.shots.length + chapterAdditionalShots.length} shots)
-                                </h4>
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    copyToClipboard([...chapterBreakdown.shots, ...chapterAdditionalShots].join("\n"))
-                                  }
-                                  className="bg-slate-700 hover:bg-slate-600 text-white"
-                                >
-                                  <Copy className="h-4 w-4 mr-1" />
-                                  Copy
-                                </Button>
-                              </div>
-                              <div className="space-y-2">
-                                {chapterBreakdown.shots.map((shot: string, shotIndex: number) => (
-                                  <div
-                                    key={shotIndex}
-                                    className="p-3 bg-slate-900/40 rounded-md border border-slate-700"
-                                  >
-                                    <div className="text-sm text-slate-300">{shot}</div>
-                                  </div>
-                                ))}
-                                {chapterAdditionalShots.map((shot: string, shotIndex: number) => (
-                                  <div
-                                    key={`additional-${shotIndex}`}
-                                    className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30"
-                                  >
-                                    <div className="text-sm text-slate-300">{shot}</div>
-                                    <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
-                                      Additional Shot
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Additional Shots Generator */}
-                            <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
-                              <h5 className="font-medium text-white mb-3">Generate Additional Shots</h5>
-                              <div className="space-y-3">
-                                <div className="flex flex-wrap gap-2">
-                                  {["Close-ups", "Wide shots", "Action", "Emotional", "Atmospheric"].map((category) => (
-                                    <Badge
-                                      key={category}
-                                      variant="outline"
-                                      className="border-slate-600 text-slate-300 cursor-pointer hover:bg-slate-700"
-                                    >
-                                      {category}
-                                    </Badge>
-                                  ))}
-                                </div>
-                                <input
-                                  placeholder="Custom request (optional)..."
-                                  className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      handleGenerateAdditionalShots(
-                                        chapter.id,
-                                        ["Close-ups", "Wide shots"],
-                                        e.currentTarget.value,
-                                      )
-                                      e.currentTarget.value = ""
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    handleGenerateAdditionalShots(chapter.id, ["Close-ups", "Wide shots"], "")
-                                  }
-                                  disabled={isLoading}
-                                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Generate More Shots
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Coverage Analysis */}
-                            <div>
-                              <h4 className="font-medium text-white mb-2">Coverage Analysis</h4>
-                              <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
-                                <div className="text-sm text-slate-300">{chapterBreakdown.coverageAnalysis}</div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          <StoryMode
+            story={story}
+            setStory={setStory}
+            storyDirectorNotes={storyDirectorNotes}
+            setStoryDirectorNotes={setStoryDirectorNotes}
+            selectedDirector={selectedDirector}
+            setSelectedDirector={setSelectedDirector}
+            allDirectors={allDirectors}
+            titleCardOptions={titleCardOptions}
+            setTitleCardOptions={setTitleCardOptions}
+            promptOptions={promptOptions}
+            setPromptOptions={setPromptOptions}
+            breakdown={breakdown}
+            setBreakdown={setBreakdown}
+            additionalShots={additionalShots}
+            setAdditionalShots={setAdditionalShots}
+            expandedChapters={expandedChapters}
+            setExpandedChapters={setExpandedChapters}
+            isLoading={isLoading}
+            onGenerateBreakdown={handleGenerateBreakdown}
+            onGenerateAdditionalShots={handleGenerateAdditionalShots}
+            onCopyToClipboard={copyToClipboard}
+          />
         ) : (
-          <div className="space-y-6">
-            {/* Music Video Input Section */}
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <PlayCircle className="h-5 w-5 text-purple-400" />
-                  Music Video Input
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Artist Picker */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white">Artist (from Artist Bank)</label>
-                  <ArtistPicker
-                    value={selectedArtistId}
-                    onChange={(id, profile) => {
-                      setSelectedArtistId(id)
-                      setSelectedArtistProfile(profile)
-                      if (profile?.artist_name) {
-                        setArtist(profile.artist_name)
-                      }
-                      if (profile?.genres?.length) {
-                        setGenre(profile.genres[0] || "")
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Song Details */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-white mb-1 block">Song Title</label>
-                    <input
-                      placeholder="Enter song title..."
-                      value={songTitle}
-                      onChange={(e) => setSongTitle(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-white mb-1 block">Artist Name</label>
-                    <input
-                      placeholder="Enter artist name..."
-                      value={artist}
-                      onChange={(e) => setArtist(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-white mb-1 block">Genre</label>
-                    <input
-                      placeholder="Enter genre..."
-                      value={genre}
-                      onChange={(e) => setGenre(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
-                    />
-                  </div>
-                </div>
-
-                <Textarea
-                  placeholder="Enter song lyrics here..."
-                  value={lyrics}
-                  onChange={(e) => setLyrics(e.target.value)}
-                  className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-                />
-
-                {/* Director Selection */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-white">Director Style</label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowCustomDirectorForm(!showCustomDirectorForm)}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Create Custom
-                    </Button>
-                  </div>
-
-                  <LibraryPicker
-                    value={selectedMusicVideoDirector}
-                    onValueChange={setSelectedMusicVideoDirector}
-                    directors={allMusicVideoDirectors}
-                    placeholder="Select a music video director style..."
-                    domain="music-video"
-                  />
-
-                  {selectedMusicVideoDirectorInfo && (
-                    <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700">
-                      <div className="text-sm text-slate-300">
-                        <div className="font-medium text-white mb-1">{selectedMusicVideoDirectorInfo.name}</div>
-                        {selectedMusicVideoDirectorInfo.description && (
-                          <div className="mb-2">{selectedMusicVideoDirectorInfo.description}</div>
-                        )}
-                        {selectedMusicVideoDirectorInfo.visualHallmarks && (
-                          <div className="text-xs text-slate-400 mb-1">
-                            <span className="text-slate-300 font-medium">Visual Hallmarks: </span>
-                            {selectedMusicVideoDirectorInfo.visualHallmarks}
-                          </div>
-                        )}
-                        {selectedMusicVideoDirectorInfo.genres && selectedMusicVideoDirectorInfo.genres.length > 0 && (
-                          <div className="text-xs text-slate-400">
-                            <span className="text-slate-300 font-medium">Genres: </span>
-                            {selectedMusicVideoDirectorInfo.genres.join(", ")}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Concept + Director Notes */}
-                <div>
-                  <label className="text-sm font-medium text-white mb-1 block">Video Concept / Story (optional)</label>
-                  <Textarea
-                    placeholder="Your narrative concept, structure ideas, references..."
-                    value={mvConcept}
-                    onChange={(e) => setMvConcept(e.target.value)}
-                    rows={3}
-                    className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-white mb-1 block">Director's Notes (optional)</label>
-                  <Textarea
-                    placeholder="Overall creative direction, mood, pacing, visual hallmarks, references..."
-                    value={mvDirectorNotes}
-                    onChange={(e) => setMvDirectorNotes(e.target.value)}
-                    rows={3}
-                    className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-                  />
-                </div>
-
-                <Button
-                  onClick={handleGenerateMusicVideoBreakdown}
-                  disabled={isLoading || !lyrics.trim()}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  {isLoading ? (
-                    <>
-                      <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating Breakdown...
-                    </>
-                  ) : (
-                    <>
-                      <Target className="h-4 w-4 mr-2" />
-                      Generate Music Video Breakdown
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Music Video Config */}
-            {showMusicVideoConfig && musicVideoBreakdown && (
-              <MusicVideoConfig
-                treatments={musicVideoBreakdown.treatments}
-                selectedTreatment={musicVideoBreakdown.selectedTreatment}
-                musicVideoStructure={musicVideoBreakdown.musicVideoStructure}
-                lyrics={lyrics}
-                onTreatmentChange={(id) => {
-                  setMusicVideoConfig((prev: any) => ({ ...(prev || {}), selectedTreatmentId: id }))
-                }}
-                initialConfig={musicVideoConfig || undefined}
-                onBack={() => setShowMusicVideoConfig(false)}
-                onConfigurationComplete={(config) => {
-                  setMusicVideoConfig({ ...config, isConfigured: true })
-                  setShowMusicVideoConfig(false)
-                  handleGenerateMusicVideoBreakdown()
-                }}
-              />
-            )}
-
-            {/* Music Video Results */}
-            {musicVideoBreakdown && musicVideoBreakdown.isConfigured && (
-              <div className="space-y-6">
-                {musicVideoBreakdown.musicVideoStructure.sections.map((section: any, index: number) => {
-                  const sectionBreakdown = musicVideoBreakdown.sectionBreakdowns[index]
-                  const isExpanded = expandedSections[section.id]
-                  const sectionAdditionalShots = additionalMusicVideoShots[section.id] || []
-
-                  return (
-                    <Card key={section.id} className="bg-slate-800/50 border-slate-700">
-                      <Collapsible open={isExpanded} onOpenChange={() => toggleSectionExpansion(section.id)}>
-                        <CollapsibleTrigger asChild>
-                          <CardHeader className="cursor-pointer hover:bg-slate-700/30 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-white flex items-center gap-2">
-                                <PlayCircle className="h-5 w-5 text-purple-400" />
-                                {section.title}
-                                <Badge variant="secondary" className="bg-slate-600/20 text-slate-300">
-                                  {section.type}
-                                </Badge>
-                              </CardTitle>
-                              {isExpanded ? (
-                                <ChevronUp className="h-5 w-5 text-slate-400" />
-                              ) : (
-                                <ChevronDown className="h-5 w-5 text-slate-400" />
-                              )}
-                            </div>
-                          </CardHeader>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <CardContent className="space-y-4">
-                            <div className="text-sm text-slate-300">
-                              <div className="mb-4">
-                                <strong>Lyrics:</strong>
-                              </div>
-                              <div className="p-3 bg-slate-900/40 rounded-md border border-slate-700 mb-4">
-                                {section.lyrics}
-                              </div>
-                            </div>
-
-                            <Separator className="bg-slate-600" />
-
-                            {/* Shots */}
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-white flex items-center gap-2">
-                                  <Eye className="h-4 w-4 text-purple-400" />
-                                  Shot List ({sectionBreakdown.shots.length + sectionAdditionalShots.length} shots)
-                                </h4>
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    copyToClipboard([...sectionBreakdown.shots, ...sectionAdditionalShots].join("\n"))
-                                  }
-                                  className="bg-slate-700 hover:bg-slate-600 text-white"
-                                >
-                                  <Copy className="h-4 w-4 mr-1" />
-                                  Copy
-                                </Button>
-                              </div>
-                              <div className="space-y-2">
-                                {sectionBreakdown.shots.map((shot: string, shotIndex: number) => (
-                                  <div
-                                    key={shotIndex}
-                                    className="p-3 bg-slate-900/40 rounded-md border border-slate-700"
-                                  >
-                                    <div className="text-sm text-slate-300">{shot}</div>
-                                  </div>
-                                ))}
-                                {sectionAdditionalShots.map((shot: string, shotIndex: number) => (
-                                  <div
-                                    key={`additional-${shotIndex}`}
-                                    className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30"
-                                  >
-                                    <div className="text-sm text-slate-300">{shot}</div>
-                                    <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
-                                      Additional Shot
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Additional Shots Generator */}
-                            <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
-                              <h5 className="font-medium text-white mb-3">Generate Additional Shots</h5>
-                              <div className="space-y-3">
-                                <input
-                                  placeholder="Describe what kind of shots you want..."
-                                  className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      handleGenerateAdditionalMusicVideoShots(section.id, e.currentTarget.value)
-                                      e.currentTarget.value = ""
-                                    }
-                                  }}
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    handleGenerateAdditionalMusicVideoShots(
-                                      section.id,
-                                      "More creative performance shots",
-                                    )
-                                  }
-                                  disabled={isLoading}
-                                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Generate More Shots
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Performance Notes */}
-                            {sectionBreakdown.performanceNotes && sectionBreakdown.performanceNotes.length > 0 && (
-                              <div>
-                                <h4 className="font-medium text-white mb-2">Performance Notes</h4>
-                                <div className="space-y-2">
-                                  {sectionBreakdown.performanceNotes.map((note: string, noteIndex: number) => (
-                                    <div
-                                      key={noteIndex}
-                                      className="p-3 bg-slate-900/40 rounded-md border border-slate-700"
-                                    >
-                                      <div className="text-sm text-slate-300">{note}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          <MusicVideoMode
+            lyrics={lyrics}
+            setLyrics={setLyrics}
+            songTitle={songTitle}
+            setSongTitle={setSongTitle}
+            artist={artist}
+            setArtist={setArtist}
+            genre={genre}
+            setGenre={setGenre}
+            mvConcept={mvConcept}
+            setMvConcept={setMvConcept}
+            mvDirectorNotes={mvDirectorNotes}
+            setMvDirectorNotes={setMvDirectorNotes}
+            selectedArtistId={selectedArtistId}
+            setSelectedArtistId={setSelectedArtistId}
+            selectedArtistProfile={selectedArtistProfile}
+            setSelectedArtistProfile={setSelectedArtistProfile}
+            selectedMusicVideoDirector={selectedMusicVideoDirector}
+            setSelectedMusicVideoDirector={setSelectedMusicVideoDirector}
+            allMusicVideoDirectors={allMusicVideoDirectors}
+            musicVideoConfig={musicVideoConfig}
+            setMusicVideoConfig={setMusicVideoConfig}
+            showMusicVideoConfig={showMusicVideoConfig}
+            setShowMusicVideoConfig={setShowMusicVideoConfig}
+            musicVideoBreakdown={musicVideoBreakdown}
+            setMusicVideoBreakdown={setMusicVideoBreakdown}
+            additionalMusicVideoShots={additionalMusicVideoShots}
+            setAdditionalMusicVideoShots={setAdditionalMusicVideoShots}
+            expandedSections={expandedSections}
+            setExpandedSections={setExpandedSections}
+            isLoading={isLoading}
+            onGenerateMusicVideoBreakdown={handleGenerateMusicVideoBreakdown}
+            onGenerateAdditionalMusicVideoShots={handleGenerateAdditionalMusicVideoShots}
+            onCopyToClipboard={copyToClipboard}
+          />
         )}
       </main>
+      
       {showProjectManager && (
         <ProjectManager
-          isOpen={showProjectManager}
-          onClose={() => setShowProjectManager(false)}
-          onProjectSelect={(projectId) => {
+          currentProject={null}
+          onLoadProject={(project: any) => {
+            setCurrentProjectId(project.id)
+            setShowProjectManager(false)
+          }}
+          onNewProject={() => {
+            setShowProjectManager(false)
+          }}
+          currentProjectId={currentProjectId || ""}
+          onProjectSaved={(projectId: string) => {
             setCurrentProjectId(projectId)
           }}
         />

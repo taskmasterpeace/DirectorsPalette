@@ -92,6 +92,7 @@ export function MusicVideoConfig({
     if (!initialConfig || (!initialConfig.locations && !initialConfig.wardrobe && !initialConfig.props)) {
       generateSuggestions()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const generateSuggestions = async () => {
@@ -249,7 +250,7 @@ export function MusicVideoConfig({
           <div>
             <h2 className="text-xl font-bold text-white">Configure Music Video</h2>
             <p className="text-slate-400 text-sm">
-              Customize treatment, locations, wardrobe, and props for "{musicVideoStructure.songTitle}" by{" "}
+              Customize treatment, locations, wardrobe, and props for &quot;{musicVideoStructure.songTitle}&quot; by{" "}
               {musicVideoStructure.artist}
             </p>
           </div>

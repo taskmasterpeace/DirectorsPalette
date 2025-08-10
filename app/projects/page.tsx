@@ -41,9 +41,19 @@ export default function ProjectsPage() {
 
       {open && (
         <ProjectManager
-          isOpen={open}
-          onClose={() => setOpen(false)}
-          onProjectSelect={(projectId) => {
+          currentProject={null}
+          onLoadProject={(project: any) => {
+            try {
+              localStorage.setItem("dsvb:navigateToProjectId", project.id)
+            } catch {}
+            router.push("/")
+          }}
+          onNewProject={() => {
+            setOpen(false)
+            router.push("/")
+          }}
+          currentProjectId=""
+          onProjectSaved={(projectId: string) => {
             try {
               localStorage.setItem("dsvb:navigateToProjectId", projectId)
             } catch {}
