@@ -7,6 +7,7 @@ import { ProjectManager } from "@/components/project-manager"
 import { ProjectHeader } from "@/components/shared/ProjectHeader"
 import { StoryMode } from "@/components/story/StoryMode"
 import { MusicVideoMode } from "@/components/music-video/MusicVideoMode"
+import { AsyncBoundary } from "@/components/shared/AsyncBoundary"
 import { generateBreakdown, generateAdditionalChapterShots } from "./actions-story"
 import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from "./actions-mv"
 import { generateDirectorStyleDetails } from "./actions-shared"
@@ -557,65 +558,69 @@ export default function Home() {
         />
 
         {mode === "story" ? (
-          <StoryMode
-            story={story}
-            setStory={setStory}
-            storyDirectorNotes={storyDirectorNotes}
-            setStoryDirectorNotes={setStoryDirectorNotes}
-            selectedDirector={selectedDirector}
-            setSelectedDirector={setSelectedDirector}
-            allDirectors={allDirectors}
-            titleCardOptions={titleCardOptions}
-            setTitleCardOptions={setTitleCardOptions}
-            promptOptions={promptOptions}
-            setPromptOptions={setPromptOptions}
-            breakdown={breakdown}
-            setBreakdown={setBreakdown}
-            additionalShots={additionalShots}
-            setAdditionalShots={setAdditionalShots}
-            expandedChapters={expandedChapters}
-            setExpandedChapters={setExpandedChapters}
-            isLoading={isLoading}
-            onGenerateBreakdown={handleGenerateBreakdown}
-            onGenerateAdditionalShots={handleGenerateAdditionalShots}
-            onCopyToClipboard={copyToClipboard}
-          />
+          <AsyncBoundary>
+            <StoryMode
+              story={story}
+              setStory={setStory}
+              storyDirectorNotes={storyDirectorNotes}
+              setStoryDirectorNotes={setStoryDirectorNotes}
+              selectedDirector={selectedDirector}
+              setSelectedDirector={setSelectedDirector}
+              allDirectors={allDirectors}
+              titleCardOptions={titleCardOptions}
+              setTitleCardOptions={setTitleCardOptions}
+              promptOptions={promptOptions}
+              setPromptOptions={setPromptOptions}
+              breakdown={breakdown}
+              setBreakdown={setBreakdown}
+              additionalShots={additionalShots}
+              setAdditionalShots={setAdditionalShots}
+              expandedChapters={expandedChapters}
+              setExpandedChapters={setExpandedChapters}
+              isLoading={isLoading}
+              onGenerateBreakdown={handleGenerateBreakdown}
+              onGenerateAdditionalShots={handleGenerateAdditionalShots}
+              onCopyToClipboard={copyToClipboard}
+            />
+          </AsyncBoundary>
         ) : (
-          <MusicVideoMode
-            lyrics={lyrics}
-            setLyrics={setLyrics}
-            songTitle={songTitle}
-            setSongTitle={setSongTitle}
-            artist={artist}
-            setArtist={setArtist}
-            genre={genre}
-            setGenre={setGenre}
-            mvConcept={mvConcept}
-            setMvConcept={setMvConcept}
-            mvDirectorNotes={mvDirectorNotes}
-            setMvDirectorNotes={setMvDirectorNotes}
-            selectedArtistId={selectedArtistId}
-            setSelectedArtistId={setSelectedArtistId}
-            selectedArtistProfile={selectedArtistProfile}
-            setSelectedArtistProfile={setSelectedArtistProfile}
-            selectedMusicVideoDirector={selectedMusicVideoDirector}
-            setSelectedMusicVideoDirector={setSelectedMusicVideoDirector}
-            allMusicVideoDirectors={allMusicVideoDirectors}
-            musicVideoConfig={musicVideoConfig}
-            setMusicVideoConfig={setMusicVideoConfig}
-            showMusicVideoConfig={showMusicVideoConfig}
-            setShowMusicVideoConfig={setShowMusicVideoConfig}
-            musicVideoBreakdown={musicVideoBreakdown}
-            setMusicVideoBreakdown={setMusicVideoBreakdown}
-            additionalMusicVideoShots={additionalMusicVideoShots}
-            setAdditionalMusicVideoShots={setAdditionalMusicVideoShots}
-            expandedSections={expandedSections}
-            setExpandedSections={setExpandedSections}
-            isLoading={isLoading}
-            onGenerateMusicVideoBreakdown={handleGenerateMusicVideoBreakdown}
-            onGenerateAdditionalMusicVideoShots={handleGenerateAdditionalMusicVideoShots}
-            onCopyToClipboard={copyToClipboard}
-          />
+          <AsyncBoundary>
+            <MusicVideoMode
+              lyrics={lyrics}
+              setLyrics={setLyrics}
+              songTitle={songTitle}
+              setSongTitle={setSongTitle}
+              artist={artist}
+              setArtist={setArtist}
+              genre={genre}
+              setGenre={setGenre}
+              mvConcept={mvConcept}
+              setMvConcept={setMvConcept}
+              mvDirectorNotes={mvDirectorNotes}
+              setMvDirectorNotes={setMvDirectorNotes}
+              selectedArtistId={selectedArtistId}
+              setSelectedArtistId={setSelectedArtistId}
+              selectedArtistProfile={selectedArtistProfile}
+              setSelectedArtistProfile={setSelectedArtistProfile}
+              selectedMusicVideoDirector={selectedMusicVideoDirector}
+              setSelectedMusicVideoDirector={setSelectedMusicVideoDirector}
+              allMusicVideoDirectors={allMusicVideoDirectors}
+              musicVideoConfig={musicVideoConfig}
+              setMusicVideoConfig={setMusicVideoConfig}
+              showMusicVideoConfig={showMusicVideoConfig}
+              setShowMusicVideoConfig={setShowMusicVideoConfig}
+              musicVideoBreakdown={musicVideoBreakdown}
+              setMusicVideoBreakdown={setMusicVideoBreakdown}
+              additionalMusicVideoShots={additionalMusicVideoShots}
+              setAdditionalMusicVideoShots={setAdditionalMusicVideoShots}
+              expandedSections={expandedSections}
+              setExpandedSections={setExpandedSections}
+              isLoading={isLoading}
+              onGenerateMusicVideoBreakdown={handleGenerateMusicVideoBreakdown}
+              onGenerateAdditionalMusicVideoShots={handleGenerateAdditionalMusicVideoShots}
+              onCopyToClipboard={copyToClipboard}
+            />
+          </AsyncBoundary>
         )}
       </main>
       
