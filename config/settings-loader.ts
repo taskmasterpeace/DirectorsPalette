@@ -2,7 +2,6 @@
  * Settings loader for managing app configuration
  */
 import path from 'path'
-import fs from 'fs/promises'
 import { z } from 'zod'
 
 // ===== Configuration Schemas =====
@@ -18,78 +17,55 @@ const AISettingsSchema = z.object({
 const AppSettingsSchema = z.object({
   debug: z.boolean().default(false),
   enableLogging: z.boolean().default(true),
-  maxRetries: z.number().default(3),
-  retryDelay: z.number().default(1000),
-  enableAnalytics: z.boolean().default(false),
-  enableErrorReporting: z.boolean().default(true),
+  enableCaching: z.boolean().default(true),
+  cachePrefix: z.string().default('imgprompt'),
+  cacheTTL: z.number().default(3600),
 })
 
-const FeatureSettingsSchema = z.object({
-  storyMode: z.object({
-    enabled: z.boolean().default(true),
-    maxChapters: z.number().default(20),
-    defaultDirector: z.string().default('nolan'),
-    enableTitleCards: z.boolean().default(true),
-    maxAdditionalShots: z.number().default(10),
-  }).default({}),
-  musicVideoMode: z.object({
-    enabled: z.boolean().default(true),
-    maxSections: z.number().default(15),
-    defaultDirector: z.string().default('hype-williams'),
-    enableSuggestions: z.boolean().default(true),
-    maxTreatments: z.number().default(5),
-  }).default({}),
-  artistProfiles: z.object({
-    enabled: z.boolean().default(true),
-    maxProfiles: z.number().default(100),
-    enableAutofill: z.boolean().default(true),
-    enableCreateFromLyrics: z.boolean().default(true),
-  }).default({}),
-  customDirectors: z.object({
-    enabled: z.boolean().default(true),
-    maxCustomDirectors: z.number().default(50),
-    enableStyleGeneration: z.boolean().default(true),
-  }).default({}),
-}).default({})
-
-const UISettingsSchema = z.object({
-  defaultMode: z.enum(['story', 'music-video']).default('story'),
-  enableProjectManager: z.boolean().default(true),
-  enableAdvancedOptions: z.boolean().default(true),
-  autoSaveInterval: z.number().default(30000),
-  maxToastDuration: z.number().default(5000),
-}).default({})
-
-const StorageSettingsSchema = z.object({
-  enablePersistence: z.boolean().default(true),
-  sessionStoragePrefix: z.string().default('dsvb:'),
-  indexedDBName: z.string().default('dsvb-db'),
-  maxStorageSize: z.number().default(100000000),
-}).default({})
-
-const SettingsSchema = z.object({
-  version: z.string().default('1.0'),
-  ai: AISettingsSchema.default({}),
-  app: AppSettingsSchema.default({}),
-  features: FeatureSettingsSchema.default({}),
-  ui: UISettingsSchema.default({}),
-  storage: StorageSettingsSchema.default({}),
+const SecuritySettingsSchema = z.object({
+  enableRateLimit: z.boolean().default(true),
+  enableContentModeration: z.boolean().default(true),
+  enableInputSanitization: z.boolean().default(true),
+  maxTextLength: z.number().default(50000),
+  maxRequestsPerMinute: z.number().default(60),
 })
 
-// ===== Types =====
+const ConfigSchema = z.object({
+  ai: AISettingsSchema.optional(),
+  app: AppSettingsSchema.optional(), 
+  security: SecuritySettingsSchema.optional(),
+})
+
 export type AISettings = z.infer<typeof AISettingsSchema>
 export type AppSettings = z.infer<typeof AppSettingsSchema>
-export type FeatureSettings = z.infer<typeof FeatureSettingsSchema>
-export type UISettings = z.infer<typeof UISettingsSchema>
-export type StorageSettings = z.infer<typeof StorageSettingsSchema>
-export type Settings = z.infer<typeof SettingsSchema>
+export type SecuritySettings = z.infer<typeof SecuritySettingsSchema>
+export type Config = z.infer<typeof ConfigSchema>
+
+// Server-side file reading function
+async function readConfigFile(): Promise<Config | null> {
+  if (typeof window !== 'undefined') {
+    // Client-side: return null, will use environment variables and defaults
+    return null
+  }
+  
+  try {
+    // Dynamic import to avoid bundling fs in client
+    const fs = await import('fs/promises')
+    const configPath = path.join(process.cwd(), 'config', 'settings.json')
+    const content = await fs.readFile(configPath, 'utf-8')
+    const parsed = JSON.parse(content)
+    return ConfigSchema.parse(parsed)
+  } catch (error) {
+    // Config file not found or invalid, will use defaults
+    console.warn('Config file not found or invalid, using defaults:', error)
+    return null
+  }
+}
 
 class SettingsLoader {
   private static instance: SettingsLoader
-  private settings: Settings | null = null
+  private config: Config = {}
   private loaded = false
-
-  private constructor() {}
 
   static getInstance(): SettingsLoader {
     if (!SettingsLoader.instance) {
@@ -99,87 +75,103 @@ class SettingsLoader {
   }
 
   /**
-   * Load settings from files and environment variables
+   * Load configuration from file and environment variables
    */
-  async load(): Promise<Settings> {
-    if (this.loaded && this.settings) {
-      return this.settings
-    }
+  async loadSettings(): Promise<void> {
+    if (this.loaded) return
 
     try {
-      // Load base settings
-      let settings: Partial<Settings> = {}
-
-      // Try to load from app-settings.json
-      try {
-        const settingsPath = path.join(process.cwd(), 'config', 'settings', 'app-settings.json')
-        const content = await fs.readFile(settingsPath, 'utf-8')
-        settings = JSON.parse(content)
-      } catch (error) {
-        console.warn('Could not load app-settings.json, using defaults')
+      // Try to load config file first
+      const fileConfig = await readConfigFile()
+      if (fileConfig) {
+        this.config = fileConfig
       }
 
       // Override with environment variables
-      const envOverrides = this.loadEnvironmentOverrides()
-      settings = { ...settings, ...envOverrides }
-
-      // Validate and parse with defaults
-      this.settings = SettingsSchema.parse(settings)
+      this.applyEnvironmentOverrides()
+      
       this.loaded = true
-
-      return this.settings
     } catch (error) {
-      console.error('Failed to load settings:', error)
-      
-      // Return default settings on error
-      this.settings = SettingsSchema.parse({})
+      console.warn('Failed to load settings:', error)
       this.loaded = true
-      
-      return this.settings
     }
   }
 
   /**
-   * Load environment variable overrides
+   * Apply environment variable overrides
    */
-  private loadEnvironmentOverrides(): Partial<Settings> {
-    const overrides: any = {}
-
-    // AI settings from environment
-    if (process.env.AI_MODEL) {
-      overrides.ai = { ...overrides.ai, model: process.env.AI_MODEL }
+  private applyEnvironmentOverrides(): void {
+    // AI Settings
+    if (process.env.OPENAI_MODEL) {
+      this.config.ai = { ...this.config.ai, model: process.env.OPENAI_MODEL }
     }
     if (process.env.AI_MAX_TOKENS) {
-      overrides.ai = { ...overrides.ai, maxTokens: parseInt(process.env.AI_MAX_TOKENS) }
+      this.config.ai = { ...this.config.ai, maxTokens: parseInt(process.env.AI_MAX_TOKENS) }
     }
     if (process.env.AI_TEMPERATURE) {
-      overrides.ai = { ...overrides.ai, temperature: parseFloat(process.env.AI_TEMPERATURE) }
+      this.config.ai = { ...this.config.ai, temperature: parseFloat(process.env.AI_TEMPERATURE) }
     }
 
-    // App settings from environment
-    if (process.env.NODE_ENV === 'development') {
-      overrides.app = { ...overrides.app, debug: true }
+    // App Settings
+    if (process.env.DEBUG) {
+      this.config.app = { ...this.config.app, debug: process.env.DEBUG === 'true' }
     }
-    if (process.env.DISABLE_LOGGING === 'true') {
-      overrides.app = { ...overrides.app, enableLogging: false }
-    }
-
-    // Feature flags from environment
-    if (process.env.DISABLE_STORY_MODE === 'true') {
-      overrides.features = { ...overrides.features, storyMode: { enabled: false } }
-    }
-    if (process.env.DISABLE_MUSIC_VIDEO_MODE === 'true') {
-      overrides.features = { ...overrides.features, musicVideoMode: { enabled: false } }
+    if (process.env.ENABLE_CACHING) {
+      this.config.app = { ...this.config.app, enableCaching: process.env.ENABLE_CACHING === 'true' }
     }
 
-    return overrides
+    // Security Settings
+    if (process.env.ENABLE_RATE_LIMIT) {
+      this.config.security = { 
+        ...this.config.security, 
+        enableRateLimit: process.env.ENABLE_RATE_LIMIT === 'true' 
+      }
+    }
+    if (process.env.MAX_TEXT_LENGTH) {
+      this.config.security = { 
+        ...this.config.security, 
+        maxTextLength: parseInt(process.env.MAX_TEXT_LENGTH) 
+      }
+    }
   }
 
   /**
-   * Get current settings
+   * Get AI configuration with defaults
    */
-  getSettings(): Settings | null {
-    return this.settings
+  getAIConfig(): AISettings {
+    const defaults = AISettingsSchema.parse({})
+    return { ...defaults, ...this.config.ai }
+  }
+
+  /**
+   * Get app configuration with defaults
+   */
+  getAppConfig(): AppSettings {
+    const defaults = AppSettingsSchema.parse({})
+    return { ...defaults, ...this.config.app }
+  }
+
+  /**
+   * Get security configuration with defaults
+   */
+  getSecurityConfig(): SecuritySettings {
+    const defaults = SecuritySettingsSchema.parse({})
+    return { ...defaults, ...this.config.security }
+  }
+
+  /**
+   * Get full configuration
+   */
+  getConfig(): {
+    ai: AISettings
+    app: AppSettings
+    security: SecuritySettings
+  } {
+    return {
+      ai: this.getAIConfig(),
+      app: this.getAppConfig(),
+      security: this.getSecurityConfig(),
+    }
   }
 
   /**
@@ -190,35 +182,43 @@ class SettingsLoader {
   }
 
   /**
-   * Get a setting by path
+   * Reset loader state (useful for testing)
    */
-  getSetting(path: string): any {
-    if (!this.settings) return undefined
-
-    const keys = path.split('.')
-    let current: any = this.settings
-
-    for (const key of keys) {
-      if (current && typeof current === 'object' && key in current) {
-        current = current[key]
-      } else {
-        return undefined
-      }
-    }
-
-    return current
+  reset(): void {
+    this.config = {}
+    this.loaded = false
   }
 
   /**
-   * Reload settings
+   * Validate environment setup
    */
-  async reload(): Promise<Settings> {
-    this.loaded = false
-    this.settings = null
-    return this.load()
+  validateEnvironment(): {
+    valid: boolean
+    missing: string[]
+    warnings: string[]
+  } {
+    const missing: string[] = []
+    const warnings: string[] = []
+
+    // Check required environment variables
+    if (!process.env.OPENAI_API_KEY) {
+      missing.push('OPENAI_API_KEY')
+    }
+
+    // Check for common misconfigurations
+    if (process.env.NODE_ENV === 'production') {
+      if (process.env.DEBUG === 'true') {
+        warnings.push('DEBUG is enabled in production')
+      }
+    }
+
+    return {
+      valid: missing.length === 0,
+      missing,
+      warnings
+    }
   }
 }
 
-// ===== Exports =====
+// Export singleton instance
 export const settingsLoader = SettingsLoader.getInstance()
-export default settingsLoader
