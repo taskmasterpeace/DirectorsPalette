@@ -1,14 +1,12 @@
 /**
  * Configuration service that provides unified access to settings and prompts
  */
-import { config, type Config, type AIConfig, type AppSettings } from './index'
-import { promptLoader, type PromptConfig } from './prompt-loader'
-import { settingsLoader, type Settings } from './settings-loader'
+import { promptLoader } from './prompt-loader'
+import { settingsLoader } from './settings-loader'
 
 export class ConfigService {
   private static instance: ConfigService
   private initialized = false
-  private settings: Settings | null = null
 
   private constructor() {}
 
@@ -25,148 +23,76 @@ export class ConfigService {
   async initialize(): Promise<void> {
     if (this.initialized) return
 
-    await Promise.all([
-      config.load(),
-      promptLoader.load(),
-      settingsLoader.load().then(settings => this.settings = settings)
-    ])
-
-    this.initialized = true
+    try {
+      await Promise.all([
+        promptLoader.loadPrompts(),
+        settingsLoader.loadSettings()
+      ])
+      this.initialized = true
+    } catch (error) {
+      console.warn('Failed to initialize configuration service:', error)
+      this.initialized = true // Set to true to prevent repeated attempts
+    }
   }
 
   /**
-   * Get the full configuration
+   * Get AI configuration
    */
-  getConfig(): Config {
-    return config.getConfig()
+  getAIConfig() {
+    return settingsLoader.getAIConfig()
   }
 
   /**
-   * Get AI configuration (from new settings system)
+   * Get app settings
    */
-  getAIConfig(): any {
-    return this.settings?.ai || config.getAIConfig()
+  getAppConfig() {
+    return settingsLoader.getAppConfig()
   }
 
   /**
-   * Get app settings (from new settings system)
+   * Get security configuration
    */
-  getAppSettings(): any {
-    return this.settings?.app || config.getAppSettings()
+  getSecurityConfig() {
+    return settingsLoader.getSecurityConfig()
   }
 
   /**
-   * Get feature settings
+   * Get a prompt by category and key
    */
-  getFeatureSettings(): any {
-    return this.settings?.features || {}
+  getPrompt(category: string, key: string): string {
+    return promptLoader.getPrompt(category, key) || ''
   }
 
   /**
-   * Get UI settings
-   */
-  getUISettings(): any {
-    return this.settings?.ui || {}
-  }
-
-  /**
-   * Get storage settings
-   */
-  getStorageSettings(): any {
-    return this.settings?.storage || {}
-  }
-
-  /**
-   * Get full settings object
-   */
-  getSettings(): Settings | null {
-    return this.settings
-  }
-
-  /**
-   * Get a prompt template
-   */
-  getPrompt(category: string, key: string): string | undefined {
-    return promptLoader.getPrompt(category, key)
-  }
-
-  /**
-   * Get a filled prompt template
+   * Get filled prompt template
    */
   getFilledPrompt(category: string, key: string, variables: Record<string, string>): string {
-    const template = this.getPrompt(category, key)
-    if (!template) {
-      throw new Error(`Prompt not found: ${category}.${key}`)
-    }
-    
-    return promptLoader.fillTemplate(template, variables)
+    return promptLoader.getFilledPrompt(category, key, variables)
   }
 
   /**
-   * Get all prompts for a category
-   */
-  getPromptCategory(category: string): PromptConfig | undefined {
-    return promptLoader.getCategory(category)
-  }
-
-  /**
-   * Check if service is initialized
+   * Check if configuration is initialized
    */
   isInitialized(): boolean {
     return this.initialized
   }
 
   /**
-   * Get environment-based configuration
+   * Validate environment setup
    */
-  getEnvironment(): 'development' | 'production' | 'test' {
-    return process.env.NODE_ENV as 'development' | 'production' | 'test' || 'development'
-  }
-
-  /**
-   * Check if debug mode is enabled
-   */
-  isDebugMode(): boolean {
-    return this.getAppSettings().debug || this.getEnvironment() === 'development'
-  }
-
-  /**
-   * Update a configuration value
-   */
-  updateConfig(path: string, value: any): void {
-    config.set(path, value)
-  }
-
-  /**
-   * Get a configuration value by path
-   */
-  getConfigValue(path: string): any {
-    const keys = path.split('.')
-    let current: any = config.getConfig()
-    
-    for (const key of keys) {
-      if (current && typeof current === 'object' && key in current) {
-        current = current[key]
-      } else {
-        return undefined
-      }
-    }
-    
-    return current
+  validateEnvironment() {
+    return settingsLoader.validateEnvironment()
   }
 }
 
-// ===== Helper Functions =====
+// Global service instance
+export const configService = ConfigService.getInstance()
 
 /**
- * Ensure the config service is initialized
+ * Ensure configuration is initialized
  */
-export async function ensureInitialized(): Promise<ConfigService> {
-  const service = ConfigService.getInstance()
-  await service.initialize()
-  return service
+export async function ensureInitialized(): Promise<void> {
+  if (!configService.isInitialized()) {
+    await configService.initialize()
+  }
 }
-
-// ===== Exports =====
-export const configService = ConfigService.getInstance()
-export default configService
