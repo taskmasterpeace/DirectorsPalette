@@ -1,0 +1,142 @@
+app/actions-mv.ts(171,24): error TS18048: 'selectedTreatment' is possibly 'undefined'.
+app/actions-mv.ts(172,27): error TS18048: 'selectedTreatment' is possibly 'undefined'.
+app/actions-mv.ts(173,27): error TS18048: 'selectedTreatment' is possibly 'undefined'.
+app/actions.ts(426,39): error TS18048: 'selectedTreatment' is possibly 'undefined'.
+app/actions.ts(427,42): error TS18048: 'selectedTreatment' is possibly 'undefined'.
+app/actions.ts(428,42): error TS18048: 'selectedTreatment' is possibly 'undefined'.
+app/actions.ts(470,47): error TS7006: Parameter 'l' implicitly has an 'any' type.
+app/actions.ts(471,46): error TS7006: Parameter 'w' implicitly has an 'any' type.
+app/actions.ts(472,39): error TS7006: Parameter 'p' implicitly has an 'any' type.
+app/director-library/page.tsx(80,27): error TS2349: This expression is not callable.
+  Each member of the union type '{ <S extends MusicListItem>(predicate: (value: MusicListItem, index: number, array: MusicListItem[]) => value is S, thisArg?: any): S[]; (predicate: (value: MusicListItem, index: number, array: MusicListItem[]) => unknown, thisArg?: any): MusicListItem[]; } | { ...; }' has signatures, but none of those signatures are compatible with each other.
+app/director-library/page.tsx(80,35): error TS7006: Parameter 'i' implicitly has an 'any' type.
+app/director-library/page.tsx(259,28): error TS7006: Parameter 'd' implicitly has an 'any' type.
+app/page.tsx(168,45): error TS2349: This expression is not callable.
+  Each member of the union type '{ <S extends FilmDirector>(predicate: (value: FilmDirector, index: number, obj: FilmDirector[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: FilmDirector, index: number, obj: FilmDirector[]) => unknown, thisArg?: any): FilmDirector | undefined; } | { ...; }' has signatures, but none of those signatures are compatible with each other.
+app/page.tsx(168,51): error TS7006: Parameter 'd' implicitly has an 'any' type.
+app/page.tsx(169,65): error TS2349: This expression is not callable.
+  Each member of the union type '{ <S extends MusicVideoDirector>(predicate: (value: MusicVideoDirector, index: number, obj: MusicVideoDirector[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: MusicVideoDirector, index: number, obj: MusicVideoDirector[]) => unknown, thisArg?: any): MusicVideoDirector | undefined; } | { ...; }' has signatures, but none of those signatures are compatible with each other.
+app/page.tsx(487,15): error TS2322: Type '{ domain: "film"; createdAt: Date; updatedAt: Date; isCustom: true; category: "Custom"; id: string; name: string; description: string; visualLanguage?: string | undefined; visualStyle?: string | undefined; ... 4 more ...; disciplines?: string[] | undefined; }' is not assignable to type 'FilmDirector'.
+  Types of property 'disciplines' are incompatible.
+    Type 'string[] | undefined' is not assignable to type 'FilmDirectorDiscipline[] | undefined'.
+      Type 'string[]' is not assignable to type 'FilmDirectorDiscipline[]'.
+        Type 'string' is not assignable to type 'FilmDirectorDiscipline'.
+app/page.tsx(515,15): error TS2322: Type '{ domain: "music-video"; createdAt: Date; updatedAt: Date; isCustom: true; category: "Custom"; id: string; name: string; description: string; visualHallmarks?: string | undefined; ... 4 more ...; disciplines?: string[] | undefined; }' is not assignable to type 'MusicVideoDirector'.
+  Types of property 'disciplines' are incompatible.
+    Type 'string[] | undefined' is not assignable to type 'MusicDirectorDiscipline[] | undefined'.
+      Type 'string[]' is not assignable to type 'MusicDirectorDiscipline[]'.
+        Type 'string' is not assignable to type 'MusicDirectorDiscipline'.
+app/projects/page.tsx(44,11): error TS2322: Type '{ isOpen: true; onClose: () => void; onProjectSelect: (projectId: any) => void; }' is not assignable to type 'IntrinsicAttributes & ProjectManagerProps'.
+  Property 'isOpen' does not exist on type 'IntrinsicAttributes & ProjectManagerProps'.
+app/projects/page.tsx(46,29): error TS7006: Parameter 'projectId' implicitly has an 'any' type.
+components/artist-picker.tsx(21,27): error TS18048: 'a.artist_name' is possibly 'undefined'.
+components/artist-picker.tsx(21,55): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(that: string, locales?: string | string[] | undefined, options?: CollatorOptions | undefined): number', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(that: string): number', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+components/director-card.tsx(126,60): error TS2339: Property 'join' does not exist on type 'string | string[]'.
+  Property 'join' does not exist on type 'string'.
+components/director-music-form.tsx(17,3): error TS2322: Type '"Standard"' is not assignable to type 'MusicVideoDirectorCategory'.
+components/director-music-form.tsx(18,3): error TS2322: Type '"Hip-Hop & R&B Visionaries"' is not assignable to type 'MusicVideoDirectorCategory'.
+components/director-music-form.tsx(19,3): error TS2322: Type '"Cinematic Storytellers"' is not assignable to type 'MusicVideoDirectorCategory'.
+components/director-music-form.tsx(20,3): error TS2322: Type '"Avant-Garde & Indie Innovators"' is not assignable to type 'MusicVideoDirectorCategory'.
+components/director-music-form.tsx(21,3): error TS2322: Type '"Pop & Spectacle Auteurs"' is not assignable to type 'MusicVideoDirectorCategory'.
+components/director-music-form.tsx(26,3): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(27,3): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(28,3): error TS2322: Type '"choreography"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(29,3): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(30,3): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(31,3): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(32,3): error TS2322: Type '"live-action"' is not assignable to type 'MusicDirectorDiscipline'.
+components/director-music-form.tsx(47,64): error TS2339: Property 'join' does not exist on type 'string | string[]'.
+  Property 'join' does not exist on type 'string'.
+components/director-music-form.tsx(48,72): error TS2345: Argument of type 'MusicVideoDirectorCategory | "Standard"' is not assignable to parameter of type 'MusicVideoDirectorCategory | (() => MusicVideoDirectorCategory)'.
+  Type '"Standard"' is not assignable to type 'MusicVideoDirectorCategory | (() => MusicVideoDirectorCategory)'.
+components/director-music-form.tsx(75,15): error TS7006: Parameter 'g' implicitly has an 'any' type.
+components/music-video/MusicVideoMode.tsx(150,15): error TS2322: Type '(id: string | null, profile: ArtistProfile | undefined) => void' is not assignable to type '(artistId: string | null, profile?: { artist_id: string; meta?: { version: string; created_at: string; updated_at: string; } | undefined; artist_name?: string | undefined; real_name?: string | undefined; ... 14 more ...; chat_voice?: { ...; } | undefined; } | null | undefined) => void'.
+  Types of parameters 'profile' and 'profile' are incompatible.
+    Type '{ artist_id: string; meta?: { version: string; created_at: string; updated_at: string; } | undefined; artist_name?: string | undefined; real_name?: string | undefined; image_data_url?: string | undefined; ... 13 more ...; chat_voice?: { ...; } | undefined; } | null | undefined' is not assignable to type '{ artist_id: string; meta?: { version: string; created_at: string; updated_at: string; } | undefined; artist_name?: string | undefined; real_name?: string | undefined; image_data_url?: string | undefined; ... 13 more ...; chat_voice?: { ...; } | undefined; } | undefined'.
+      Type 'null' is not assignable to type '{ artist_id: string; meta?: { version: string; created_at: string; updated_at: string; } | undefined; artist_name?: string | undefined; real_name?: string | undefined; image_data_url?: string | undefined; ... 13 more ...; chat_voice?: { ...; } | undefined; } | undefined'.
+lib/curated-directors.ts(136,5): error TS2322: Type '"Hip-Hop & R&B Visionaries"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(138,19): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(138,37): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(138,52): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(138,71): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(152,5): error TS2322: Type '"Avant-Garde & Indie Innovators"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(154,19): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(154,37): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(154,50): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(154,61): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(168,5): error TS2322: Type '"Cinematic Storytellers"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(170,19): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(170,32): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(170,47): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(170,58): error TS2322: Type '"live-action"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(184,5): error TS2322: Type '"Cinematic Storytellers"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(186,19): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(186,37): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(186,48): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(186,63): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(200,5): error TS2322: Type '"Avant-Garde & Indie Innovators"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(202,19): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(202,37): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(202,48): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(202,63): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(216,5): error TS2322: Type '"Pop & Spectacle Auteurs"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(218,19): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(218,34): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(218,53): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(218,64): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(232,5): error TS2322: Type '"Pop & Spectacle Auteurs"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(234,19): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(234,37): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(234,56): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(234,71): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(248,5): error TS2322: Type '"Hip-Hop & R&B Visionaries"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(250,19): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(250,34): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(250,47): error TS2322: Type '"live-action"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(250,62): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(264,5): error TS2322: Type '"Hip-Hop & R&B Visionaries"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(266,19): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(266,32): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(266,47): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(266,66): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(280,5): error TS2322: Type '"Avant-Garde & Indie Innovators"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/curated-directors.ts(282,19): error TS2322: Type '"fashion-styling"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(282,38): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(282,56): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/curated-directors.ts(282,71): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/director-db.ts(247,7): error TS18048: 'director.description' is possibly 'undefined'.
+lib/director-db.ts(249,7): error TS18048: 'director.tags' is possibly 'undefined'.
+lib/director-db.ts(259,7): error TS18048: 'director.description' is possibly 'undefined'.
+lib/director-db.ts(260,7): error TS18048: 'director.visualHallmarks' is possibly 'undefined'.
+lib/director-db.ts(261,7): error TS18048: 'director.genres' is possibly 'undefined'.
+lib/director-db.ts(261,23): error TS2339: Property 'some' does not exist on type 'string | string[]'.
+  Property 'some' does not exist on type 'string'.
+lib/director-db.ts(261,28): error TS7006: Parameter 'genre' implicitly has an 'any' type.
+lib/director-db.ts(262,7): error TS18048: 'director.tags' is possibly 'undefined'.
+lib/directors-defaults.ts(63,5): error TS2322: Type '"Hip-Hop & R&B Visionaries"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/directors-defaults.ts(65,19): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(65,34): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(65,45): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(80,5): error TS2322: Type '"Hip-Hop & R&B Visionaries"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/directors-defaults.ts(82,19): error TS2322: Type '"performance"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(82,34): error TS2322: Type '"choreography"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(82,50): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(97,5): error TS2322: Type '"Avant-Garde & Indie Innovators"' is not assignable to type 'MusicVideoDirectorCategory | undefined'.
+lib/directors-defaults.ts(99,19): error TS2322: Type '"narrative"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(99,32): error TS2322: Type '"visual-effects"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/directors-defaults.ts(99,50): error TS2322: Type '"editing"' is not assignable to type 'MusicDirectorDiscipline'.
+lib/prompts-mv.ts(17,30): error TS2551: Property 'hometown_country' does not exist on type '{ gender?: string | undefined; race_ethnicity?: string | undefined; age_range?: string | undefined; accent?: string | undefined; neighborhood?: string | undefined; city?: string | undefined; hometown_city?: string | undefined; state?: string | undefined; hometown_state?: string | undefined; zip?: string | undefined; }'. Did you mean 'hometown_city'?
+lib/prompts-mv.ts(30,31): error TS2339: Property 'sound_palette' does not exist on type '{ tempo_energy?: string | undefined; drums_bass_chords?: string | undefined; emotional_arc?: string | undefined; emotional_arc_rules?: string | undefined; }'.
+lib/prompts-mv.ts(30,90): error TS2339: Property 'sound_palette' does not exist on type '{ tempo_energy?: string | undefined; drums_bass_chords?: string | undefined; emotional_arc?: string | undefined; emotional_arc_rules?: string | undefined; }'.
+lib/prompts-mv.ts(32,31): error TS2339: Property 'camera_movement_rules' does not exist on type '{ tempo_energy?: string | undefined; drums_bass_chords?: string | undefined; emotional_arc?: string | undefined; emotional_arc_rules?: string | undefined; }'.
+lib/prompts-mv.ts(33,45): error TS2339: Property 'camera_movement_rules' does not exist on type '{ tempo_energy?: string | undefined; drums_bass_chords?: string | undefined; emotional_arc?: string | undefined; emotional_arc_rules?: string | undefined; }'.
+lib/prompts-mv.ts(35,31): error TS2339: Property 'lighting_lift_rules' does not exist on type '{ tempo_energy?: string | undefined; drums_bass_chords?: string | undefined; emotional_arc?: string | undefined; emotional_arc_rules?: string | undefined; }'.
+lib/prompts-mv.ts(35,91): error TS2339: Property 'lighting_lift_rules' does not exist on type '{ tempo_energy?: string | undefined; drums_bass_chords?: string | undefined; emotional_arc?: string | undefined; emotional_arc_rules?: string | undefined; }'.
+lib/prompts-mv.ts(36,7): error TS2339: Property 'signature_slang' does not exist on type '{ artist_id: string; artist_name?: string | undefined; real_name?: string | undefined; image_data_url?: string | undefined; artist_identity?: { gender?: string | undefined; race_ethnicity?: string | undefined; ... 7 more ...; zip?: string | undefined; } | undefined; ... 13 more ...; meta?: { ...; } | undefined; }'.
+lib/prompts-mv.ts(36,68): error TS2339: Property 'signature_slang' does not exist on type '{ artist_id: string; artist_name?: string | undefined; real_name?: string | undefined; image_data_url?: string | undefined; artist_identity?: { gender?: string | undefined; race_ethnicity?: string | undefined; ... 7 more ...; zip?: string | undefined; } | undefined; ... 13 more ...; meta?: { ...; } | undefined; }'.

@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Separator } from "@/components/ui/separator"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 
 export const metadata: Metadata = {
   title: "Directors Palette",
@@ -26,7 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Separator orientation="vertical" className="mr-2 h-4" />
                 <div className="text-sm opacity-80">Directors Palette</div>
               </header>
-              <div className="p-4">{children}</div>
+              <div className="p-4">
+                <ErrorBoundary>
+                  {children}
+                </ErrorBoundary>
+              </div>
             </SidebarInset>
           </SidebarProvider>
           <Toaster />

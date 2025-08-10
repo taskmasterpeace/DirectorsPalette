@@ -19,7 +19,7 @@ import {
   RACE_ETHNICITY_OPTIONS,
 } from "@/lib/artist-types"
 import { artistDB } from "@/lib/artist-db"
-import { autofillArtistProfile, createArtistFromDescription, createArtistFromLyrics } from "@/app/actions-artist"
+import { ArtistService } from "@/services"
 import { useArtistStore } from "@/lib/artist-store"
 
 type Props = {
@@ -177,7 +177,7 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
   async function onAutoFill() {
     setIsLoading(true)
     try {
-      const res = await autofillArtistProfile(state)
+      const res = await ArtistService.autofillProfile(state)
       const merged = mergeArtist<ArtistProfile>(state, res.fill)
       setState((prev) => ({ ...prev, ...merged }))
     } catch (error) {
@@ -191,7 +191,7 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
     if (!description.trim()) return
     setIsLoading(true)
     try {
-      const res = await createArtistFromDescription(description)
+      const res = await ArtistService.createFromDescription(description)
       setState(res.profile)
       setDescription("")
       setShowDescriptionInput(false)
@@ -206,7 +206,7 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
     if (!lyrics.trim()) return
     setIsLoading(true)
     try {
-      const res = await createArtistFromLyrics(lyrics)
+      const res = await ArtistService.createFromLyrics(lyrics)
       setState(res.profile)
       setLyrics("")
       setShowLyricsInput(false)

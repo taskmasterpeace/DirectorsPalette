@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, Settings, Plus, X, MapPin, Palette, Target, PlayCircle, Eye, Sparkles } from "lucide-react"
 import type { LocationConfig, WardrobeConfig, PropConfig } from "@/lib/indexeddb"
-import { generateMusicVideoSuggestions } from "@/app/actions-mv"
+import { MusicVideoService } from "@/services"
 
 interface Treatment {
   id: string
@@ -92,12 +92,13 @@ export function MusicVideoConfig({
     if (!initialConfig || (!initialConfig.locations && !initialConfig.wardrobe && !initialConfig.props)) {
       generateSuggestions()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const generateSuggestions = async () => {
     setIsGeneratingSuggestions(true)
     try {
-      const suggestions = await generateMusicVideoSuggestions({
+      const suggestions = await MusicVideoService.generateSuggestions({
         lyrics,
         songTitle: musicVideoStructure.songTitle,
         artist: musicVideoStructure.artist,
@@ -249,7 +250,7 @@ export function MusicVideoConfig({
           <div>
             <h2 className="text-xl font-bold text-white">Configure Music Video</h2>
             <p className="text-slate-400 text-sm">
-              Customize treatment, locations, wardrobe, and props for "{musicVideoStructure.songTitle}" by{" "}
+              Customize treatment, locations, wardrobe, and props for &quot;{musicVideoStructure.songTitle}&quot; by{" "}
               {musicVideoStructure.artist}
             </p>
           </div>
