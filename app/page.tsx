@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, Wand2 } from "lucide-react"
 import { ProjectManager } from "@/components/project-manager"
@@ -8,8 +8,9 @@ import { ProjectHeader } from "@/components/shared/ProjectHeader"
 import { StoryMode } from "@/components/story/StoryMode"
 import { MusicVideoMode } from "@/components/music-video/MusicVideoMode"
 import { AsyncBoundary } from "@/components/shared/AsyncBoundary"
+import { DirectorQuestionCards, type DirectorQuestion } from "@/components/story/DirectorQuestionCards"
 import { MusicVideoService, DirectorService, type TitleCardOptions, type PromptOptions } from "@/services"
-import { generateStoryBreakdown, generateAdditionalShots } from "@/app/actions/story-actions"
+import { generateStoryBreakdown, generateAdditionalShots, extractStoryEntities, generateStoryBreakdownWithEntities } from "@/app/actions/story-actions"
 import { useToast } from "@/components/ui/use-toast"
 import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
@@ -19,6 +20,7 @@ import { useAppStore } from "@/stores/app-store"
 import { useStoryStore } from "@/stores/story-store"
 import { useMusicVideoStore } from "@/stores/music-video-store"
 import { useDirectorStore } from "@/stores/director-store"
+import { useStoryEntitiesStore } from "@/stores/story-entities-store"
 
 interface CustomDirector {
   id: string
@@ -100,6 +102,18 @@ export default function Home() {
     directorsLoaded, setDirectorsLoaded
   } = useDirectorStore()
 
+  const {
+    showEntitiesConfig, setShowEntitiesConfig,
+    currentEntities, setCurrentEntities,
+    extractedEntities, setExtractedEntities,
+    isExtracting, setIsExtracting,
+    isGeneratingWithEntities, setIsGeneratingWithEntities
+  } = useStoryEntitiesStore()
+  
+  // Director questions state
+  const [showDirectorQuestions, setShowDirectorQuestions] = useState(false)
+  const [directorAnswers, setDirectorAnswers] = useState<DirectorQuestion[]>([])
+
   // Load directors from IndexedDB on mount
   useEffect(() => {
     if (directorsLoaded) return
@@ -165,13 +179,13 @@ export default function Home() {
   useEffect(() => {
     const onModeChange = (e: Event) => {
       const ce = e as CustomEvent
-      const newMode = ce.detail as Mode | undefined
+      const newMode = ce.detail?.mode as Mode | undefined
       if (newMode === "story" || newMode === "music-video") {
         setMode(newMode)
       }
     }
-    window.addEventListener("dsvb:mode-change", onModeChange as EventListener)
-    return () => window.removeEventListener("dsvb:mode-change", onModeChange as EventListener)
+    window.addEventListener("mode-change", onModeChange as EventListener)
+    return () => window.removeEventListener("mode-change", onModeChange as EventListener)
   }, [setMode])
 
   // Navigate-to-project bridge (from /projects)
@@ -191,44 +205,44 @@ export default function Home() {
       toast({ variant: "destructive", title: "Error", description: "Please enter a story first." })
       return
     }
-    setIsLoading(true)
+    
+    // Start the new flow: Extract entities first
+    setIsExtracting(true)
     try {
-      const response = await generateStoryBreakdown({
-        story,
-        selectedDirector,
-        titleCardOptions,
-        allDirectors,
-        promptOptions,
-        storyDirectorNotes,
-      })
+      const response = await extractStoryEntities(story)
       
       if (!response.success) {
         throw new Error(response.error)
       }
       
-      const result = response.data
-      setBreakdown(result)
-      setAdditionalShots({})
-      if (result?.storyStructure?.chapters?.length) {
-        const first = result.storyStructure.chapters[0]
-        setExpandedChapters({ ...expandedChapters, [first.id]: true })
-      }
-      toast({ title: "Success", description: "Story breakdown generated!" })
+      setExtractedEntities(response.data)
+      setShowEntitiesConfig(true) // Show entity configuration dialog
+      toast({ title: "Entities Extracted", description: "Review and refine the story elements" })
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to generate breakdown" })
+      toast({ 
+        variant: "destructive", 
+        title: "Error", 
+        description: error.message || "Failed to extract entities" 
+      })
     } finally {
-      setIsLoading(false)
+      setIsExtracting(false)
     }
   }
 
   const handleGenerateMusicVideoBreakdown = async () => {
-    if (!lyrics.trim()) {
-      toast({ variant: "destructive", title: "Error", description: "Please enter song lyrics first." })
-      return
-    }
-
-    setIsLoading(true)
     try {
+      console.log('Generate button clicked!')
+      console.log('Lyrics:', lyrics)
+      
+      if (!lyrics.trim()) {
+        toast({ variant: "destructive", title: "Error", description: "Please enter song lyrics first." })
+        return
+      }
+
+      console.log('About to generate, setting loading to true')
+      setIsLoading(true)
+      console.log('Calling MusicVideoService.generateFullBreakdown')
+      
       const result = await MusicVideoService.generateFullBreakdown(
         lyrics,
         songTitle || "Untitled Song",
@@ -239,6 +253,8 @@ export default function Home() {
         { directorNotes: mvDirectorNotes, videoConcept: mvConcept },
         selectedArtistProfile,
       )
+
+      console.log('Generation result:', result)
 
       if (!result.isConfigured) {
         setMusicVideoBreakdown(result)
@@ -254,6 +270,8 @@ export default function Home() {
         toast({ title: "Success", description: "Music video breakdown generated!" })
       }
     } catch (error: any) {
+      console.error('Error in handleGenerateMusicVideoBreakdown:', error)
+      alert('Error: ' + error.message)
       toast({
         variant: "destructive",
         title: "Error",
@@ -333,6 +351,87 @@ export default function Home() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleExtractEntities = async () => {
+    if (!story.trim()) {
+      toast({ variant: "destructive", title: "Error", description: "Please enter a story first." })
+      return
+    }
+
+    setIsExtracting(true)
+    try {
+      const response = await extractStoryEntities(story)
+      
+      if (!response.success) {
+        throw new Error(response.error)
+      }
+      
+      setExtractedEntities(response.data)
+      toast({ title: "Success", description: "Story entities extracted successfully!" })
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Error", 
+        description: error.message || "Failed to extract entities" 
+      })
+    } finally {
+      setIsExtracting(false)
+    }
+  }
+
+  const handleGenerateWithEntities = async () => {
+    if (!story.trim()) {
+      toast({ variant: "destructive", title: "Error", description: "Please enter a story first." })
+      return
+    }
+
+    // After entities are configured, show director questions
+    setShowEntitiesConfig(false)
+    setShowDirectorQuestions(true)
+  }
+  
+  const handleDirectorQuestionsAnswered = async (answers: DirectorQuestion[]) => {
+    setDirectorAnswers(answers)
+    setShowDirectorQuestions(false)
+    
+    // Now generate with entities and answers
+    setIsGeneratingWithEntities(true)
+    try {
+      const response = await generateStoryBreakdownWithEntities(
+        {
+          story,
+          selectedDirector,
+          titleCardOptions,
+          allDirectors,
+          promptOptions,
+          storyDirectorNotes,
+          directorAnswers: answers, // Include director's Q&A
+        },
+        currentEntities
+      )
+      
+      if (!response.success) {
+        throw new Error(response.error)
+      }
+      
+      const result = response.data
+      setBreakdown(result)
+      setAdditionalShots({})
+      if (result?.storyStructure?.chapters?.length) {
+        const first = result.storyStructure.chapters[0]
+        setExpandedChapters({ ...expandedChapters, [first.id]: true })
+      }
+      toast({ title: "Success", description: "Entity-enhanced story breakdown generated!" })
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Error", 
+        description: error.message || "Failed to generate breakdown with entities" 
+      })
+    } finally {
+      setIsGeneratingWithEntities(false)
     }
   }
 
@@ -452,8 +551,18 @@ export default function Home() {
               setAdditionalShots={setAdditionalShots}
               expandedChapters={expandedChapters}
               setExpandedChapters={setExpandedChapters}
-              isLoading={isLoading}
+              isLoading={isLoading || isGeneratingWithEntities}
+              showEntitiesConfig={showEntitiesConfig}
+              setShowEntitiesConfig={setShowEntitiesConfig}
+              currentEntities={currentEntities}
+              setCurrentEntities={setCurrentEntities}
+              extractedEntities={extractedEntities}
+              setExtractedEntities={setExtractedEntities}
+              isExtracting={isExtracting}
+              isGeneratingWithEntities={isGeneratingWithEntities}
               onGenerateBreakdown={handleGenerateBreakdown}
+              onExtractEntities={handleExtractEntities}
+              onGenerateWithEntities={handleGenerateWithEntities}
               onGenerateAdditionalShots={handleGenerateAdditionalShots}
               onCopyToClipboard={copyToClipboard}
             />
@@ -513,6 +622,18 @@ export default function Home() {
           onProjectSaved={(projectId: string) => {
             setCurrentProjectId(projectId)
           }}
+        />
+      )}
+      
+      {/* Director Questions Dialog */}
+      {showDirectorQuestions && selectedDirectorInfo && (
+        <DirectorQuestionCards
+          isOpen={showDirectorQuestions}
+          onClose={() => setShowDirectorQuestions(false)}
+          director={selectedDirectorInfo}
+          storyContext={story}
+          entities={currentEntities}
+          onQuestionsAnswered={handleDirectorQuestionsAnswered}
         />
       )}
     </div>

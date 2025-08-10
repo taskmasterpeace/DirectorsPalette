@@ -20,11 +20,16 @@ import {
   Palette,
   Camera,
   Eye,
+  Users,
+  MapPin,
+  Package,
 } from "lucide-react"
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
 import { useToast } from "@/components/ui/use-toast"
 import { ProgressBar } from "@/components/ui/progress-bar"
+import { StoryEntitiesConfig } from "./story-entities-config"
 import type { FilmDirector } from "@/lib/director-types"
+import type { StoryEntities, ExtractedEntities } from "./story-entities-config"
 
 interface StoryModeProps {
   // Story input state
@@ -64,8 +69,20 @@ interface StoryModeProps {
   // Loading
   isLoading: boolean
   
+  // Entities
+  showEntitiesConfig: boolean
+  setShowEntitiesConfig: (show: boolean) => void
+  currentEntities: StoryEntities
+  setCurrentEntities: (entities: StoryEntities) => void
+  extractedEntities: ExtractedEntities | null
+  setExtractedEntities: (entities: ExtractedEntities | null) => void
+  isExtracting: boolean
+  isGeneratingWithEntities: boolean
+  
   // Handlers
   onGenerateBreakdown: () => Promise<void>
+  onExtractEntities: () => Promise<void>
+  onGenerateWithEntities: () => Promise<void>
   onGenerateAdditionalShots: (chapterId: string, categories: string[], customRequest: string) => Promise<void>
   onCopyToClipboard: (text: string) => void
 }
@@ -89,7 +106,17 @@ export function StoryMode({
   expandedChapters,
   setExpandedChapters,
   isLoading,
+  showEntitiesConfig,
+  setShowEntitiesConfig,
+  currentEntities,
+  setCurrentEntities,
+  extractedEntities,
+  setExtractedEntities,
+  isExtracting,
+  isGeneratingWithEntities,
   onGenerateBreakdown,
+  onExtractEntities,
+  onGenerateWithEntities,
   onGenerateAdditionalShots,
   onCopyToClipboard,
 }: StoryModeProps) {
@@ -202,32 +229,70 @@ export function StoryMode({
             </CollapsibleContent>
           </Collapsible>
 
-          <Button
-            onClick={onGenerateBreakdown}
-            disabled={isLoading || !story.trim()}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-          >
-            {isLoading ? (
-              <>
-                <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating Breakdown...
-              </>
-            ) : (
-              <>
-                <Target className="h-4 w-4 mr-2" />
-                Generate Story Breakdown
-              </>
-            )}
-          </Button>
+          {/* Generation Options */}
+          <div className="flex gap-3">
+            <Button
+              onClick={onGenerateBreakdown}
+              disabled={isLoading || !story.trim()}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Generate Shot Breakdown
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {/* Entity Summary */}
+          {(currentEntities.characters.length > 0 || currentEntities.locations.length > 0 || currentEntities.props.length > 0) && (
+            <Card className="bg-purple-900/20 border-purple-700/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-4 text-sm">
+                  {currentEntities.characters.length > 0 && (
+                    <div className="flex items-center gap-1 text-purple-300">
+                      <Users className="h-3 w-3" />
+                      {currentEntities.characters.length} characters
+                    </div>
+                  )}
+                  {currentEntities.locations.length > 0 && (
+                    <div className="flex items-center gap-1 text-purple-300">
+                      <MapPin className="h-3 w-3" />
+                      {currentEntities.locations.length} locations
+                    </div>
+                  )}
+                  {currentEntities.props.length > 0 && (
+                    <div className="flex items-center gap-1 text-purple-300">
+                      <Package className="h-3 w-3" />
+                      {currentEntities.props.length} props
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
 
       {/* Progress Bar */}
-      {isLoading && (
+      {(isLoading || isGeneratingWithEntities) && (
         <Card className="bg-slate-900/60 border-slate-800">
           <CardContent className="pt-6">
+            <div className="text-center mb-2">
+              <p className="text-sm text-slate-300">
+                {isGeneratingWithEntities 
+                  ? "Generating enhanced breakdown with entity context..." 
+                  : "Generating story breakdown..."}
+              </p>
+            </div>
             <ProgressBar 
-              isActive={isLoading} 
+              isActive={isLoading || isGeneratingWithEntities} 
               duration={34000} // 34 seconds based on actual timing
               showPercentage={true}
             />
@@ -252,9 +317,25 @@ export function StoryMode({
                         <CardTitle className="text-white flex items-center gap-2">
                           <BookOpen className="h-5 w-5 text-amber-400" />
                           {chapter.title}
-                          <Badge variant="secondary" className="bg-slate-600/20 text-slate-300">
-                            {chapter.estimatedDuration}
-                          </Badge>
+                          <div className="flex gap-1">
+                            {chapter.keyCharacters?.slice(0, 2).map((character: string, idx: number) => (
+                              <Badge key={idx} variant="secondary" className="bg-blue-600/20 text-blue-300 text-xs">
+                                <Users className="h-2 w-2 mr-1" />
+                                {character}
+                              </Badge>
+                            ))}
+                            {chapter.primaryLocation && (
+                              <Badge variant="secondary" className="bg-green-600/20 text-green-300 text-xs">
+                                <MapPin className="h-2 w-2 mr-1" />
+                                {chapter.primaryLocation}
+                              </Badge>
+                            )}
+                            {chapter.keyCharacters?.length > 2 && (
+                              <Badge variant="secondary" className="bg-slate-600/20 text-slate-300 text-xs">
+                                +{chapter.keyCharacters.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
                         </CardTitle>
                         {isExpanded ? (
                           <ChevronUp className="h-5 w-5 text-slate-400" />
@@ -380,6 +461,20 @@ export function StoryMode({
           })}
         </div>
       )}
+      
+      {/* Story Entities Configuration Dialog */}
+      <StoryEntitiesConfig
+        isOpen={showEntitiesConfig}
+        onClose={() => setShowEntitiesConfig(false)}
+        story={story}
+        extractedEntities={extractedEntities}
+        currentEntities={currentEntities}
+        onEntitiesUpdate={setCurrentEntities}
+        onExtractEntities={onExtractEntities}
+        onGenerateWithEntities={onGenerateWithEntities}
+        isExtracting={isExtracting}
+        isGenerating={isGeneratingWithEntities}
+      />
     </div>
   )
 }

@@ -4,7 +4,7 @@
 
 import { generateObject } from "ai"
 import { z } from "zod"
-import { assertAIEnv, AI_MODEL, ServiceError } from "./base"
+import { assertAIEnv, getAIConfig, ServiceError } from "./base"
 import type { ArtistProfile } from "@/lib/artist-types"
 import { mvPrompts, buildArtistProfileString, buildDirectorStyleString } from "@/lib/prompts-mv"
 
@@ -151,13 +151,13 @@ export class MusicVideoService {
       // Generate structure and treatments in parallel
       const [structureResult, treatmentsResult] = await Promise.all([
         generateObject({
-          model: AI_MODEL,
+          model: getAIConfig().model,
           schema: MusicVideoStructureSchema,
           prompt: mvPrompts.musicVideoStructure({ songTitle, artist, genre }),
           system: `Analyze song structure. LYRICS: """${lyrics}"""`,
         }),
         generateObject({
-          model: AI_MODEL,
+          model: getAIConfig().model,
           schema: z.object({ treatments: z.array(TreatmentSchema) }),
           prompt: mvPrompts.musicVideoTreatments({
             songTitle,
@@ -196,7 +196,7 @@ export class MusicVideoService {
       // Generate suggestions and section breakdowns
       const [suggestionsResult, ...sectionBreakdowns] = await Promise.all([
         generateObject({
-          model: AI_MODEL,
+          model: getAIConfig().model,
           schema: SuggestionsSchema,
           prompt: mvPrompts.musicVideoSuggestions({
             lyrics,
@@ -213,7 +213,7 @@ export class MusicVideoService {
         }),
         ...musicVideoStructure.sections.map((section) =>
           generateObject({
-            model: AI_MODEL,
+            model: getAIConfig().model,
             schema: MusicVideoSectionBreakdownSchema,
             prompt: mvPrompts.musicVideoSectionBreakdown({
               section,
