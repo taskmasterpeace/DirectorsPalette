@@ -1,7 +1,6 @@
 /**
  * Director service for generating custom director style details
  */
-"use server"
 
 import { generateObject } from "ai"
 import { z } from "zod"

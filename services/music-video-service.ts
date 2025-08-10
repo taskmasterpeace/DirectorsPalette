@@ -1,7 +1,6 @@
 /**
  * Music video service for generating breakdowns and additional shots
  */
-"use server"
 
 import { generateObject } from "ai"
 import { z } from "zod"

@@ -1,7 +1,6 @@
 /**
  * Artist service for managing artist profiles and autofill
  */
-"use server"
 
 import { generateText } from "ai"
 import { assertAIEnv, AI_MODEL, ServiceError } from "./base"

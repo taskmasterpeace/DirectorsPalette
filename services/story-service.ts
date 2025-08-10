@@ -1,7 +1,6 @@
 /**
  * Story service for generating story breakdowns and additional shots
  */
-"use server"
 
 import { generateObject } from "ai"
 import { z } from "zod"
