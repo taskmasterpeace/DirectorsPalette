@@ -191,8 +191,6 @@ export class StoryService {
         schema: StoryStructureSchema,
         prompt: structurePrompt,
         system: structureSystemPrompt,
-        maxTokens: aiConfig.maxTokens,
-        temperature: aiConfig.temperature,
       })
 
       // Generate chapter breakdowns
@@ -203,7 +201,7 @@ export class StoryService {
 
           let prompt = await getPrompt('story-prompts', 'chapterBreakdown', {
             directorStyle,
-            directorNotes: directorNotes || "None"
+            directorNotes: sanitizedDirectorNotes || "None"
           })
 
           // Apply prompt options
@@ -223,8 +221,6 @@ export class StoryService {
             schema: ChapterBreakdownSchema,
             prompt,
             system: systemPrompt,
-            maxTokens: aiConfig.maxTokens,
-            temperature: aiConfig.temperature,
           })
 
           // Generate title cards if enabled
@@ -242,8 +238,6 @@ export class StoryService {
               schema: z.object({ titleCards: z.array(TitleCardSchema) }),
               prompt: titleCardPrompt,
               system: titleSystemPrompt,
-              maxTokens: aiConfig.maxTokens,
-              temperature: aiConfig.temperature,
             })
             ;(breakdown as any).titleCards = tc.titleCards
           }
@@ -281,42 +275,49 @@ export class StoryService {
     directorNotes = ""
   ): Promise<AdditionalShots> {
     return withPerformanceMonitoring('story-additional-shots-generation', async () => {
-    try {
-      assertAIEnv()
-      
-      const {
-        story,
-        director,
-        storyStructure,
-        chapterId,
-        existingBreakdown,
-        existingAdditionalShots,
-        categories,
-        customRequest,
-      } = args
-      
-      // Validate and sanitize input
-      const validatedInput = validateServerInput(
-        AdditionalShotsRequestSchema,
-        { customRequest },
-        { sanitize: true, moderate: true, rateLimit: { key: 'additional-shots-generation', limit: 15, windowMs: 300000 } }
-      )
-      
-      // Create cache key from input data
-      const inputData = {
-        ...args,
-        customDirectors,
-        promptOptions,
-        directorNotes
-      }
-      
-      return cacheAIGeneration(
-        'additional-shots',
-        inputData,
-        async () => {
-          return this._generateAdditionalShotsInternal(args, customDirectors, promptOptions, directorNotes)
+      try {
+        assertAIEnv()
+        
+        const {
+          story,
+          director,
+          storyStructure,
+          chapterId,
+          existingBreakdown,
+          existingAdditionalShots,
+          categories,
+          customRequest,
+        } = args
+        
+        // Validate and sanitize input
+        const validatedInput = validateServerInput(
+          AdditionalShotsRequestSchema,
+          { customRequest },
+          { sanitize: true, moderate: true, rateLimit: { key: 'additional-shots-generation', limit: 15, windowMs: 300000 } }
+        )
+        
+        // Create cache key from input data
+        const inputData = {
+          ...args,
+          customDirectors,
+          promptOptions,
+          directorNotes
         }
-      )
+        
+        return cacheAIGeneration(
+          'additional-shots',
+          inputData,
+          async () => {
+            return this._generateAdditionalShotsInternal(args, customDirectors, promptOptions, directorNotes)
+          }
+        )
+      } catch (error) {
+        throw new ServiceError(
+          `Failed to generate additional shots: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'ADDITIONAL_SHOTS_FAILED',
+          { chapterId: args.chapterId, categories: args.categories }
+        )
+      }
     })()
   }
   
@@ -388,8 +389,6 @@ export class StoryService {
         schema: AdditionalShotsSchema,
         prompt,
         system: systemPrompt,
-        maxTokens: aiConfig.maxTokens,
-        temperature: aiConfig.temperature,
       })
 
       return object

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { Home, FolderOpen, Users, Palette, Film, Music } from "lucide-react"
 import {
   Sidebar,
@@ -20,9 +21,22 @@ export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
 
-  function setMode(mode: "story" | "music-video") {
+  const [currentMode, setCurrentMode] = useState<"story" | "music-video">("story")
+
+  // Load current mode from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem("dsvb:mode") as "story" | "music-video"
+      if (savedMode) {
+        setCurrentMode(savedMode)
+      }
+    } catch {}
+  }, [])
+
+  function handleModeChange(mode: "story" | "music-video") {
     try {
       localStorage.setItem("dsvb:mode", mode)
+      setCurrentMode(mode)
       window.dispatchEvent(new CustomEvent("mode-change", { detail: { mode } }))
     } catch {}
     if (pathname !== "/") {
@@ -46,8 +60,7 @@ export function AppSidebar() {
     <Sidebar className="border-r border-slate-800">
       <SidebarHeader className="p-4 border-b border-slate-800 bg-slate-900">
         <div className="flex items-center gap-3">
-          <img src="/directors-palette-logo.png" alt="Directors Palette" className="w-7 h-7 rounded" />
-          <div className="text-white font-semibold">Directors Palette</div>
+          <img src="/directors-palette-logo.png" alt="Director's Palette" className="w-8 h-8 rounded" />
         </div>
       </SidebarHeader>
 
@@ -77,11 +90,15 @@ export function AppSidebar() {
               {modeItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    onClick={() => setMode(item.mode)}
-                    className="text-slate-200 hover:text-white cursor-pointer"
+                    onClick={() => handleModeChange(item.mode)}
+                    isActive={currentMode === item.mode}
+                    className="text-slate-200 hover:text-white cursor-pointer data-[state=active]:bg-slate-700 data-[state=active]:text-white"
                   >
                     <item.icon className="w-4 h-4" />
                     <span>{item.title}</span>
+                    {currentMode === item.mode && (
+                      <div className="ml-auto w-2 h-2 bg-amber-400 rounded-full" />
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

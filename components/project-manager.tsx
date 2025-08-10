@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { BookOpen, PlayCircle, Trash2, Download, Search, Plus, Calendar, Clock, Film, Music } from "lucide-react"
-import { projectDB, type SavedProject } from "@/lib/indexeddb"
+import type { SavedProject } from "@/lib/indexeddb"
 import { useArtistStore } from "@/lib/artist-store"
 
 interface ProjectManagerProps {
@@ -36,6 +36,7 @@ export function ProjectManager({
 
   const loadProjects = async () => {
     try {
+      const { projectDB } = await import("@/lib/indexeddb")
       const allProjects = await projectDB.getAllProjects()
       setProjects(allProjects)
     } catch (error) {
@@ -46,7 +47,7 @@ export function ProjectManager({
   }
 
   const handleSaveProject = async () => {
-    if (!currentProject.story?.trim() && !currentProject.musicVideoData?.lyrics?.trim()) {
+    if (!currentProject?.story?.trim() && !currentProject?.musicVideoData?.lyrics?.trim()) {
       return
     }
 
@@ -60,6 +61,8 @@ export function ProjectManager({
         activeArtist: activeArtist || undefined,
       }
 
+      const { projectDB } = await import("@/lib/indexeddb")
+      
       if (currentProjectId) {
         // Update existing project
         await projectDB.updateProject(currentProjectId, projectData)
@@ -67,8 +70,8 @@ export function ProjectManager({
         // Create new project
         projectId = await projectDB.saveProject({
           name:
-            currentProject.name ||
-            `${currentProject.isMusicVideoMode ? "Music Video" : "Story"} Project ${new Date().toLocaleDateString()}`,
+            currentProject?.name ||
+            `${currentProject?.isMusicVideoMode ? "Music Video" : "Story"} Project ${new Date().toLocaleDateString()}`,
           ...projectData,
         })
         onProjectSaved(projectId)
@@ -85,6 +88,7 @@ export function ProjectManager({
   const handleDeleteProject = async (projectId: string) => {
     if (confirm("Are you sure you want to delete this project?")) {
       try {
+        const { projectDB } = await import("@/lib/indexeddb")
         await projectDB.deleteProject(projectId)
         await loadProjects()
       } catch (error) {
@@ -155,7 +159,7 @@ export function ProjectManager({
           <div className="flex gap-2">
             <Button
               onClick={handleSaveProject}
-              disabled={isSaving || (!currentProject.story?.trim() && !currentProject.musicVideoData?.lyrics?.trim())}
+              disabled={isSaving || (!currentProject?.story?.trim() && !currentProject?.musicVideoData?.lyrics?.trim())}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               {isSaving ? (
@@ -196,12 +200,12 @@ export function ProjectManager({
         </div>
 
         {/* Current Project Status */}
-        {(currentProject.story?.trim() || currentProject.musicVideoData?.lyrics?.trim()) && (
+        {(currentProject?.story?.trim() || currentProject?.musicVideoData?.lyrics?.trim()) && (
           <div className="p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
               <span className="text-blue-400 font-semibold text-sm">Current Project</span>
-              {currentProject.isMusicVideoMode ? (
+              {currentProject?.isMusicVideoMode ? (
                 <Badge className="bg-purple-600/20 text-purple-300 border-purple-700/30 text-xs">Music Video</Badge>
               ) : (
                 <Badge className="bg-amber-600/20 text-amber-300 border-amber-700/30 text-xs">Story</Badge>
@@ -213,29 +217,29 @@ export function ProjectManager({
               )}
             </div>
             <div className="text-slate-300 text-sm">
-              {currentProject.isMusicVideoMode ? (
+              {currentProject?.isMusicVideoMode ? (
                 <>
-                  {currentProject.musicVideoData?.songTitle && (
+                  {currentProject?.musicVideoData?.songTitle && (
                     <div>
-                      <strong>Song:</strong> {currentProject.musicVideoData.songTitle}
+                      <strong>Song:</strong> {currentProject?.musicVideoData?.songTitle}
                     </div>
                   )}
-                  {currentProject.musicVideoData?.artist && (
+                  {currentProject?.musicVideoData?.artist && (
                     <div>
-                      <strong>Artist:</strong> {currentProject.musicVideoData.artist}
+                      <strong>Artist:</strong> {currentProject?.musicVideoData?.artist}
                     </div>
                   )}
                   <div>
-                    <strong>Status:</strong> {currentProject.musicVideoBreakdown ? "Generated" : "Draft"}
+                    <strong>Status:</strong> {currentProject?.musicVideoBreakdown ? "Generated" : "Draft"}
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <strong>Length:</strong> {currentProject.story?.length || 0} characters
+                    <strong>Length:</strong> {currentProject?.story?.length || 0} characters
                   </div>
                   <div>
-                    <strong>Status:</strong> {currentProject.breakdown ? "Generated" : "Draft"}
+                    <strong>Status:</strong> {currentProject?.breakdown ? "Generated" : "Draft"}
                   </div>
                 </>
               )}

@@ -90,7 +90,21 @@ DIRECTOR STYLE PROFILE:
 CREATIVE DIRECTION NOTES:
 {directorNotes}
 
-Generate a shot list that authentically reflects this director's style (framing, movement, lighting, pacing). Identify character/location/prop references and provide coverage analysis and additional opportunities. Ensure references begin with "@" handles if applicable. Return ONLY JSON.`,
+CRITICAL SHOT REQUIREMENTS:
+- For DIALOGUE scenes: MUST include over-the-shoulder (OTS) shots using this exact format:
+  "Over-the-shoulder view from behind [Character A] ([appearance description]), looking at [Character B] ([appearance description]) at [location], [Character A]'s shoulder prominently in frame, [Character B's action/expression], [atmosphere/lighting]"
+  
+- For CONVERSATIONS: Provide full coverage:
+  1. Establishing two-shot
+  2. OTS from Character A to B
+  3. Reverse OTS from B to A  
+  4. Close-ups for emotional beats
+  5. Return to two-shot for resolution
+
+- For ACTION: Mix wide shots (geography) with close-ups (impact)
+- For EMOTIONAL moments: Hold on close-ups, include reaction shots
+
+Generate a shot list that authentically reflects this director's style. Each shot should be a complete, detailed image prompt. Identify character/location/prop references with "@" handles. Return ONLY JSON.`,
   additionalShots: `Expand a shot list with distinct new shots for categories: {categories}.
 
 DIRECTOR STYLE PROFILE:
