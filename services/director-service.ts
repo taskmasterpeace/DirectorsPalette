@@ -5,7 +5,7 @@
 
 import { generateObject } from "ai"
 import { z } from "zod"
-import { assertAIEnv, AI_MODEL, ServiceError } from "./base"
+import { assertAIEnv, getAIConfig, getPrompt, ServiceError } from "./base"
 
 const DirectorStyleSchema = z.object({
   visualHallmarks: z.string().describe("Key visual hallmarks as a sentence or short paragraph."),
@@ -24,14 +24,20 @@ export class DirectorService {
     try {
       assertAIEnv()
       
+      const aiConfig = await getAIConfig()
+      const systemPrompt = await getPrompt('director-prompts', 'systemPrompts.styleGeneration')
+      const promptTemplate = await getPrompt('director-prompts', 'styleGenerationPrompt', {
+        name,
+        description
+      })
+      
       const { object } = await generateObject({
-        model: AI_MODEL,
+        model: aiConfig.model,
         schema: DirectorStyleSchema,
-        system: "You are a seasoned film scholar distilling a director concept into practical style attributes for production.",
-        prompt: `DIRECTOR NAME: ${name}
-DIRECTOR DESCRIPTION: ${description}
-
-Return concise, production-ready attributes.`,
+        system: systemPrompt,
+        prompt: promptTemplate,
+        maxTokens: aiConfig.maxTokens,
+        temperature: aiConfig.temperature,
       })
       
       return object

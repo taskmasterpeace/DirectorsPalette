@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "ai": {
+    "model": "gpt-4o",
+    "maxTokens": 4000,
+    "temperature": 0.7,
+    "fallbackModel": "gpt-4o-mini",
+    "retryAttempts": 3,
+    "retryDelay": 1000
+  },
+  "app": {
+    "debug": false,
+    "enableLogging": true,
+    "maxRetries": 3,
+    "retryDelay": 1000,
+    "enableAnalytics": false,
+    "enableErrorReporting": true
+  },
+  "features": {
+    "storyMode": {
+      "enabled": true,
+      "maxChapters": 20,
+      "defaultDirector": "nolan",
+      "enableTitleCards": true,
+      "maxAdditionalShots": 10
+    },
+    "musicVideoMode": {
+      "enabled": true,
+      "maxSections": 15,
+      "defaultDirector": "hype-williams",
+      "enableSuggestions": true,
+      "maxTreatments": 5
+    },
+    "artistProfiles": {
+      "enabled": true,
+      "maxProfiles": 100,
+      "enableAutofill": true,
+      "enableCreateFromLyrics": true
+    },
+    "customDirectors": {
+      "enabled": true,
+      "maxCustomDirectors": 50,
+      "enableStyleGeneration": true
+    }
+  },
+  "ui": {
+    "defaultMode": "story",
+    "enableProjectManager": true,
+    "enableAdvancedOptions": true,
+    "autoSaveInterval": 30000,
+    "maxToastDuration": 5000
+  },
+  "storage": {
+    "enablePersistence": true,
+    "sessionStoragePrefix": "dsvb:",
+    "indexedDBName": "dsvb-db",
+    "maxStorageSize": 100000000
+  }
+}
