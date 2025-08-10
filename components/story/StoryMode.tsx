@@ -202,7 +202,10 @@ export function StoryMode({
           </Collapsible>
 
           <Button
-            onClick={onGenerateBreakdown}
+            onClick={() => {
+              console.log('🔄 Generate button clicked in StoryMode', { isLoading, storyTrimmed: !!story.trim() })
+              onGenerateBreakdown()
+            }}
             disabled={isLoading || !story.trim()}
             className="w-full bg-amber-600 hover:bg-amber-700 text-white"
           >
