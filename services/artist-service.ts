@@ -5,6 +5,7 @@
 import { generateText } from "ai"
 import { assertAIEnv, AI_MODEL, ServiceError } from "./base"
 import type { ArtistProfile } from "@/lib/artist-types"
+import { cacheAIGeneration, withPerformanceMonitoring } from "@/lib/cache"
 
 // ===== Utilities =====
 function extractJsonFromResponse(text: string): any {
@@ -19,8 +20,13 @@ export class ArtistService {
    * Autofill missing fields in an artist profile
    */
   static async autofillProfile(input: ArtistProfile): Promise<{ fill: Partial<ArtistProfile> }> {
-    try {
-      assertAIEnv()
+    return withPerformanceMonitoring('artist-autofill-generation', async () => {
+      return cacheAIGeneration(
+        'artist-autofill',
+        input,
+        async () => {
+          try {
+            assertAIEnv()
 
       const prompt = `
 You are completing a structured Artist Profile for a music video director. 
@@ -116,15 +122,18 @@ IMPORTANT: Return raw JSON only. No markdown formatting. No explanations.
         temperature: 0.8,
       })
 
-      const fillData = extractJsonFromResponse(result.text)
-      return { fill: fillData }
-    } catch (error) {
-      throw new ServiceError(
-        `Failed to autofill artist profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'ARTIST_AUTOFILL_FAILED',
-        { artistName: input.artist_name }
+            const fillData = extractJsonFromResponse(result.text)
+            return { fill: fillData }
+          } catch (error) {
+            throw new ServiceError(
+              `Failed to autofill artist profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              'ARTIST_AUTOFILL_FAILED',
+              { artistName: input.artist_name }
+            )
+          }
+        }
       )
-    }
+    })()
   }
 
   /**

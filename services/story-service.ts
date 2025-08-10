@@ -8,6 +8,8 @@ import { assertAIEnv, getAIConfig, getPrompt, ServiceError } from "./base"
 import { validateServerInput } from "@/lib/validation/validator"
 import { StoryInputSchema, AdditionalShotsRequestSchema } from "@/lib/validation/schemas"
 import { storyRateLimiter } from "@/lib/security/rate-limiter"
+import { cacheAIGeneration, withPerformanceMonitoring, CacheKeys } from "@/lib/cache"
+import { generateContentHash } from "@/lib/security/security-utils"
 
 // ===== Schemas =====
 const ChapterSchema = z.object({
@@ -117,19 +119,66 @@ export class StoryService {
     promptOptions: PromptOptions,
     directorNotes = ""
   ) {
-    try {
-      assertAIEnv()
-      
-      // Validate and sanitize input
-      const validatedInput = validateServerInput(
-        StoryInputSchema,
-        { story, selectedDirector: director, directorNotes },
-        { sanitize: true, moderate: true, rateLimit: { key: 'story-generation', limit: 10, windowMs: 300000 } }
-      )
-      
-      // Use validated input
-      const sanitizedStory = validatedInput.story
-      const sanitizedDirectorNotes = validatedInput.directorNotes || ""
+    return withPerformanceMonitoring('story-breakdown-generation', async () => {
+      try {
+        assertAIEnv()
+        
+        // Validate and sanitize input
+        const validatedInput = validateServerInput(
+          StoryInputSchema,
+          { story, selectedDirector: director, directorNotes },
+          { sanitize: true, moderate: true, rateLimit: { key: 'story-generation', limit: 10, windowMs: 300000 } }
+        )
+        
+        // Use validated input
+        const sanitizedStory = validatedInput.story
+        const sanitizedDirectorNotes = validatedInput.directorNotes || ""
+        
+        // Create cache key from input data
+        const inputData = {
+          story: sanitizedStory,
+          director,
+          titleCardOptions,
+          customDirectors,
+          promptOptions,
+          directorNotes: sanitizedDirectorNotes
+        }
+        
+        return cacheAIGeneration(
+          'story-breakdown',
+          inputData,
+          async () => {
+            return this._generateBreakdownInternal(
+              sanitizedStory,
+              director,
+              titleCardOptions,
+              customDirectors,
+              promptOptions,
+              sanitizedDirectorNotes
+            )
+          }
+        )
+      } catch (error) {
+        throw new ServiceError(
+          `Failed to generate story breakdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          'STORY_BREAKDOWN_FAILED',
+          { director, storyLength: story.length }
+        )
+      }
+    })()
+  }
+  
+  /**
+   * Internal method for generating breakdown (cached)
+   */
+  private static async _generateBreakdownInternal(
+    sanitizedStory: string,
+    director: string,
+    titleCardOptions: TitleCardOptions,
+    customDirectors: DirectorInfo[],
+    promptOptions: PromptOptions,
+    sanitizedDirectorNotes: string
+  ) {
       
       const aiConfig = await getAIConfig()
 
@@ -211,19 +260,70 @@ export class StoryService {
         chapterBreakdowns,
         overallAnalysis: "Initial breakdown complete.",
       }
-    } catch (error) {
-      throw new ServiceError(
-        `Failed to generate story breakdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'STORY_BREAKDOWN_FAILED',
-        { story: story.substring(0, 100) + '...', director }
-      )
-    }
   }
 
   /**
    * Generate additional shots for a specific chapter
    */
   static async generateAdditionalShots(
+    args: {
+      story: string
+      director: string
+      storyStructure: StoryStructure
+      chapterId: string
+      existingBreakdown: ChapterBreakdown
+      existingAdditionalShots: string[]
+      categories: string[]
+      customRequest: string
+    },
+    customDirectors: DirectorInfo[],
+    promptOptions: PromptOptions,
+    directorNotes = ""
+  ): Promise<AdditionalShots> {
+    return withPerformanceMonitoring('story-additional-shots-generation', async () => {
+    try {
+      assertAIEnv()
+      
+      const {
+        story,
+        director,
+        storyStructure,
+        chapterId,
+        existingBreakdown,
+        existingAdditionalShots,
+        categories,
+        customRequest,
+      } = args
+      
+      // Validate and sanitize input
+      const validatedInput = validateServerInput(
+        AdditionalShotsRequestSchema,
+        { customRequest },
+        { sanitize: true, moderate: true, rateLimit: { key: 'additional-shots-generation', limit: 15, windowMs: 300000 } }
+      )
+      
+      // Create cache key from input data
+      const inputData = {
+        ...args,
+        customDirectors,
+        promptOptions,
+        directorNotes
+      }
+      
+      return cacheAIGeneration(
+        'additional-shots',
+        inputData,
+        async () => {
+          return this._generateAdditionalShotsInternal(args, customDirectors, promptOptions, directorNotes)
+        }
+      )
+    })()
+  }
+  
+  /**
+   * Internal method for generating additional shots (cached)
+   */
+  private static async _generateAdditionalShotsInternal(
     args: {
       story: string
       director: string
