@@ -24,14 +24,16 @@ export function useMusicVideoGeneration() {
     setIsLoading(true)
     try {
       const result = await generateFullMusicVideoBreakdown({
-        songTitle: musicVideoStore.songTitle,
-        artist: musicVideoStore.artist,
-        genre: musicVideoStore.genre,
-        lyrics: musicVideoStore.lyrics,
-        concept: musicVideoStore.mvConcept,
+        songTitle: musicVideoStore.songTitle || '',
+        artistName: musicVideoStore.artist || '',
+        lyrics: musicVideoStore.lyrics || '',
+        director: musicVideoStore.selectedMusicVideoDirector,
         directorNotes: musicVideoStore.mvDirectorNotes,
-        selectedDirector: musicVideoStore.selectedMusicVideoDirector,
-        artistProfile: musicVideoStore.selectedArtistProfile
+        artistProfile: musicVideoStore.selectedArtistProfile,
+        includeVisualMetaphors: true,
+        includePerformanceShots: true,
+        includeLocationScout: true,
+        musicVideoConfig: musicVideoStore.musicVideoConfig
       })
 
       if (result.success && result.data) {
@@ -73,15 +75,16 @@ export function useMusicVideoGeneration() {
     setIsLoading(true)
     try {
       const result = await generateFullMusicVideoBreakdown({
-        songTitle: musicVideoStore.songTitle,
-        artist: musicVideoStore.artist,
-        genre: musicVideoStore.genre,
-        lyrics: musicVideoStore.lyrics,
-        concept: musicVideoStore.mvConcept,
+        songTitle: musicVideoStore.songTitle || '',
+        artistName: musicVideoStore.artist || '',
+        lyrics: musicVideoStore.lyrics || '',
+        director: musicVideoStore.selectedMusicVideoDirector,
         directorNotes: musicVideoStore.mvDirectorNotes,
-        selectedDirector: musicVideoStore.selectedMusicVideoDirector,
         artistProfile: musicVideoStore.selectedArtistProfile,
-        config: musicVideoConfig
+        includeVisualMetaphors: true,
+        includePerformanceShots: true,
+        includeLocationScout: true,
+        musicVideoConfig: musicVideoConfig
       })
 
       if (result.success && result.data) {

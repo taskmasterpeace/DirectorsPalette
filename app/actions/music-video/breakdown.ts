@@ -94,10 +94,11 @@ export async function generateFullMusicVideoBreakdown(params: {
 
   try {
     // Step 1: Generate Music Video Structure
-    const structurePrompt = mvPrompts.structure
-      .replace("{songTitle}", songTitle)
-      .replace("{artistName}", artistName)
-      .replace("{lyrics}", lyrics)
+    const structurePrompt = mvPrompts.musicVideoStructure({
+      songTitle,
+      artist: artistName,
+      genre: "unknown" // We'll determine this from the analysis
+    })
 
     const { object: musicVideoStructure } = await generateObject({
       model: openai("gpt-4o-mini"),
@@ -109,13 +110,14 @@ export async function generateFullMusicVideoBreakdown(params: {
     const artistContext = artistProfile ? buildArtistProfileString(artistProfile) : ""
     const directorContext = director ? buildDirectorStyleString(director, directorNotes) : ""
 
-    const treatmentPrompt = mvPrompts.treatments
-      .replace("{songTitle}", songTitle)
-      .replace("{artistName}", artistName)
-      .replace("{lyrics}", lyrics)
-      .replace("{genre}", musicVideoStructure.genre)
-      .replace("{artistContext}", artistContext)
-      .replace("{directorContext}", directorContext)
+    const treatmentPrompt = mvPrompts.musicVideoTreatments({
+      songTitle,
+      artist: artistName,
+      genre: musicVideoStructure.genre,
+      directorNotes: directorNotes || "",
+      artistContext,
+      directorContext
+    })
 
     const { object: treatmentData } = await generateObject({
       model: openai("gpt-4o-mini"),
@@ -128,18 +130,26 @@ export async function generateFullMusicVideoBreakdown(params: {
     const sectionBreakdowns = []
 
     for (const section of musicVideoStructure.sections) {
-      const sectionPrompt = mvPrompts.sectionBreakdown
-        .replace("{sectionType}", section.type)
-        .replace("{sectionLyrics}", section.lyrics || "Instrumental")
-        .replace("{treatment}", JSON.stringify(selectedTreatment))
-        .replace("{directorContext}", directorContext)
-        .replace("{artistContext}", artistContext)
-        .replace(
-          "{visualOptions}",
-          `${includeVisualMetaphors ? "Include visual metaphors. " : ""}${
-            includePerformanceShots ? "Include performance shots. " : ""
-          }${includeLocationScout ? "Consider diverse locations. " : ""}`
-        )
+      const sectionPrompt = `
+Generate a shot list for this section of the music video.
+
+Section: ${section.type}
+Lyrics: ${section.lyrics || "Instrumental"}
+
+Treatment: ${selectedTreatment.name}
+Concept: ${selectedTreatment.concept}
+Visual Theme: ${selectedTreatment.visualTheme}
+
+${directorContext}
+${artistContext}
+
+Create 3-5 detailed shots that:
+${includeVisualMetaphors ? "- Include visual metaphors\n" : ""}${
+  includePerformanceShots ? "- Include performance shots\n" : ""
+}${includeLocationScout ? "- Consider diverse locations\n" : ""}
+- Match the treatment's visual theme
+- Progress the narrative
+`
 
       // Add config references if available
       let configContext = ""
