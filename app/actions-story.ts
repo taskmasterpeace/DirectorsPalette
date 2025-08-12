@@ -201,21 +201,38 @@ export async function generateBreakdown(
   userChapterCount: number = 4,
   progressCallback?: (stage: string, current: number, total: number, message?: string) => void
 ) {
-  assertAIEnv()
+  console.log('DEBUG: generateBreakdown called')
   
-  console.log('🎬 STORY LENGTH:', story.length, 'characters')
+  try {
+    assertAIEnv()
+    
+    console.log('🎬 STORY LENGTH:', story.length, 'characters')
   console.log('🎭 DIRECTOR SELECTED:', director)
   console.log('📝 DIRECTOR NOTES:', directorNotes || 'None')
   console.log('🚀 Starting structure detection (aiming for 3-5 chapters)...')
+  console.log('DEBUG: titleCardOptions:', titleCardOptions)
+  console.log('DEBUG: promptOptions:', promptOptions)
+  console.log('DEBUG: chapterMethod:', chapterMethod)
+  console.log('DEBUG: userChapterCount:', userChapterCount)
 
-  const { object: storyStructure } = await generateObject({
-    model: openai("gpt-4o-mini"),
-    schema: StoryStructureSchema,
-    prompt: prompts.structureDetection,
-    system: `You are a professional script supervisor and editor. STORY: """${story}"""`,
-  })
+  console.log('DEBUG: About to call generateObject for structure...')
+  let storyStructure
+  try {
+    const result = await generateObject({
+      model: openai("gpt-4o-mini"),
+      schema: StoryStructureSchema,
+      prompt: prompts.structureDetection,
+      system: `You are a professional script supervisor and editor. STORY: """${story}"""`,
+    })
+    storyStructure = result.object
+    console.log('DEBUG: Structure generated successfully:', storyStructure)
+  } catch (error) {
+    console.error('ERROR generating structure:', error)
+    throw error
+  }
 
   console.log('✅ Structure detection completed, chapters:', storyStructure.chapters?.length || 0)
+  console.log('DEBUG: Chapters:', JSON.stringify(storyStructure.chapters?.map(c => ({id: c.id, title: c.title, narrativeBeat: c.narrativeBeat}))))
   console.log('🎬 Starting chapter breakdowns for', storyStructure.chapters?.length || 0, 'chapters...')
 
   // Get custom directors from a store or pass empty array
@@ -289,6 +306,17 @@ export async function generateBreakdown(
       chapterBreakdowns,
       chapters: storyStructure.chapters,
       overallAnalysis: "Initial breakdown complete.",
+    }
+  }
+  } catch (error) {
+    console.error('ERROR in generateBreakdown:', error)
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to generate breakdown'
     }
   }
 }
