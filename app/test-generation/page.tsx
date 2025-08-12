@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { generateBreakdown } from '@/app/actions-story'
+import { generateBreakdown } from '@/app/actions/story'
 
 export default function TestGeneration() {
   const [result, setResult] = useState<any>(null)

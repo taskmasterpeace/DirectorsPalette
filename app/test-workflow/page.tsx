@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { generateBreakdown } from '@/app/actions-story'
+import { generateBreakdown } from '@/app/actions/story'
 import { generateFullMusicVideoBreakdown } from '@/app/actions-mv'
 
 const TEST_STORY = `

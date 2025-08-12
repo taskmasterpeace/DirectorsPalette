@@ -10,7 +10,7 @@ import { useStoryStore } from '@/stores/story-store'
 import { useStoryEntitiesStore } from '@/stores/story-entities-store'
 import { useAppStore } from '@/stores/app-store'
 import { curatedFilmDirectors } from '@/lib/curated-directors'
-import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story-references'
+import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story'
 
 export function StoryContainer() {
   const storyStore = useStoryStore()

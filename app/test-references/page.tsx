@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story-references'
+import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story'
 
 const TEST_STORY = `
 John walked into the abandoned warehouse. The place was dark and dusty. 

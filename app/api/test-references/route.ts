@@ -1,4 +1,4 @@
-import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story-references';
+import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story';
 
 export async function POST(request: Request) {
   try {

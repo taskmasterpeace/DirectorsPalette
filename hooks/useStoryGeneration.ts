@@ -3,7 +3,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useStoryStore } from '@/stores/story-store'
 import { useStoryEntitiesStore } from '@/stores/story-entities-store'
 import { useAppStore } from '@/stores/app-store'
-import { generateBreakdown, generateAdditionalChapterShots } from '@/app/actions-story'
+import { generateBreakdown, generateAdditionalChapterShots } from '@/app/actions/story'
 import { extractStoryEntities, generateStoryBreakdownWithEntities } from '@/app/actions/story-actions'
 import type { DirectorQuestion } from '@/components/story/DirectorQuestionCards'
 

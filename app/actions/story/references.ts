@@ -3,6 +3,7 @@
 import { openai } from "@ai-sdk/openai"
 import { generateObject } from "ai"
 import { z } from "zod"
+import { generateBreakdown } from "./breakdown"
 
 const ReferenceSchema = z.object({
   id: z.string(),
@@ -118,9 +119,6 @@ export async function generateStoryBreakdownWithReferences(
     .map(p => `${p.reference} - ${p.name}: ${p.description}`)
     .join('\n')
 
-  // Import the regular generateBreakdown but with constraints
-  const { generateBreakdown } = await import('../actions-story')
-  
   // Add reference constraints to director notes
   const constrainedNotes = `
 ${directorNotes}
