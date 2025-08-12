@@ -7,6 +7,9 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: "Directors Palette",
   description: "Visual story and music video breakdown tool",
