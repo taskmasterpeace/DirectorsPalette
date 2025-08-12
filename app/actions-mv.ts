@@ -168,6 +168,7 @@ export async function generateFullMusicVideoBreakdown(params: {
           musicVideoStructure,
           treatments,
           selectedTreatment: treatments[0],
+          sections: musicVideoStructure.sections, // Add sections for easy access
           isConfigured: false,
         },
         config: {
