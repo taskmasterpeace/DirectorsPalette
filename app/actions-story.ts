@@ -198,8 +198,7 @@ export async function generateBreakdown(
   titleCardOptions?: { enabled: boolean; format: "full" | "name-only" | "roman-numerals"; approaches: string[] },
   promptOptions?: { includeCameraStyle?: boolean; includeColorPalette?: boolean } | null,
   chapterMethod: string = "ai-suggested",
-  userChapterCount: number = 4,
-  progressCallback?: (stage: string, current: number, total: number, message?: string) => void
+  userChapterCount: number = 4
 ) {
   console.log('DEBUG: generateBreakdown called')
   
@@ -240,9 +239,8 @@ export async function generateBreakdown(
   
   const chapterBreakdowns = await Promise.all(
     (storyStructure.chapters || []).map(async (chapter, index) => {
-      if (progressCallback) {
-        progressCallback('breakdowns', index, storyStructure.chapters.length, `Generating chapter ${index + 1} breakdown...`)
-      }
+      // Cannot call client callbacks from server actions
+      // Progress tracking must be handled client-side
       
       const selectedDirectorInfo = [...customDirectors].find((d) => d.id === director)
       const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
@@ -295,9 +293,7 @@ export async function generateBreakdown(
     breakdowns: chapterBreakdowns.length
   })
 
-  if (progressCallback) {
-    progressCallback('complete', storyStructure.chapters.length, storyStructure.chapters.length, 'Generation complete!')
-  }
+  // Progress callback removed - can't call client functions from server
 
   return {
     success: true,

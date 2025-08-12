@@ -57,12 +57,7 @@ export function useStoryGeneration() {
         titleCardOptions || undefined,
         promptOptions || undefined,
         chapterMethod,
-        userChapterCount,
-        (stage, current, total, message) => {
-          setGenerationStage(stage as any)
-          setStageProgress({ current, total })
-          setStageMessage(message || '')
-        }
+        userChapterCount
       )
 
       if (result.success && result.data) {
