@@ -92,13 +92,13 @@ export default function DirectorLibraryPage() {
 
   const onEdit = (id: string) => {
     if (tab === "film") {
-      const d = film.find((x) => x.id === id)
+      const d = film?.find((x) => x.id === id)
       if (!d) return
       setEditingFilm(d)
       setEditingMusic(null)
       setEditOpen(true)
     } else {
-      const d = music.find((x) => x.id === id)
+      const d = music?.find((x) => x.id === id)
       if (!d) return
       setEditingMusic(d)
       setEditingFilm(null)
