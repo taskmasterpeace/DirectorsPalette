@@ -73,6 +73,7 @@ interface StoryModeProps {
   
   // Loading
   isLoading: boolean
+  isExtractingReferences?: boolean
   
   // Progress tracking
   generationStage: 'idle' | 'structure' | 'breakdowns' | 'complete'
@@ -120,6 +121,7 @@ export function StoryMode({
   expandedChapters,
   setExpandedChapters,
   isLoading,
+  isExtractingReferences,
   generationStage,
   stageProgress,
   stageMessage,
@@ -377,18 +379,23 @@ export function StoryMode({
           <div className="flex gap-3">
             <Button
               onClick={() => onGenerateBreakdown(chapterMethod, userChapterCount)}
-              disabled={isLoading || !story.trim()}
+              disabled={isLoading || isExtractingReferences || !story.trim()}
               className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
             >
-              {isLoading ? (
+              {isExtractingReferences ? (
+                <>
+                  <Target className="h-4 w-4 mr-2 animate-spin" />
+                  Extracting References...
+                </>
+              ) : isLoading ? (
                 <>
                   <Wand2 className="h-4 w-4 mr-2 animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  Generate Shot Breakdown
+                  <Target className="h-4 w-4 mr-2" />
+                  Extract Story References
                 </>
               )}
             </Button>
