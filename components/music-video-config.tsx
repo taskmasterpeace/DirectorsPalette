@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, Settings, Plus, X, MapPin, Palette, Target, PlayCircle, Eye, Sparkles } from "lucide-react"
 import type { LocationConfig, WardrobeConfig, PropConfig } from "@/lib/indexeddb"
 import { MusicVideoService } from "@/services"
+import { ReferenceLegend } from "@/components/music-video/ReferenceLegend"
 
 interface Treatment {
   id: string
@@ -77,6 +78,7 @@ export function MusicVideoConfig({
   const [activeTab, setActiveTab] = useState<"treatment" | "locations" | "wardrobe" | "props">("treatment")
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false)
   const [showCustomTreatment, setShowCustomTreatment] = useState(false)
+  const [showReferenceLegend, setShowReferenceLegend] = useState(false)
   const [customTreatment, setCustomTreatment] = useState({
     name: "",
     concept: "",
@@ -85,7 +87,7 @@ export function MusicVideoConfig({
     hookStrategy: "",
   })
 
-  const currentTreatmentDetails = treatments.find((t) => t.id === currentTreatmentId) || selectedTreatment
+  const currentTreatmentDetails = treatments?.find((t) => t.id === currentTreatmentId) || selectedTreatment
 
   // Auto-generate suggestions when component loads if none provided
   useEffect(() => {
@@ -275,6 +277,13 @@ export function MusicVideoConfig({
             )}
           </Button>
           <Button
+            onClick={() => setShowReferenceLegend(!showReferenceLegend)}
+            variant="outline"
+            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+          >
+            📋 {showReferenceLegend ? 'Hide' : 'Show'} References
+          </Button>
+          <Button
             onClick={handleComplete}
             disabled={!isConfigurationValid()}
             className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -311,6 +320,15 @@ export function MusicVideoConfig({
           </Button>
         ))}
       </div>
+
+      {/* Reference Legend */}
+      <ReferenceLegend
+        artist={musicVideoStructure.artist}
+        locations={locations}
+        wardrobe={wardrobe}
+        props={props}
+        isOpen={showReferenceLegend}
+      />
 
       {/* Tab Content */}
       <div className="min-h-[600px]">
