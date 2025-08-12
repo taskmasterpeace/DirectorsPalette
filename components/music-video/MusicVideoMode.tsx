@@ -16,9 +16,11 @@ import {
   Wand2,
   Target,
   Eye,
+  X,
 } from "lucide-react"
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
-import { MusicVideoConfig } from "@/components/music-video-config"
+import { EnhancedMusicVideoConfig } from "@/components/music-video/EnhancedMusicVideoConfig"
+import { EnhancedShotGenerator } from "@/components/music-video/EnhancedShotGenerator"
 import ArtistPicker from "@/components/artist-picker"
 import { useToast } from "@/components/ui/use-toast"
 import type { ArtistProfile } from "@/lib/artist-types"
@@ -50,7 +52,8 @@ interface MusicVideoModeProps {
   // Director selection
   selectedMusicVideoDirector: string
   setSelectedMusicVideoDirector: (directorId: string) => void
-  allMusicVideoDirectors: any[] // TODO: Type this properly
+  curatedDirectors: any[] // TODO: Type this properly
+  customDirectors: any[] // TODO: Type this properly
   
   // Music video config
   musicVideoConfig: any
@@ -71,8 +74,10 @@ interface MusicVideoModeProps {
   // Loading
   isLoading: boolean
   
-  // Handlers
+  // Handlers  
+  onGenerateMusicVideoReferences: () => Promise<void>
   onGenerateMusicVideoBreakdown: () => Promise<void>
+  onClearMusicVideo: () => void
   onGenerateAdditionalMusicVideoShots: (sectionId: string, customRequest: string) => Promise<void>
   onCopyToClipboard: (text: string) => void
 }
@@ -96,7 +101,8 @@ export function MusicVideoMode({
   setSelectedArtistProfile,
   selectedMusicVideoDirector,
   setSelectedMusicVideoDirector,
-  allMusicVideoDirectors,
+  curatedDirectors,
+  customDirectors,
   musicVideoConfig,
   setMusicVideoConfig,
   showMusicVideoConfig,
@@ -108,13 +114,16 @@ export function MusicVideoMode({
   expandedSections,
   setExpandedSections,
   isLoading,
+  onGenerateMusicVideoReferences,
   onGenerateMusicVideoBreakdown,
+  onClearMusicVideo,
   onGenerateAdditionalMusicVideoShots,
   onCopyToClipboard,
 }: MusicVideoModeProps) {
   const { toast } = useToast()
   
-  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors.find((d) => d.id === selectedMusicVideoDirector)
+  const allMusicVideoDirectors = [...(curatedDirectors || []), ...(customDirectors || [])]
+  const selectedMusicVideoDirectorInfo = allMusicVideoDirectors?.find((d) => d?.id === selectedMusicVideoDirector)
 
   const toggleSectionExpansion = (sectionId: string) => {
     setExpandedSections((prev: any) => ({ ...prev, [sectionId]: !prev[sectionId] }))
@@ -220,29 +229,67 @@ export function MusicVideoMode({
             />
           </div>
 
-          <Button
-            onClick={onGenerateMusicVideoBreakdown}
-            disabled={isLoading || !lyrics.trim()}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            {isLoading ? (
-              <>
-                <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating Breakdown...
-              </>
-            ) : (
-              <>
-                <Target className="h-4 w-4 mr-2" />
-                Generate Music Video Breakdown
-              </>
-            )}
-          </Button>
+          {!musicVideoBreakdown ? (
+            <Button
+              onClick={onGenerateMusicVideoReferences}
+              disabled={isLoading || !lyrics.trim()}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating References...
+                </>
+              ) : (
+                <>
+                  <Target className="h-4 w-4 mr-2" />
+                  Step 1: Generate References
+                </>
+              )}
+            </Button>
+          ) : (
+            <div className="w-full space-y-3">
+              <div className="text-center">
+                <Badge variant="secondary" className="bg-green-600/20 text-green-300">
+                  ✅ References Generated - Configure and then generate final shots
+                </Badge>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={onClearMusicVideo}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="flex-1 border-red-600/30 text-red-400 hover:bg-red-600/10 hover:text-red-300"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear & Start Over
+                </Button>
+                <Button
+                  onClick={onGenerateMusicVideoBreakdown}
+                  disabled={isLoading}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isLoading ? (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating Final Breakdown...
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Step 2: Generate Final Breakdown
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Music Video Config */}
       {showMusicVideoConfig && musicVideoBreakdown && (
-        <MusicVideoConfig
+        <EnhancedMusicVideoConfig
           treatments={musicVideoBreakdown.treatments}
           selectedTreatment={musicVideoBreakdown.selectedTreatment}
           musicVideoStructure={musicVideoBreakdown.musicVideoStructure}
@@ -343,36 +390,16 @@ export function MusicVideoMode({
                         </div>
                       </div>
 
-                      {/* Additional Shots Generator */}
-                      <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
-                        <h5 className="font-medium text-white mb-3">Generate Additional Shots</h5>
-                        <div className="space-y-3">
-                          <input
-                            placeholder="Describe what kind of shots you want..."
-                            className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                onGenerateAdditionalMusicVideoShots(section.id, e.currentTarget.value)
-                                e.currentTarget.value = ""
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              onGenerateAdditionalMusicVideoShots(
-                                section.id,
-                                "More creative performance shots"
-                              )
-                            }
-                            disabled={isLoading}
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Generate More Shots
-                          </Button>
-                        </div>
-                      </div>
+                      {/* Enhanced Additional Shots Generator */}
+                      <EnhancedShotGenerator
+                        sectionId={section.id}
+                        sectionTitle={section.title}
+                        locations={musicVideoConfig?.locations || []}
+                        wardrobe={musicVideoConfig?.wardrobe || []}
+                        props={musicVideoConfig?.props || []}
+                        onGenerate={onGenerateAdditionalMusicVideoShots}
+                        isLoading={isLoading}
+                      />
 
                       {/* Performance Notes */}
                       {sectionBreakdown.performanceNotes && sectionBreakdown.performanceNotes.length > 0 && (

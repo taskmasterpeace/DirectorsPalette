@@ -118,11 +118,11 @@ export function useMusicVideoGeneration() {
   ) => {
     const { musicVideoBreakdown, selectedMusicVideoDirector } = musicVideoStore
     
-    if (!musicVideoBreakdown) return
+    if (!musicVideoBreakdown || !musicVideoBreakdown.sections) return
 
     setIsLoading(true)
     try {
-      const section = musicVideoBreakdown.sections.find(s => s.id === sectionId)
+      const section = musicVideoBreakdown.sections?.find(s => s.id === sectionId)
       if (!section) throw new Error('Section not found')
 
       const result = await generateAdditionalMusicVideoShots(

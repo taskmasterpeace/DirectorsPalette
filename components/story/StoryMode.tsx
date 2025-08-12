@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   BookOpen,
   ChevronDown,
@@ -27,7 +28,10 @@ import {
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
 import { useToast } from "@/components/ui/use-toast"
 import { ProgressBar } from "@/components/ui/progress-bar"
+import { MultiStageProgress } from "@/components/ui/multi-stage-progress"
 import { StoryEntitiesConfig } from "./story-entities-config"
+import { ReferencesPanel } from "./ReferencesPanel"
+import { EnhancedShotGenerator } from "./EnhancedShotGenerator"
 import type { FilmDirector } from "@/lib/director-types"
 import type { StoryEntities, ExtractedEntities } from "./story-entities-config"
 
@@ -41,7 +45,8 @@ interface StoryModeProps {
   // Director selection
   selectedDirector: string
   setSelectedDirector: (directorId: string) => void
-  allDirectors: any[] // TODO: Type this properly
+  curatedDirectors: any[] // TODO: Type this properly
+  customDirectors: any[] // TODO: Type this properly
   
   // Options
   titleCardOptions: {
@@ -69,6 +74,13 @@ interface StoryModeProps {
   // Loading
   isLoading: boolean
   
+  // Progress tracking
+  generationStage: 'idle' | 'structure' | 'breakdowns' | 'complete'
+  stageProgress: { current: number; total: number }
+  stageMessage: string
+  elapsedTime: number
+  estimatedTime: number
+  
   // Entities
   showEntitiesConfig: boolean
   setShowEntitiesConfig: (show: boolean) => void
@@ -80,10 +92,11 @@ interface StoryModeProps {
   isGeneratingWithEntities: boolean
   
   // Handlers
-  onGenerateBreakdown: () => Promise<void>
+  onGenerateBreakdown: (chapterMethod: string, userChapterCount: number) => Promise<void>
   onExtractEntities: () => Promise<void>
   onGenerateWithEntities: () => Promise<void>
   onGenerateAdditionalShots: (chapterId: string, categories: string[], customRequest: string) => Promise<void>
+  onClearStory: () => void
   onCopyToClipboard: (text: string) => void
 }
 
@@ -94,7 +107,8 @@ export function StoryMode({
   setStoryDirectorNotes,
   selectedDirector,
   setSelectedDirector,
-  allDirectors,
+  curatedDirectors,
+  customDirectors,
   titleCardOptions,
   setTitleCardOptions,
   promptOptions,
@@ -106,6 +120,11 @@ export function StoryMode({
   expandedChapters,
   setExpandedChapters,
   isLoading,
+  generationStage,
+  stageProgress,
+  stageMessage,
+  elapsedTime,
+  estimatedTime,
   showEntitiesConfig,
   setShowEntitiesConfig,
   currentEntities,
@@ -118,12 +137,94 @@ export function StoryMode({
   onExtractEntities,
   onGenerateWithEntities,
   onGenerateAdditionalShots,
+  onClearStory,
   onCopyToClipboard,
 }: StoryModeProps) {
   const { toast } = useToast()
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [chapterMethod, setChapterMethod] = useState<'auto-detect' | 'user-specified' | 'ai-suggested' | 'single'>('ai-suggested')
+  const [userChapterCount, setUserChapterCount] = useState(4)
 
-  const selectedDirectorInfo = allDirectors.find((d) => d.id === selectedDirector)
+  const allDirectors = [...(curatedDirectors || []), ...(customDirectors || [])]
+  const selectedDirectorInfo = allDirectors?.find((d) => d?.id === selectedDirector)
+
+  // Extract references from breakdown
+  const extractedReferences = useMemo(() => {
+    if (!breakdown) return { characters: [], locations: [], props: [] }
+    
+    const allRefs = {
+      characters: new Map<string, { name: string; description: string; chapters: string[] }>(),
+      locations: new Map<string, { name: string; description: string; chapters: string[] }>(),
+      props: new Map<string, { name: string; description: string; chapters: string[] }>()
+    }
+    
+    breakdown.chapterBreakdowns?.forEach((cb: any, idx: number) => {
+      const chapter = breakdown.storyStructure.chapters[idx]
+      const chapterNum = (idx + 1).toString()
+      
+      // Create description lookups
+      const charDescMap = new Map(cb.characterDescriptions?.map((d: any) => [d.name, d.description]) || [])
+      const locDescMap = new Map(cb.locationDescriptions?.map((d: any) => [d.name, d.description]) || [])
+      const propDescMap = new Map(cb.propDescriptions?.map((d: any) => [d.name, d.description]) || [])
+      
+      // Extract characters with director-style descriptions
+      cb.characterReferences?.forEach((ref: string) => {
+        const cleanRef = ref.replace('@', '').trim()
+        if (!allRefs.characters.has(cleanRef)) {
+          allRefs.characters.set(cleanRef, {
+            name: cleanRef,
+            description: charDescMap.get(cleanRef) || `Character appearing in the story`,
+            chapters: [chapterNum]
+          })
+        } else {
+          const existing = allRefs.characters.get(cleanRef)!
+          if (!existing.chapters.includes(chapterNum)) {
+            existing.chapters.push(chapterNum)
+          }
+        }
+      })
+      
+      // Extract locations with atmospheric descriptions
+      cb.locationReferences?.forEach((ref: string) => {
+        const cleanRef = ref.replace('@', '').trim()
+        if (!allRefs.locations.has(cleanRef)) {
+          allRefs.locations.set(cleanRef, {
+            name: cleanRef,
+            description: locDescMap.get(cleanRef) || `Location in the story`,
+            chapters: [chapterNum]
+          })
+        } else {
+          const existing = allRefs.locations.get(cleanRef)!
+          if (!existing.chapters.includes(chapterNum)) {
+            existing.chapters.push(chapterNum)
+          }
+        }
+      })
+      
+      // Extract props with visual significance descriptions
+      cb.propReferences?.forEach((ref: string) => {
+        const cleanRef = ref.replace('@', '').trim()
+        if (!allRefs.props.has(cleanRef)) {
+          allRefs.props.set(cleanRef, {
+            name: cleanRef,
+            description: propDescMap.get(cleanRef) || `Important prop/object in the story`,
+            chapters: [chapterNum]
+          })
+        } else {
+          const existing = allRefs.props.get(cleanRef)!
+          if (!existing.chapters.includes(chapterNum)) {
+            existing.chapters.push(chapterNum)
+          }
+        }
+      })
+    })
+    
+    return {
+      characters: Array.from(allRefs.characters.values()).map((v, i) => ({ id: `char-${i}`, ...v })),
+      locations: Array.from(allRefs.locations.values()).map((v, i) => ({ id: `loc-${i}`, ...v })),
+      props: Array.from(allRefs.props.values()).map((v, i) => ({ id: `prop-${i}`, ...v }))
+    }
+  }, [breakdown])
 
   const toggleChapterExpansion = (chapterId: string) => {
     setExpandedChapters((prev: any) => ({ ...prev, [chapterId]: !prev[chapterId] }))
@@ -158,14 +259,57 @@ export function StoryMode({
 
           {/* Director Notes */}
           <div>
-            <label className="text-sm font-medium text-white mb-1 block">Director&apos;s Notes (optional)</label>
+            <label className="text-sm font-medium text-white mb-1 block">🎯 Director&apos;s Notes (HIGHEST PRIORITY)</label>
             <Textarea
-              placeholder="Overall creative direction, themes, pacing, references..."
+              placeholder="Your specific creative guidance, themes, visual style, mood..."
               value={storyDirectorNotes}
               onChange={(e) => setStoryDirectorNotes(e.target.value)}
               rows={3}
               className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
             />
+            <p className="text-xs text-amber-300 mt-1">
+              These notes guide and enhance the selected director&apos;s style
+            </p>
+          </div>
+
+          {/* Chapter Method Selection */}
+          <div>
+            <label className="text-sm font-medium text-white mb-2 block">📖 Chapter Generation Method</label>
+            <Select value={chapterMethod} onValueChange={(value: any) => setChapterMethod(value)}>
+              <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto-detect">🔍 Auto-detect from headings</SelectItem>
+                <SelectItem value="user-specified">🎚️ User-specified count</SelectItem>
+                <SelectItem value="ai-suggested">🤖 AI-suggested (3-5 chapters)</SelectItem>
+                <SelectItem value="single">📄 Single chapter (no breakdown)</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {chapterMethod === 'user-specified' && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">Chapter count:</span>
+                  <span className="text-sm font-medium text-white">{userChapterCount} chapters</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="2" 
+                  max="8" 
+                  value={userChapterCount}
+                  onChange={(e) => setUserChapterCount(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+            )}
+            
+            <p className="text-xs text-slate-400 mt-1">
+              {chapterMethod === 'auto-detect' && 'Looks for existing headings like "Chapter 1", "# Title", etc.'}
+              {chapterMethod === 'user-specified' && `Story will be split into exactly ${userChapterCount} chapters`}
+              {chapterMethod === 'ai-suggested' && 'AI determines optimal chapter count based on story structure'}
+              {chapterMethod === 'single' && 'Treats entire story as one chapter for shot generation'}
+            </p>
           </div>
 
           {/* Advanced Options */}
@@ -232,9 +376,9 @@ export function StoryMode({
           {/* Generation Options */}
           <div className="flex gap-3">
             <Button
-              onClick={onGenerateBreakdown}
+              onClick={() => onGenerateBreakdown(chapterMethod, userChapterCount)}
               disabled={isLoading || !story.trim()}
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
             >
               {isLoading ? (
                 <>
@@ -248,6 +392,17 @@ export function StoryMode({
                 </>
               )}
             </Button>
+
+            {(story.trim() || breakdown) && (
+              <Button
+                onClick={onClearStory}
+                disabled={isLoading}
+                variant="outline"
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+              >
+                Clear
+              </Button>
+            )}
           </div>
           
           {/* Entity Summary */}
@@ -280,8 +435,18 @@ export function StoryMode({
         </CardContent>
       </Card>
 
-      {/* Progress Bar */}
-      {(isLoading || isGeneratingWithEntities) && (
+      {/* Multi-Stage Progress Tracking */}
+      <MultiStageProgress
+        stage={generationStage}
+        currentStep={stageProgress.current}
+        totalSteps={stageProgress.total}
+        message={stageMessage}
+        elapsedTime={elapsedTime / 1000} // Convert ms to seconds
+        estimatedTime={estimatedTime / 1000} // Convert ms to seconds
+      />
+
+      {/* Legacy Progress Bar (keep for entities generation) */}
+      {isGeneratingWithEntities && (
         <Card className="bg-slate-900/60 border-slate-800">
           <CardContent className="pt-6">
             <div className="text-center mb-2">
@@ -298,6 +463,16 @@ export function StoryMode({
             />
           </CardContent>
         </Card>
+      )}
+
+      {/* References Panel - Show after generation */}
+      {breakdown && (
+        <ReferencesPanel
+          characters={extractedReferences.characters}
+          locations={extractedReferences.locations}
+          props={extractedReferences.props}
+          selectedDirector={selectedDirectorInfo?.name}
+        />
       )}
 
       {/* Story Results */}
@@ -369,16 +544,37 @@ export function StoryMode({
                             <Eye className="h-4 w-4 text-amber-400" />
                             Shot List ({chapterBreakdown.shots.length + chapterAdditionalShots.length} shots)
                           </h4>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              onCopyToClipboard([...chapterBreakdown.shots, ...chapterAdditionalShots].join("\n"))
-                            }
-                            className="bg-slate-700 hover:bg-slate-600 text-white"
-                          >
-                            <Copy className="h-4 w-4 mr-1" />
-                            Copy
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                onCopyToClipboard([...chapterBreakdown.shots, ...chapterAdditionalShots].join("\n"))
+                              }
+                              className="bg-slate-700 hover:bg-slate-600 text-white"
+                            >
+                              <Copy className="h-4 w-4 mr-1" />
+                              Copy Chapter
+                            </Button>
+                            {breakdown && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const allShots = breakdown.chapterBreakdowns
+                                    .flatMap((cb: any, idx: number) => [
+                                      `\n=== ${breakdown.storyStructure.chapters[idx].title} ===`,
+                                      ...cb.shots,
+                                      ...(additionalShots[cb.chapterId] || [])
+                                    ])
+                                    .join("\n")
+                                  onCopyToClipboard(allShots)
+                                }}
+                                className="bg-amber-600 hover:bg-amber-700 text-white"
+                              >
+                                <Copy className="h-4 w-4 mr-1" />
+                                Copy All
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           {chapterBreakdown.shots.map((shot: string, shotIndex: number) => (
@@ -403,48 +599,29 @@ export function StoryMode({
                         </div>
                       </div>
 
-                      {/* Additional Shots Generator */}
-                      <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
-                        <h5 className="font-medium text-white mb-3">Generate Additional Shots</h5>
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap gap-2">
-                            {["Close-ups", "Wide shots", "Action", "Emotional", "Atmospheric"].map((category) => (
-                              <Badge
-                                key={category}
-                                variant="outline"
-                                className="border-slate-600 text-slate-300 cursor-pointer hover:bg-slate-700"
-                              >
-                                {category}
-                              </Badge>
-                            ))}
-                          </div>
-                          <input
-                            placeholder="Custom request (optional)..."
-                            className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md text-white text-sm"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                onGenerateAdditionalShots(
-                                  chapter.id,
-                                  ["Close-ups", "Wide shots"],
-                                  e.currentTarget.value
-                                )
-                                e.currentTarget.value = ""
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              onGenerateAdditionalShots(chapter.id, ["Close-ups", "Wide shots"], "")
-                            }
-                            disabled={isLoading}
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Generate More Shots
-                          </Button>
-                        </div>
-                      </div>
+                      {/* Enhanced Shot Generator */}
+                      <EnhancedShotGenerator
+                        chapterId={chapter.id}
+                        chapterCharacters={chapterBreakdown.characterReferences || []}
+                        chapterLocations={chapterBreakdown.locationReferences || []}
+                        chapterProps={chapterBreakdown.propReferences || []}
+                        onGenerateShot={(chapterId, shotType, characters, location, customReq) => {
+                          // Build categories from shot type
+                          const categories = [shotType]
+                          
+                          // Build custom request with selected elements
+                          let enhancedRequest = customReq
+                          if (characters.length > 0) {
+                            enhancedRequest += ` Include characters: ${characters.map(c => `@${c}`).join(', ')}.`
+                          }
+                          if (location) {
+                            enhancedRequest += ` Set at location: @${location}.`
+                          }
+                          
+                          onGenerateAdditionalShots(chapterId, categories, enhancedRequest)
+                        }}
+                        isLoading={isLoading}
+                      />
 
                       {/* Coverage Analysis */}
                       <div>

@@ -110,11 +110,11 @@ export function useStoryGeneration() {
   ) => {
     const { breakdown, selectedDirector } = storyStore
     
-    if (!breakdown) return
+    if (!breakdown || !breakdown.chapters) return
 
     setIsLoading(true)
     try {
-      const chapter = breakdown.chapters.find(c => c.id === chapterId)
+      const chapter = breakdown.chapters?.find(c => c.id === chapterId)
       if (!chapter) throw new Error('Chapter not found')
 
       const result = await generateAdditionalChapterShots(
