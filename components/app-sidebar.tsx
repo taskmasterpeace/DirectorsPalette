@@ -21,11 +21,15 @@ import {
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { mode, setMode } = useAppStore()
+  const { mode = "story", setMode } = useAppStore()
 
   function handleModeChange(newMode: "story" | "music-video") {
-    setMode(newMode)
-    window.dispatchEvent(new CustomEvent("dsvb:mode-change", { detail: { mode: newMode } }))
+    if (setMode) {
+      setMode(newMode)
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent("dsvb:mode-change", { detail: { mode: newMode } }))
+    }
     if (pathname !== "/") {
       router.push("/")
     }
@@ -56,7 +60,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-slate-300">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {navItems && navItems.length > 0 && navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url} className="text-slate-200">
                     <Link href={item.url} className="hover:text-white">
@@ -74,7 +78,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-slate-300">Modes</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {modeItems.map((item) => (
+              {modeItems && modeItems.length > 0 && modeItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     onClick={() => handleModeChange(item.mode)}
