@@ -499,7 +499,7 @@ export function StoryMode({
                         <CardTitle className="text-white flex items-center gap-2">
                           <BookOpen className="h-5 w-5 text-amber-400" />
                           {chapter.title}
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {chapter.keyCharacters?.slice(0, 2).map((character: string, idx: number) => (
                               <Badge key={idx} variant="secondary" className="bg-blue-600/20 text-blue-300 text-xs">
                                 <Users className="h-2 w-2 mr-1" />
