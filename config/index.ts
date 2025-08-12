@@ -137,3 +137,7 @@ class ConfigManager {
 // ===== Exports =====
 export const config = ConfigManager.getInstance()
 export default config
+
+// Re-export constants and prompts
+export * from './constants'
+export * from './prompts'

@@ -40,6 +40,7 @@ interface AppActions {
   
   // Reset action
   resetAppState: () => void
+  reset: () => void
 }
 
 const initialAppState: AppState = {
@@ -76,7 +77,8 @@ export const useAppStore = create<AppState & AppActions>()(
         setIsGeneratingDirectorStyle: (isGeneratingDirectorStyle) => set({ isGeneratingDirectorStyle }),
         
         // Reset action
-        resetAppState: () => set(initialAppState)
+        resetAppState: () => set(initialAppState),
+        reset: () => set(initialAppState)
       }),
       {
         name: 'app-store',

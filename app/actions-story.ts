@@ -84,11 +84,15 @@ const prompts = {
   structureDetection: `Analyze the following text and split it into logical chapters. Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered. Return ONLY JSON.`,
   chapterBreakdown: `You are a world-class cinematographer creating a visual breakdown for a story chapter.
 
+BALANCE REQUIREMENTS:
+- Director Notes: PRIMARY creative guidance (highest priority) 
+- Director Style: Core aesthetic framework (enhanced by director notes)
+
+DIRECTOR NOTES (HIGHEST PRIORITY - GUIDES DIRECTOR STYLE):
+{directorNotes}
+
 DIRECTOR STYLE PROFILE:
 {directorStyle}
-
-CREATIVE DIRECTION NOTES:
-{directorNotes}
 
 CRITICAL SHOT REQUIREMENTS:
 - For DIALOGUE scenes: MUST include over-the-shoulder (OTS) shots using this exact format:
@@ -104,16 +108,41 @@ CRITICAL SHOT REQUIREMENTS:
 - For ACTION: Mix wide shots (geography) with close-ups (impact)
 - For EMOTIONAL moments: Hold on close-ups, include reaction shots
 
-Generate a shot list that authentically reflects this director's style. Each shot should be a complete, detailed image prompt. Identify character/location/prop references with "@" handles. Return ONLY JSON.`,
+Generate a shot list that authentically reflects this director's style. Each shot should be a complete, detailed image prompt.
+
+REFERENCE FORMATTING:
+- Use clean @reference handles: @protagonist, @sarah_young, @apartment, @gun
+- Format: "[Shot description] featuring @character_name at @location_name with @prop_name"
+- Keep references consistent and descriptive
+
+CRITICAL JSON FORMAT REQUIREMENTS:
+- chapterId: string (required)
+- characterReferences: array of strings (required)
+- locationReferences: array of strings (required) 
+- propReferences: array of strings (required)
+- shots: array of STRINGS (not objects, just plain text descriptions)
+- coverageAnalysis: string (required)
+- additionalOpportunities: array of strings (required)
+
+Return ONLY JSON matching this exact schema.`,
   additionalShots: `Expand a shot list with distinct new shots for categories: {categories}.
+
+BALANCE REQUIREMENTS:
+- Director Notes: PRIMARY creative guidance (highest priority) 
+- Director Style: Core aesthetic framework (enhanced by director notes)
+
+DIRECTOR NOTES (HIGHEST PRIORITY - GUIDES DIRECTOR STYLE):
+{directorNotes}
 
 DIRECTOR STYLE PROFILE:
 {directorStyle}
 
-CREATIVE DIRECTION NOTES:
-{directorNotes}
-
 CUSTOM REQUEST: {customRequest}
+
+REFERENCE FORMATTING:
+- Use clean @reference handles: @protagonist, @sarah_young, @apartment, @gun
+- Format: "[Shot description] featuring @character_name at @location_name with @prop_name"
+- Keep references consistent and descriptive
 
 Return ONLY JSON with 'newShots' and 'coverageAnalysis'.`,
   titleCard: `Design {count} unique title card concepts for the chapter "{chapterTitle}". For each, provide 'styleLabel' and a detailed 'description'. Approaches: {approaches}. Return ONLY JSON.`,
@@ -128,13 +157,21 @@ export async function generateBreakdown(
   directorNotes = "",
 ) {
   assertAIEnv()
+  
+  console.log('🎬 ACTUAL STORY INPUT:', story.substring(0, 200) + '...')
+  console.log('🎭 DIRECTOR:', director)
+  console.log('📝 DIRECTOR NOTES:', directorNotes)
+  console.log('🚀 Starting structure detection API call...')
 
   const { object: storyStructure } = await generateObject({
-    model: openai("gpt-4o"),
+    model: openai("gpt-4o-mini"),
     schema: StoryStructureSchema,
     prompt: prompts.structureDetection,
     system: `You are a professional script supervisor and editor. STORY: """${story}"""`,
   })
+
+  console.log('✅ Structure detection completed, chapters:', storyStructure.chapters?.length || 0)
+  console.log('🎬 Starting chapter breakdowns for', storyStructure.chapters?.length || 0, 'chapters...')
 
   const chapterBreakdowns = await Promise.all(
     (storyStructure.chapters || []).map(async (chapter) => {
@@ -145,15 +182,18 @@ export async function generateBreakdown(
         .replace("{directorStyle}", directorStyle)
         .replace("{directorNotes}", directorNotes || "None")
 
-      if (!promptOptions.includeCameraStyle) {
+      const includeCameraStyle = promptOptions?.includeCameraStyle ?? true
+      const includeColorPalette = promptOptions?.includeColorPalette ?? true
+      
+      if (!includeCameraStyle) {
         prompt += `\nIMPORTANT: Minimize detailed camera movement descriptions.`
       }
-      if (!promptOptions.includeColorPalette) {
+      if (!includeColorPalette) {
         prompt += `\nIMPORTANT: Minimize detailed color palette and lighting descriptions.`
       }
 
       const { object: breakdown } = await generateObject({
-        model: openai("gpt-4o"),
+        model: openai("gpt-4o-mini"),
         schema: ChapterBreakdownSchema,
         prompt,
         system: `Create a visual breakdown. CHAPTER CONTENT: """${chapter.content}"""`,
@@ -161,7 +201,7 @@ export async function generateBreakdown(
 
       if (titleCardOptions.enabled) {
         const { object: tc } = await generateObject({
-          model: openai("gpt-4o"),
+          model: openai("gpt-4o-mini"),
           schema: z.object({ titleCards: z.array(TitleCardSchema) }),
           prompt: prompts.titleCard
             .replace("{count}", "3")
@@ -178,6 +218,12 @@ export async function generateBreakdown(
       }
     }),
   )
+
+  console.log('🎉 Generation completed successfully!')
+  console.log('📊 Final result:', {
+    chapters: storyStructure.chapters?.length || 0,
+    breakdowns: chapterBreakdowns.length
+  })
 
   return {
     storyStructure,
@@ -229,7 +275,7 @@ export async function generateAdditionalChapterShots(
   if (!promptOptions.includeColorPalette) prompt += `\nIMPORTANT: Minimize detailed color/lighting.`
 
   const { object } = await generateObject({
-    model: openai("gpt-4o"),
+    model: openai("gpt-4o-mini"),
     schema: AdditionalShotsSchema,
     prompt,
     system: `Expand the shot list. CHAPTER CONTENT: """${chapter.content}""". EXISTING SHOTS: """${[
