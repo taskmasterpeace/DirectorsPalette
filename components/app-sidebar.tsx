@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Home, FolderOpen, Users, Palette, Film, Music } from "lucide-react"
+import { useAppStore } from "@/stores/app-store"
 import {
   Sidebar,
   SidebarContent,
@@ -20,25 +21,11 @@ import {
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { mode, setMode } = useAppStore()
 
-  const [currentMode, setCurrentMode] = useState<"story" | "music-video">("story")
-
-  // Load current mode from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedMode = localStorage.getItem("dsvb:mode") as "story" | "music-video"
-      if (savedMode) {
-        setCurrentMode(savedMode)
-      }
-    } catch {}
-  }, [])
-
-  function handleModeChange(mode: "story" | "music-video") {
-    try {
-      localStorage.setItem("dsvb:mode", mode)
-      setCurrentMode(mode)
-      window.dispatchEvent(new CustomEvent("mode-change", { detail: { mode } }))
-    } catch {}
+  function handleModeChange(newMode: "story" | "music-video") {
+    setMode(newMode)
+    window.dispatchEvent(new CustomEvent("dsvb:mode-change", { detail: { mode: newMode } }))
     if (pathname !== "/") {
       router.push("/")
     }
@@ -91,12 +78,12 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     onClick={() => handleModeChange(item.mode)}
-                    isActive={currentMode === item.mode}
+                    isActive={mode === item.mode}
                     className="text-slate-200 hover:text-white cursor-pointer data-[state=active]:bg-slate-700 data-[state=active]:text-white"
                   >
                     <item.icon className="w-4 h-4" />
                     <span>{item.title}</span>
-                    {currentMode === item.mode && (
+                    {mode === item.mode && (
                       <div className="ml-auto w-2 h-2 bg-amber-400 rounded-full" />
                     )}
                   </SidebarMenuButton>
