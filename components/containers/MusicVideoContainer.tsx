@@ -4,10 +4,12 @@ import { MusicVideoMode } from '@/components/music-video/MusicVideoMode'
 import { useMusicVideoGeneration } from '@/hooks/useMusicVideoGeneration'
 import { useDirectorManagement } from '@/hooks/useDirectorManagement'
 import { useMusicVideoStore } from '@/stores/music-video-store'
+import { useAppStore } from '@/stores/app-store'
 import { curatedMusicVideoDirectors } from '@/lib/curated-directors'
 
 export function MusicVideoContainer() {
   const musicVideoStore = useMusicVideoStore()
+  const { isLoading } = useAppStore()
   const {
     handleGenerateMusicVideoReferences,
     handleGenerateMusicVideoBreakdown,
@@ -59,7 +61,7 @@ export function MusicVideoContainer() {
       setAdditionalMusicVideoShots={musicVideoStore.setAdditionalMusicVideoShots}
       expandedSections={musicVideoStore.expandedSections}
       setExpandedSections={musicVideoStore.setExpandedSections}
-      isLoading={false}
+      isLoading={isLoading}
       onGenerateMusicVideoReferences={handleGenerateMusicVideoReferences}
       onGenerateMusicVideoBreakdown={handleGenerateMusicVideoBreakdown}
       onClearMusicVideo={handleClearMusicVideo}

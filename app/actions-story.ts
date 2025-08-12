@@ -180,10 +180,12 @@ Return ONLY JSON with 'newShots' and 'coverageAnalysis'.`,
 export async function generateBreakdown(
   story: string,
   director: string,
-  titleCardOptions: { enabled: boolean; format: "full" | "name-only" | "roman-numerals"; approaches: string[] },
-  customDirectors: any[],
-  promptOptions: { includeCameraStyle?: boolean; includeColorPalette?: boolean } | null,
-  directorNotes = "",
+  directorNotes: string = "",
+  titleCardOptions?: { enabled: boolean; format: "full" | "name-only" | "roman-numerals"; approaches: string[] },
+  promptOptions?: { includeCameraStyle?: boolean; includeColorPalette?: boolean } | null,
+  chapterMethod: string = "ai-suggested",
+  userChapterCount: number = 4,
+  progressCallback?: (stage: string, current: number, total: number, message?: string) => void
 ) {
   assertAIEnv()
   
@@ -202,8 +204,15 @@ export async function generateBreakdown(
   console.log('✅ Structure detection completed, chapters:', storyStructure.chapters?.length || 0)
   console.log('🎬 Starting chapter breakdowns for', storyStructure.chapters?.length || 0, 'chapters...')
 
+  // Get custom directors from a store or pass empty array
+  const customDirectors: any[] = []
+  
   const chapterBreakdowns = await Promise.all(
-    (storyStructure.chapters || []).map(async (chapter) => {
+    (storyStructure.chapters || []).map(async (chapter, index) => {
+      if (progressCallback) {
+        progressCallback('breakdowns', index, storyStructure.chapters.length, `Generating chapter ${index + 1} breakdown...`)
+      }
+      
       const selectedDirectorInfo = [...customDirectors].find((d) => d.id === director)
       const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
 
@@ -229,7 +238,7 @@ export async function generateBreakdown(
         system: `Create a visual breakdown. CHAPTER CONTENT: """${chapter.content}"""`,
       })
 
-      if (titleCardOptions.enabled) {
+      if (titleCardOptions?.enabled) {
         const { object: tc } = await generateObject({
           model: openai("gpt-4o-mini"),
           schema: z.object({ titleCards: z.array(TitleCardSchema) }),
@@ -255,43 +264,35 @@ export async function generateBreakdown(
     breakdowns: chapterBreakdowns.length
   })
 
+  if (progressCallback) {
+    progressCallback('complete', storyStructure.chapters.length, storyStructure.chapters.length, 'Generation complete!')
+  }
+
   return {
-    storyStructure,
-    chapterBreakdowns,
-    overallAnalysis: "Initial breakdown complete.",
+    success: true,
+    data: {
+      storyStructure,
+      chapterBreakdowns,
+      chapters: storyStructure.chapters,
+      overallAnalysis: "Initial breakdown complete.",
+    }
   }
 }
 
 export async function generateAdditionalChapterShots(
-  args: {
-    story: string
-    director: string
-    storyStructure: any
-    chapterId: string
-    existingBreakdown: any
-    existingAdditionalShots: string[]
-    categories: string[]
-    customRequest: string
-  },
-  customDirectors: any[],
-  promptOptions: { includeCameraStyle?: boolean; includeColorPalette?: boolean } | null,
-  directorNotes = "",
+  chapter: any,
+  storyTitle: string,
+  director: string,
+  categories: string[],
+  customRequest: string,
+  directorNotes: string = ""
 ) {
   assertAIEnv()
-  const {
-    story,
-    director,
-    storyStructure,
-    chapterId,
-    existingBreakdown,
-    existingAdditionalShots,
-    categories,
-    customRequest,
-  } = args
-
-  const chapter = storyStructure.chapters.find((c: any) => c.id === chapterId)
+  
   if (!chapter) throw new Error("Chapter not found")
-
+  
+  // Get custom directors from a store or pass empty array
+  const customDirectors: any[] = []
   const selectedDirectorInfo = [...customDirectors].find((d) => d.id === director)
   const directorStyle = buildFilmDirectorStyle(selectedDirectorInfo)
 
@@ -301,22 +302,21 @@ export async function generateAdditionalChapterShots(
     .replace("{directorNotes}", directorNotes || "None")
     .replace("{customRequest}", customRequest || "")
 
-  // Handle promptOptions safely for server-side execution
-  const includeCameraStyle = promptOptions ? Boolean(promptOptions.includeCameraStyle) : true
-  const includeColorPalette = promptOptions ? Boolean(promptOptions.includeColorPalette) : true
-  
-  if (!includeCameraStyle) prompt += `\nIMPORTANT: Minimize detailed camera moves.`
-  if (!includeColorPalette) prompt += `\nIMPORTANT: Minimize detailed color/lighting.`
+  // Default to including camera and color details
+  const includeCameraStyle = true
+  const includeColorPalette = true
 
   const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
     schema: AdditionalShotsSchema,
     prompt,
-    system: `Expand the shot list. CHAPTER CONTENT: """${chapter.content}""". EXISTING SHOTS: """${[
-      ...(existingBreakdown?.shots || []),
-      ...(existingAdditionalShots || []),
+    system: `Expand the shot list. CHAPTER CONTENT: """${chapter.content || chapter.title || ''}""". EXISTING SHOTS: """${[
+      ...(chapter.shots || []),
     ].join("\n")}"""`,
   })
 
-  return object
+  return {
+    success: true,
+    data: object.newShots || []
+  }
 }

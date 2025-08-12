@@ -7,11 +7,13 @@ import { useStoryGeneration } from '@/hooks/useStoryGeneration'
 import { useDirectorManagement } from '@/hooks/useDirectorManagement'
 import { useStoryStore } from '@/stores/story-store'
 import { useStoryEntitiesStore } from '@/stores/story-entities-store'
+import { useAppStore } from '@/stores/app-store'
 import { curatedFilmDirectors } from '@/lib/curated-directors'
 
 export function StoryContainer() {
   const storyStore = useStoryStore()
   const entitiesStore = useStoryEntitiesStore()
+  const { isLoading } = useAppStore()
   const {
     generationStage,
     stageProgress,
@@ -72,7 +74,7 @@ export function StoryContainer() {
         setAdditionalShots={storyStore.setAdditionalShots}
         expandedChapters={storyStore.expandedChapters}
         setExpandedChapters={storyStore.setExpandedChapters}
-        isLoading={false}
+        isLoading={isLoading}
         generationStage={generationStage}
         stageProgress={stageProgress}
         stageMessage={stageMessage}

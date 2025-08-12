@@ -22,7 +22,9 @@
       "Bash(grep:*)",
       "Bash(dir:*)",
       "Bash(npm install:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(winget install:*)",
+      "Bash(echo \"Please run ''gh auth login'' manually to authenticate with GitHub, then create the PR with:\ngh pr create --title ''Fix prop naming mismatches and runtime errors'' --body ''Fixed setStory is not a function error and clipboard errors. Resolved all prop naming mismatches between containers and their child components.''\")"
     ],
     "deny": []
   }
