@@ -37,6 +37,9 @@ export function useSessionManagement() {
   const musicVideoStore = useMusicVideoStore()
 
   const saveSessionState = useCallback(() => {
+    // Skip on server-side rendering
+    if (typeof window === 'undefined') return
+    
     try {
       const sessionData: SessionData = {
         version: SESSION_VERSION,
@@ -74,6 +77,9 @@ export function useSessionManagement() {
   }, [mode, storyStore, musicVideoStore])
 
   const loadSessionState = useCallback(() => {
+    // Skip on server-side rendering
+    if (typeof window === 'undefined') return
+    
     try {
       const stored = localStorage.getItem(SESSION_KEY)
       if (!stored) return
@@ -128,7 +134,9 @@ export function useSessionManagement() {
   }, []) // Empty dependencies since we use getState()
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem(SESSION_KEY)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(SESSION_KEY)
+    }
     storyStore.resetStoryState()
     // Reset music video state
     musicVideoStore.setLyrics('')
