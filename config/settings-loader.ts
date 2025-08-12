@@ -49,15 +49,18 @@ async function readConfigFile(): Promise<Config | null> {
   }
   
   try {
-    // Dynamic import to avoid bundling fs in client
-    const fs = await import('fs/promises')
+    // Use require to conditionally load fs only on server
+    // This prevents Next.js from trying to bundle fs for the client
+    const { promises: fs } = require('fs')
     const configPath = path.join(process.cwd(), 'config', 'settings.json')
     const content = await fs.readFile(configPath, 'utf-8')
     const parsed = JSON.parse(content)
     return ConfigSchema.parse(parsed)
   } catch (error) {
-    // Config file not found or invalid, will use defaults
-    console.warn('Config file not found or invalid, using defaults:', error)
+    // Don't warn on client-side, it's expected
+    if (typeof window === 'undefined') {
+      console.warn('Config file not found or invalid, using defaults:', error)
+    }
     return null
   }
 }

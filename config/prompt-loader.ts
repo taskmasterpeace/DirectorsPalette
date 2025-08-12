@@ -20,13 +20,17 @@ async function readPromptFile(category: string): Promise<PromptConfig | null> {
   }
   
   try {
-    // Dynamic import to avoid bundling fs in client
-    const fs = await import('fs/promises')
+    // Use require to conditionally load fs only on server
+    // This prevents Next.js from trying to bundle fs for the client
+    const { promises: fs } = require('fs')
     const filePath = path.join(process.cwd(), 'config', 'prompts', `${category}.json`)
     const content = await fs.readFile(filePath, 'utf-8')
     return JSON.parse(content) as PromptConfig
   } catch (error) {
-    console.warn(`Failed to load prompt file for category ${category}:`, error)
+    // Don't warn on client-side, it's expected
+    if (typeof window === 'undefined') {
+      console.warn(`Failed to load prompt file for category ${category}:`, error)
+    }
     return null
   }
 }
