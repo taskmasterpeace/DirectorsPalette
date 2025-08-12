@@ -89,15 +89,29 @@ function buildFilmDirectorStyle(d?: {
 }
 
 const prompts = {
-  structureDetection: `Analyze the following text and split it into 3-5 logical chapters maximum. Focus on major story beats and natural narrative breaks, not minor scene changes. Each chapter should be substantial (multiple paragraphs or story sections). Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered.
+  structureDetection: `Analyze the following text and split it into 3-5 logical chapters maximum. Focus on major story beats and natural narrative breaks, not minor scene changes. Each chapter should be substantial (multiple paragraphs or story sections).
 
 REQUIRED JSON FORMAT - You MUST include ALL these fields:
 {
-  "chapters": [array of chapter objects],
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Chapter Title",
+      "content": "Full chapter text content",
+      "startPosition": 0,
+      "endPosition": 500,
+      "estimatedDuration": "2-3 minutes",
+      "keyCharacters": ["character1", "character2"],
+      "primaryLocation": "location name",
+      "narrativeBeat": "setup" // REQUIRED: Must be one of: "setup", "rising-action", "climax", or "resolution"
+    }
+  ],
   "detectionMethod": "ai-generated",  
   "totalChapters": [number],
   "fullStory": "[the complete original story text]"
 }
+
+CRITICAL: Every chapter MUST have a "narrativeBeat" field with one of these exact values: "setup", "rising-action", "climax", or "resolution"
 
 Return ONLY JSON matching this exact schema.`,
   chapterBreakdown: `You are a world-class cinematographer creating a visual breakdown for a story chapter.

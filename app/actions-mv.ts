@@ -101,22 +101,38 @@ function stringifyConfigList(items?: Array<{ reference: string; name: string; de
   return (items || []).map((i) => `${i.reference}: ${i.name} - ${i.description}`).join("\n")
 }
 
-export async function generateFullMusicVideoBreakdown(
-  lyrics: string,
-  songTitle = "Untitled Song",
-  artist = "Unknown Artist",
-  genre = "Pop",
-  config?: MusicVideoConfig,
-  selectedMusicVideoDirectorInfo?: any,
-  guidance?: { directorNotes?: string; videoConcept?: string },
-  artistProfile?: ArtistProfile,
-  options?: { debugPrompts?: boolean },
-) {
-  assertAIEnv()
-  const directorStyle = buildDirectorStyleString(selectedMusicVideoDirectorInfo)
-  const artistProfileStr = buildArtistProfileString(artistProfile)
-  const directorNotes = guidance?.directorNotes || "None"
-  const videoConcept = guidance?.videoConcept || "None"
+export async function generateFullMusicVideoBreakdown(params: {
+  lyrics: string
+  songTitle?: string
+  artist?: string
+  genre?: string
+  concept?: string
+  directorNotes?: string
+  selectedDirector?: string | null
+  artistProfile?: ArtistProfile
+  config?: MusicVideoConfig
+}) {
+  try {
+    assertAIEnv()
+    
+    const {
+      lyrics,
+      songTitle = "Untitled Song",
+      artist = "Unknown Artist",
+      genre = "Pop",
+      concept = "",
+      directorNotes = "",
+      selectedDirector,
+      artistProfile,
+      config
+    } = params
+    
+    // TODO: Load director info based on selectedDirector
+    const selectedMusicVideoDirectorInfo = null
+    
+    const directorStyle = buildDirectorStyleString(selectedMusicVideoDirectorInfo)
+    const artistProfileStr = buildArtistProfileString(artistProfile)
+    const videoConcept = concept || "None"
 
   const [structureResult, treatmentsResult] = await Promise.all([
     generateObject({
@@ -146,11 +162,19 @@ export async function generateFullMusicVideoBreakdown(
 
   if (!config || !config.isConfigured) {
     return {
-      musicVideoStructure,
-      treatments,
-      selectedTreatment: treatments[0],
-      isConfigured: false,
-      ...(options?.debugPrompts ? { debug: { prompts: { treatments: "hidden" } } } : null),
+      success: true,
+      data: {
+        breakdown: {
+          musicVideoStructure,
+          treatments,
+          selectedTreatment: treatments[0],
+          isConfigured: false,
+        },
+        config: {
+          isConfigured: false,
+          selectedTreatmentId: treatments[0]?.id
+        }
+      }
     }
   }
 
@@ -190,12 +214,29 @@ export async function generateFullMusicVideoBreakdown(
   )
 
   return {
-    musicVideoStructure,
-    treatments,
-    selectedTreatment,
-    sectionBreakdowns,
-    overallAnalysis: "Full music video breakdown complete.",
-    isConfigured: true,
+    success: true,
+    data: {
+      breakdown: {
+        musicVideoStructure,
+        treatments,
+        selectedTreatment,
+        sectionBreakdowns,
+        sections: musicVideoStructure.sections,
+        overallAnalysis: "Full music video breakdown complete.",
+        isConfigured: true,
+      },
+      config: {
+        ...config,
+        isConfigured: true
+      }
+    }
+  }
+  } catch (error) {
+    console.error('Music video generation error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to generate music video breakdown'
+    }
   }
 }
 

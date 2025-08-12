@@ -3,7 +3,8 @@
  */
 
 import { openai } from "@ai-sdk/openai"
-import { configService, ensureInitialized } from "@/config/config-service"
+// Commented out to fix fs module error - not currently used
+// import { configService, ensureInitialized } from "@/config/config-service"
 
 export function assertAIEnv() {
   console.log('Checking OPENAI_API_KEY...')
