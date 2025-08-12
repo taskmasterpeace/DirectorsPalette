@@ -3,6 +3,7 @@
 import { openai } from "@ai-sdk/openai"
 import { generateObject } from "ai"
 import { z } from "zod"
+import { withRetry, ProgressSaver } from "@/lib/error-handling"
 
 // ===== Schemas =====
 const ChapterSchema = z.object({
@@ -116,12 +117,18 @@ export async function generateBreakdown(
     throw new Error("Missing OPENAI_API_KEY environment variable")
   }
 
+  const progressSaver = new ProgressSaver(`story-${Date.now()}`)
+  
   try {
     // Try to detect existing chapters
     const detectedChapters = detectChapters(story, chapterMethod, userChapterCount)
     
-    // Generate story structure
-    const structurePrompt = `
+    // Check for saved progress
+    let storyStructure = progressSaver.get('structure')
+    
+    if (!storyStructure) {
+      // Generate story structure with retry
+      const structurePrompt = `
 Analyze this story and create a chapter structure.
 ${chapterMethod === 'user-specified' ? `Split into exactly ${userChapterCount} chapters.` : ''}
 ${chapterMethod === 'ai-suggested' ? 'Suggest 3-5 chapters based on natural story beats.' : ''}
@@ -136,17 +143,42 @@ For each chapter provide:
 - Narrative beat (setup/rising-action/climax/resolution)
 `
 
-    const { object: storyStructure } = await generateObject({
-      model: openai("gpt-4o-mini"),
-      schema: StoryStructureSchema,
-      prompt: structurePrompt,
-      system: `You are analyzing a story for film adaptation. Story: """${story}"""`,
-    })
+      storyStructure = await withRetry(
+        async () => {
+          const { object } = await generateObject({
+            model: openai("gpt-4o-mini"),
+            schema: StoryStructureSchema,
+            prompt: structurePrompt,
+            system: `You are analyzing a story for film adaptation. Story: """${story}"""`,
+          })
+          return object
+        },
+        {
+          maxRetries: 3,
+          onRetry: (attempt, error) => {
+            console.log(`Retry attempt ${attempt} for story structure:`, error.message)
+          }
+        }
+      )
+      
+      // Save progress
+      progressSaver.save('structure', storyStructure)
+    }
 
     // Generate breakdown for each chapter
     const chapterBreakdowns = []
     
-    for (const chapter of storyStructure.chapters) {
+    // Check for saved chapter progress
+    const savedChapters = progressSaver.get('chapters') || []
+    
+    for (let i = 0; i < storyStructure.chapters.length; i++) {
+      const chapter = storyStructure.chapters[i]
+      
+      // Skip if already processed
+      if (savedChapters[i]) {
+        chapterBreakdowns.push(savedChapters[i])
+        continue
+      }
       const breakdownPrompt = `
 Generate a shot list for this chapter of the story.
 
@@ -172,16 +204,33 @@ Also provide:
 ${titleCardOptions?.enabled ? '- Title card suggestions' : ''}
 `
 
-      const { object: breakdown } = await generateObject({
-        model: openai("gpt-4o-mini"),
-        schema: ChapterBreakdownSchema,
-        prompt: breakdownPrompt,
-        system: `You are a cinematographer creating a shot list in the style of ${director || 'a skilled filmmaker'}.`,
-      })
+      const breakdown = await withRetry(
+        async () => {
+          const { object } = await generateObject({
+            model: openai("gpt-4o-mini"),
+            schema: ChapterBreakdownSchema,
+            prompt: breakdownPrompt,
+            system: `You are a cinematographer creating a shot list in the style of ${director || 'a skilled filmmaker'}.`,
+          })
+          return object
+        },
+        {
+          maxRetries: 3,
+          onRetry: (attempt, error) => {
+            console.log(`Retry attempt ${attempt} for chapter ${i + 1}:`, error.message)
+          }
+        }
+      )
       
       chapterBreakdowns.push(breakdown)
+      
+      // Save progress after each chapter
+      progressSaver.save('chapters', chapterBreakdowns)
     }
 
+    // Clear progress on successful completion
+    progressSaver.clear()
+    
     return {
       success: true,
       data: {
@@ -193,6 +242,25 @@ ${titleCardOptions?.enabled ? '- Title card suggestions' : ''}
     }
   } catch (error) {
     console.error('Error generating breakdown:', error)
+    
+    // Check if we have partial progress
+    const savedStructure = progressSaver.get('structure')
+    const savedChapters = progressSaver.get('chapters')
+    
+    if (savedStructure && savedChapters && savedChapters.length > 0) {
+      console.log('Returning partial progress:', savedChapters.length, 'chapters')
+      return {
+        success: true,
+        partial: true,
+        data: {
+          storyStructure: savedStructure,
+          chapterBreakdowns: savedChapters,
+          chapters: savedStructure.chapters,
+          generatedAt: new Date().toISOString(),
+        }
+      }
+    }
+    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to generate breakdown'
