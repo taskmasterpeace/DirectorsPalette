@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { generateFullMusicVideoBreakdown } from '@/app/actions-mv'
+import { generateFullMusicVideoBreakdown } from '@/app/actions/music-video'
 
 export default function TestMVGeneration() {
   const [result, setResult] = useState<any>(null)

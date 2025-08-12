@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { generateBreakdown } from '@/app/actions/story'
-import { generateFullMusicVideoBreakdown } from '@/app/actions-mv'
+import { generateFullMusicVideoBreakdown } from '@/app/actions/music-video'
 
 const TEST_STORY = `
 John walked into the abandoned warehouse. The place was dark and dusty. 

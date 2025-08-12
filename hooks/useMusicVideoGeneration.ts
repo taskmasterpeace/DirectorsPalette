@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useMusicVideoStore } from '@/stores/music-video-store'
 import { useAppStore } from '@/stores/app-store'
-import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from '@/app/actions-mv'
+import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from '@/app/actions/music-video'
 
 export function useMusicVideoGeneration() {
   const { toast } = useToast()
