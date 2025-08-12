@@ -88,6 +88,10 @@ const SuggestionsSchema = z.object({
 })
 
 function assertAIEnv() {
+  console.log('[Server Action] Checking OPENAI_API_KEY...')
+  console.log('[Server Action] OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY)
+  console.log('[Server Action] OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0)
+  
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Missing OPENAI_API_KEY. Please add the OpenAI integration or set the key in project settings.")
   }

@@ -30,48 +30,43 @@ export function MusicVideoContainer() {
   return (
     <MusicVideoMode
       lyrics={musicVideoStore.lyrics}
-      onLyricsChange={musicVideoStore.setLyrics}
+      setLyrics={musicVideoStore.setLyrics}
       songTitle={musicVideoStore.songTitle}
-      onSongTitleChange={musicVideoStore.setSongTitle}
+      setSongTitle={musicVideoStore.setSongTitle}
       artist={musicVideoStore.artist}
-      onArtistChange={musicVideoStore.setArtist}
+      setArtist={musicVideoStore.setArtist}
       genre={musicVideoStore.genre}
-      onGenreChange={musicVideoStore.setGenre}
-      concept={musicVideoStore.mvConcept}
-      onConceptChange={musicVideoStore.setMvConcept}
-      directorNotes={musicVideoStore.mvDirectorNotes}
-      onDirectorNotesChange={musicVideoStore.setMvDirectorNotes}
+      setGenre={musicVideoStore.setGenre}
+      mvConcept={musicVideoStore.mvConcept}
+      setMvConcept={musicVideoStore.setMvConcept}
+      mvDirectorNotes={musicVideoStore.mvDirectorNotes}
+      setMvDirectorNotes={musicVideoStore.setMvDirectorNotes}
       selectedArtistId={musicVideoStore.selectedArtistId}
-      onArtistSelect={(id, profile) => {
-        musicVideoStore.setSelectedArtistId(id)
-        musicVideoStore.setSelectedArtistProfile(profile)
-      }}
-      selectedDirector={musicVideoStore.selectedMusicVideoDirector}
-      onDirectorChange={musicVideoStore.setSelectedMusicVideoDirector}
-      breakdown={musicVideoStore.musicVideoBreakdown}
-      config={musicVideoStore.musicVideoConfig}
-      showConfig={musicVideoStore.showMusicVideoConfig}
-      onConfigUpdate={musicVideoStore.setMusicVideoConfig}
-      onConfigClose={() => musicVideoStore.setShowMusicVideoConfig(false)}
-      onGenerateReferences={handleGenerateMusicVideoReferences}
-      onGenerateBreakdown={handleGenerateMusicVideoBreakdown}
-      onClearBreakdown={handleClearMusicVideo}
+      setSelectedArtistId={musicVideoStore.setSelectedArtistId}
+      selectedArtistProfile={musicVideoStore.selectedArtistProfile}
+      setSelectedArtistProfile={musicVideoStore.setSelectedArtistProfile}
+      selectedMusicVideoDirector={musicVideoStore.selectedMusicVideoDirector}
+      setSelectedMusicVideoDirector={musicVideoStore.setSelectedMusicVideoDirector}
       curatedDirectors={curatedMusicVideoDirectors || []}
       customDirectors={customMusicVideoDirectors || []}
-      onGenerateAdditionalShots={handleGenerateAdditionalMusicVideoShots}
-      additionalShots={musicVideoStore.additionalMusicVideoShots}
+      musicVideoConfig={musicVideoStore.musicVideoConfig}
+      setMusicVideoConfig={musicVideoStore.setMusicVideoConfig}
+      showMusicVideoConfig={musicVideoStore.showMusicVideoConfig}
+      setShowMusicVideoConfig={musicVideoStore.setShowMusicVideoConfig}
+      musicVideoBreakdown={musicVideoStore.musicVideoBreakdown}
+      setMusicVideoBreakdown={musicVideoStore.setMusicVideoBreakdown}
+      additionalMusicVideoShots={musicVideoStore.additionalMusicVideoShots}
+      setAdditionalMusicVideoShots={musicVideoStore.setAdditionalMusicVideoShots}
       expandedSections={musicVideoStore.expandedSections}
-      onToggleSectionExpansion={musicVideoStore.toggleSectionExpansion}
-      selectedSection={musicVideoStore.selectedMusicVideoSection}
-      onSelectSection={musicVideoStore.setSelectedMusicVideoSection}
-      showCustomDirectorForm={showCustomDirectorForm}
-      onShowCustomDirectorForm={setShowCustomDirectorForm}
-      customDirectorName={customDirectorName}
-      onCustomDirectorNameChange={setCustomDirectorName}
-      customDirectorDescription={customDirectorDescription}
-      onCustomDirectorDescriptionChange={setCustomDirectorDescription}
-      isGeneratingDirectorStyle={isGeneratingDirectorStyle}
-      onCreateCustomDirector={handleCreateCustomDirector}
+      setExpandedSections={musicVideoStore.setExpandedSections}
+      isLoading={false}
+      onGenerateMusicVideoReferences={handleGenerateMusicVideoReferences}
+      onGenerateMusicVideoBreakdown={handleGenerateMusicVideoBreakdown}
+      onClearMusicVideo={handleClearMusicVideo}
+      onGenerateAdditionalMusicVideoShots={handleGenerateAdditionalMusicVideoShots}
+      onCopyToClipboard={(text: string) => {
+        navigator.clipboard.writeText(text).catch(console.error)
+      }}
     />
   )
 }

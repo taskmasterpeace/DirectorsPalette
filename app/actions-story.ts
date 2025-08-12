@@ -30,11 +30,19 @@ const TitleCardSchema = z.object({
   description: z.string(),
 })
 
+const ReferenceDescriptionSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+})
+
 const ChapterBreakdownSchema = z.object({
   chapterId: z.string(),
   characterReferences: z.array(z.string()),
   locationReferences: z.array(z.string()),
   propReferences: z.array(z.string()),
+  characterDescriptions: z.array(ReferenceDescriptionSchema).optional(),
+  locationDescriptions: z.array(ReferenceDescriptionSchema).optional(),
+  propDescriptions: z.array(ReferenceDescriptionSchema).optional(),
   shots: z.array(z.string()),
   coverageAnalysis: z.string(),
   additionalOpportunities: z.array(z.string()),
@@ -81,7 +89,17 @@ function buildFilmDirectorStyle(d?: {
 }
 
 const prompts = {
-  structureDetection: `Analyze the following text and split it into logical chapters. Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered. Return ONLY JSON.`,
+  structureDetection: `Analyze the following text and split it into 3-5 logical chapters maximum. Focus on major story beats and natural narrative breaks, not minor scene changes. Each chapter should be substantial (multiple paragraphs or story sections). Identify the narrative beat for each chapter (setup, rising-action, climax, resolution). Provide a unique ID, a concise title, the full content, start/end character positions, estimated screen time, key characters, and primary location for each chapter. Ensure the entire text is covered.
+
+REQUIRED JSON FORMAT - You MUST include ALL these fields:
+{
+  "chapters": [array of chapter objects],
+  "detectionMethod": "ai-generated",  
+  "totalChapters": [number],
+  "fullStory": "[the complete original story text]"
+}
+
+Return ONLY JSON matching this exact schema.`,
   chapterBreakdown: `You are a world-class cinematographer creating a visual breakdown for a story chapter.
 
 BALANCE REQUIREMENTS:
@@ -110,16 +128,23 @@ CRITICAL SHOT REQUIREMENTS:
 
 Generate a shot list that authentically reflects this director's style. Each shot should be a complete, detailed image prompt.
 
-REFERENCE FORMATTING:
+REFERENCE FORMATTING & DESCRIPTIONS:
 - Use clean @reference handles: @protagonist, @sarah_young, @apartment, @gun
 - Format: "[Shot description] featuring @character_name at @location_name with @prop_name"
 - Keep references consistent and descriptive
+- For each reference, provide a brief director-style description:
+  - Characters: Physical appearance and personality in director's visual language
+  - Locations: Atmospheric qualities and visual tone in director's style
+  - Props: Visual significance and symbolic meaning in the narrative
 
 CRITICAL JSON FORMAT REQUIREMENTS:
 - chapterId: string (required)
-- characterReferences: array of strings (required)
-- locationReferences: array of strings (required) 
-- propReferences: array of strings (required)
+- characterReferences: array of strings (required, e.g., ["protagonist", "sarah_young"])
+- locationReferences: array of strings (required, e.g., ["apartment", "street"]) 
+- propReferences: array of strings (required, e.g., ["gun", "phone"])
+- characterDescriptions: array of {name, description} objects with director-style descriptions
+- locationDescriptions: array of {name, description} objects with atmospheric qualities
+- propDescriptions: array of {name, description} objects with visual significance
 - shots: array of STRINGS (not objects, just plain text descriptions)
 - coverageAnalysis: string (required)
 - additionalOpportunities: array of strings (required)
@@ -139,10 +164,14 @@ DIRECTOR STYLE PROFILE:
 
 CUSTOM REQUEST: {customRequest}
 
-REFERENCE FORMATTING:
+REFERENCE FORMATTING & DESCRIPTIONS:
 - Use clean @reference handles: @protagonist, @sarah_young, @apartment, @gun
 - Format: "[Shot description] featuring @character_name at @location_name with @prop_name"
 - Keep references consistent and descriptive
+- For each reference, provide a brief director-style description:
+  - Characters: Physical appearance and personality in director's visual language
+  - Locations: Atmospheric qualities and visual tone in director's style
+  - Props: Visual significance and symbolic meaning in the narrative
 
 Return ONLY JSON with 'newShots' and 'coverageAnalysis'.`,
   titleCard: `Design {count} unique title card concepts for the chapter "{chapterTitle}". For each, provide 'styleLabel' and a detailed 'description'. Approaches: {approaches}. Return ONLY JSON.`,
@@ -153,15 +182,15 @@ export async function generateBreakdown(
   director: string,
   titleCardOptions: { enabled: boolean; format: "full" | "name-only" | "roman-numerals"; approaches: string[] },
   customDirectors: any[],
-  promptOptions: { includeCameraStyle: boolean; includeColorPalette: boolean },
+  promptOptions: { includeCameraStyle?: boolean; includeColorPalette?: boolean } | null,
   directorNotes = "",
 ) {
   assertAIEnv()
   
-  console.log('🎬 ACTUAL STORY INPUT:', story.substring(0, 200) + '...')
-  console.log('🎭 DIRECTOR:', director)
-  console.log('📝 DIRECTOR NOTES:', directorNotes)
-  console.log('🚀 Starting structure detection API call...')
+  console.log('🎬 STORY LENGTH:', story.length, 'characters')
+  console.log('🎭 DIRECTOR SELECTED:', director)
+  console.log('📝 DIRECTOR NOTES:', directorNotes || 'None')
+  console.log('🚀 Starting structure detection (aiming for 3-5 chapters)...')
 
   const { object: storyStructure } = await generateObject({
     model: openai("gpt-4o-mini"),
@@ -182,8 +211,9 @@ export async function generateBreakdown(
         .replace("{directorStyle}", directorStyle)
         .replace("{directorNotes}", directorNotes || "None")
 
-      const includeCameraStyle = promptOptions?.includeCameraStyle ?? true
-      const includeColorPalette = promptOptions?.includeColorPalette ?? true
+      // Handle promptOptions safely for server-side execution
+      const includeCameraStyle = promptOptions ? Boolean(promptOptions.includeCameraStyle) : true
+      const includeColorPalette = promptOptions ? Boolean(promptOptions.includeColorPalette) : true
       
       if (!includeCameraStyle) {
         prompt += `\nIMPORTANT: Minimize detailed camera movement descriptions.`
@@ -244,7 +274,7 @@ export async function generateAdditionalChapterShots(
     customRequest: string
   },
   customDirectors: any[],
-  promptOptions: { includeCameraStyle: boolean; includeColorPalette: boolean },
+  promptOptions: { includeCameraStyle?: boolean; includeColorPalette?: boolean } | null,
   directorNotes = "",
 ) {
   assertAIEnv()
@@ -271,8 +301,12 @@ export async function generateAdditionalChapterShots(
     .replace("{directorNotes}", directorNotes || "None")
     .replace("{customRequest}", customRequest || "")
 
-  if (!promptOptions.includeCameraStyle) prompt += `\nIMPORTANT: Minimize detailed camera moves.`
-  if (!promptOptions.includeColorPalette) prompt += `\nIMPORTANT: Minimize detailed color/lighting.`
+  // Handle promptOptions safely for server-side execution
+  const includeCameraStyle = promptOptions ? Boolean(promptOptions.includeCameraStyle) : true
+  const includeColorPalette = promptOptions ? Boolean(promptOptions.includeColorPalette) : true
+  
+  if (!includeCameraStyle) prompt += `\nIMPORTANT: Minimize detailed camera moves.`
+  if (!includeColorPalette) prompt += `\nIMPORTANT: Minimize detailed color/lighting.`
 
   const { object } = await generateObject({
     model: openai("gpt-4o-mini"),

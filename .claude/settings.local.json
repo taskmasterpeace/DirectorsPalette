@@ -15,7 +15,14 @@
       "Bash(npm run build:*)",
       "Bash(npx next dev:*)",
       "Bash(tasklist:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(node:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

@@ -55,45 +55,45 @@ export function StoryContainer() {
     <>
       <StoryMode
         story={storyStore.story}
-        onStoryChange={storyStore.setStory}
+        setStory={storyStore.setStory}
+        storyDirectorNotes={storyStore.storyDirectorNotes}
+        setStoryDirectorNotes={storyStore.setStoryDirectorNotes}
         selectedDirector={storyStore.selectedDirector}
-        onDirectorChange={storyStore.setSelectedDirector}
-        directorNotes={storyStore.storyDirectorNotes}
-        onDirectorNotesChange={storyStore.setStoryDirectorNotes}
-        titleCardOptions={storyStore.titleCardOptions}
-        onTitleCardOptionsChange={storyStore.setTitleCardOptions}
-        promptOptions={storyStore.promptOptions}
-        onPromptOptionsChange={storyStore.setPromptOptions}
-        breakdown={storyStore.breakdown}
-        onGenerateBreakdown={handleGenerateBreakdown}
-        onClearBreakdown={handleClearStory}
+        setSelectedDirector={storyStore.setSelectedDirector}
         curatedDirectors={curatedFilmDirectors || []}
         customDirectors={customDirectors || []}
-        onGenerateAdditionalShots={handleGenerateAdditionalShots}
+        titleCardOptions={storyStore.titleCardOptions}
+        setTitleCardOptions={storyStore.setTitleCardOptions}
+        promptOptions={storyStore.promptOptions}
+        setPromptOptions={storyStore.setPromptOptions}
+        breakdown={storyStore.breakdown}
+        setBreakdown={storyStore.setBreakdown}
         additionalShots={storyStore.additionalShots}
+        setAdditionalShots={storyStore.setAdditionalShots}
         expandedChapters={storyStore.expandedChapters}
-        onToggleChapterExpansion={storyStore.toggleChapterExpansion}
-        selectedChapter={storyStore.selectedChapter}
-        onSelectChapter={storyStore.setSelectedChapter}
-        showCustomDirectorForm={showCustomDirectorForm}
-        onShowCustomDirectorForm={setShowCustomDirectorForm}
-        customDirectorName={customDirectorName}
-        onCustomDirectorNameChange={setCustomDirectorName}
-        customDirectorDescription={customDirectorDescription}
-        onCustomDirectorDescriptionChange={setCustomDirectorDescription}
-        isGeneratingDirectorStyle={isGeneratingDirectorStyle}
-        onCreateCustomDirector={handleCreateCustomDirector}
-        showEntitiesConfig={entitiesStore.showEntitiesConfig}
-        currentEntities={entitiesStore.currentEntities}
-        extractedEntities={entitiesStore.extractedEntities}
-        isExtracting={entitiesStore.isExtracting}
-        onExtractEntities={handleExtractEntities}
-        onEntitiesUpdate={entitiesStore.setCurrentEntities}
-        onGenerateWithEntities={handleGenerateWithEntitiesClick}
+        setExpandedChapters={storyStore.setExpandedChapters}
+        isLoading={false}
         generationStage={generationStage}
         stageProgress={stageProgress}
         stageMessage={stageMessage}
         elapsedTime={elapsedTime}
+        estimatedTime={30000}
+        showEntitiesConfig={entitiesStore.showEntitiesConfig}
+        setShowEntitiesConfig={entitiesStore.setShowEntitiesConfig}
+        currentEntities={entitiesStore.currentEntities}
+        setCurrentEntities={entitiesStore.setCurrentEntities}
+        extractedEntities={entitiesStore.extractedEntities}
+        setExtractedEntities={entitiesStore.setExtractedEntities}
+        isExtracting={entitiesStore.isExtracting}
+        isGeneratingWithEntities={entitiesStore.isGeneratingWithEntities}
+        onGenerateBreakdown={handleGenerateBreakdown}
+        onExtractEntities={handleExtractEntities}
+        onGenerateWithEntities={handleGenerateWithEntitiesClick}
+        onGenerateAdditionalShots={handleGenerateAdditionalShots}
+        onClearStory={handleClearStory}
+        onCopyToClipboard={(text: string) => {
+          navigator.clipboard.writeText(text).catch(console.error)
+        }}
       />
       
       {showDirectorQuestions && storyStore.selectedDirector && (

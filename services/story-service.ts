@@ -205,10 +205,13 @@ export class StoryService {
           })
 
           // Apply prompt options
-          if (!promptOptions.includeCameraStyle) {
+          const includeCameraStyle = promptOptions?.includeCameraStyle ?? true
+          const includeColorPalette = promptOptions?.includeColorPalette ?? true
+          
+          if (!includeCameraStyle) {
             prompt += `\nIMPORTANT: Minimize detailed camera movement descriptions.`
           }
-          if (!promptOptions.includeColorPalette) {
+          if (!includeColorPalette) {
             prompt += `\nIMPORTANT: Minimize detailed color palette and lighting descriptions.`
           }
 
