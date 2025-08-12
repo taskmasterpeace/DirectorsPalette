@@ -52,9 +52,12 @@ export function StoryReferenceConfig({
   onConfigurationComplete,
   onCancel
 }: StoryReferenceConfigProps) {
-  const [characters, setCharacters] = useState<Reference[]>(initialReferences.characters || [])
-  const [locations, setLocations] = useState<Reference[]>(initialReferences.locations || [])
-  const [props, setProps] = useState<Reference[]>(initialReferences.props || [])
+  // Handle null/undefined references safely
+  const safeRefs = initialReferences || { characters: [], locations: [], props: [], themes: [], suggestedTreatments: [] }
+  
+  const [characters, setCharacters] = useState<Reference[]>(safeRefs.characters || [])
+  const [locations, setLocations] = useState<Reference[]>(safeRefs.locations || [])
+  const [props, setProps] = useState<Reference[]>(safeRefs.props || [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingType, setEditingType] = useState<'character' | 'location' | 'prop' | null>(null)
   const [addingType, setAddingType] = useState<'character' | 'location' | 'prop' | null>(null)
@@ -110,8 +113,8 @@ export function StoryReferenceConfig({
       characters,
       locations,
       props,
-      themes: initialReferences.themes,
-      suggestedTreatments: initialReferences.suggestedTreatments
+      themes: safeRefs.themes,
+      suggestedTreatments: safeRefs.suggestedTreatments
     })
   }
 
@@ -278,11 +281,11 @@ export function StoryReferenceConfig({
             Add, edit, or remove elements to ensure the breakdown uses only the characters, locations, and props you want.
           </p>
           
-          {initialReferences.themes && initialReferences.themes.length > 0 && (
+          {safeRefs.themes && safeRefs.themes.length > 0 && (
             <div className="mb-4">
               <p className="text-sm text-slate-400 mb-2">Detected Themes:</p>
               <div className="flex flex-wrap gap-2">
-                {initialReferences.themes.map((theme, i) => (
+                {safeRefs.themes.map((theme, i) => (
                   <Badge key={i} variant="secondary" className="bg-purple-600/20 text-purple-300">
                     {theme}
                   </Badge>

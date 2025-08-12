@@ -174,7 +174,7 @@ export function StoryContainer() {
         />
       )}
       
-      {showReferenceConfig && extractedReferences && (
+      {showReferenceConfig && (
         <StoryReferenceConfig
           references={extractedReferences}
           isLoading={isLoading}
