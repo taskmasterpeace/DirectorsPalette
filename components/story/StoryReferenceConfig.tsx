@@ -210,7 +210,7 @@ export function StoryReferenceConfig({
                   </div>
                   <p className="text-sm text-slate-400">{item.description}</p>
                   {item.appearances && item.appearances.length > 0 && (
-                    <div className="flex gap-1 mt-1">
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {item.appearances.map((app, i) => (
                         <Badge key={i} variant="secondary" className="text-xs">
                           {app}
