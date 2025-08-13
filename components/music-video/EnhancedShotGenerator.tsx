@@ -41,18 +41,30 @@ export function EnhancedShotGenerator({
     const references = []
     
     if (selectedLocation && selectedLocation !== "none") {
-      const location = locations.find(l => l.id === selectedLocation)
+      const locationIndex = selectedLocation.startsWith('location-') ? 
+        parseInt(selectedLocation.replace('location-', '')) : null
+      const location = locationIndex !== null ? 
+        locations[locationIndex] : 
+        locations.find(l => l.id === selectedLocation)
       if (location) references.push(`Location: ${location.reference} (${location.name})`)
     }
     
     if (selectedWardrobe && selectedWardrobe !== "none") {
-      const outfit = wardrobe.find(w => w.id === selectedWardrobe)
+      const wardrobeIndex = selectedWardrobe.startsWith('wardrobe-') ?
+        parseInt(selectedWardrobe.replace('wardrobe-', '')) : null
+      const outfit = wardrobeIndex !== null ?
+        wardrobe[wardrobeIndex] :
+        wardrobe.find(w => w.id === selectedWardrobe)
       if (outfit) references.push(`Wardrobe: ${outfit.reference} (${outfit.name})`)
     }
     
     if (selectedProps.length > 0) {
       const propRefs = selectedProps.map(propId => {
-        const prop = props.find(p => p.id === propId)
+        const propIndex = propId.startsWith('prop-') ?
+          parseInt(propId.replace('prop-', '')) : null
+        const prop = propIndex !== null ?
+          props[propIndex] :
+          props.find(p => p.id === propId)
         return prop ? `${prop.reference} (${prop.name})` : propId
       }).join(', ')
       references.push(`Props: ${propRefs}`)
@@ -162,8 +174,8 @@ export function EnhancedShotGenerator({
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="none">No specific location</SelectItem>
-                {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id}>
+                {locations.map((location, index) => (
+                  <SelectItem key={location.id || `location-${index}`} value={location.id || `location-${index}`}>
                     {location.reference} - {location.name}
                   </SelectItem>
                 ))}
@@ -182,8 +194,8 @@ export function EnhancedShotGenerator({
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="none">No specific wardrobe</SelectItem>
-                {wardrobe.map((outfit) => (
-                  <SelectItem key={outfit.id} value={outfit.id}>
+                {wardrobe.map((outfit, index) => (
+                  <SelectItem key={outfit.id || `wardrobe-${index}`} value={outfit.id || `wardrobe-${index}`}>
                     {outfit.reference} - {outfit.name}
                   </SelectItem>
                 ))}
@@ -197,20 +209,23 @@ export function EnhancedShotGenerator({
           <div>
             <label className="text-sm font-medium text-white mb-2 block">Props (click to select)</label>
             <div className="flex flex-wrap gap-2">
-              {props.map((prop) => (
-                <Button
-                  key={prop.id}
-                  size="sm"
-                  variant={selectedProps.includes(prop.id) ? "default" : "outline"}
-                  onClick={() => toggleProp(prop.id)}
-                  className={selectedProps.includes(prop.id) 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "border-slate-600 text-slate-300 hover:bg-slate-700"
-                  }
-                >
-                  {prop.reference} - {prop.name}
-                </Button>
-              ))}
+              {props.map((prop, index) => {
+                const propId = prop.id || `prop-${index}`
+                return (
+                  <Button
+                    key={propId}
+                    size="sm"
+                    variant={selectedProps.includes(propId) ? "default" : "outline"}
+                    onClick={() => toggleProp(propId)}
+                    className={selectedProps.includes(propId) 
+                      ? "bg-green-600 hover:bg-green-700 text-white" 
+                      : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                    }
+                  >
+                    {prop.reference} - {prop.name}
+                  </Button>
+                )
+              })}
             </div>
           </div>
         )}
@@ -233,16 +248,34 @@ export function EnhancedShotGenerator({
             <div className="flex flex-wrap gap-2">
               {selectedLocation && selectedLocation !== "none" && (
                 <Badge variant="outline" className="border-blue-500/30 text-blue-300">
-                  {locations.find(l => l.id === selectedLocation)?.reference}
+                  {(() => {
+                    const locationIndex = selectedLocation.startsWith('location-') ?
+                      parseInt(selectedLocation.replace('location-', '')) : null
+                    const location = locationIndex !== null ?
+                      locations[locationIndex] :
+                      locations.find(l => l.id === selectedLocation)
+                    return location?.reference
+                  })()}
                 </Badge>
               )}
               {selectedWardrobe && selectedWardrobe !== "none" && (
                 <Badge variant="outline" className="border-purple-500/30 text-purple-300">
-                  {wardrobe.find(w => w.id === selectedWardrobe)?.reference}
+                  {(() => {
+                    const wardrobeIndex = selectedWardrobe.startsWith('wardrobe-') ?
+                      parseInt(selectedWardrobe.replace('wardrobe-', '')) : null
+                    const outfit = wardrobeIndex !== null ?
+                      wardrobe[wardrobeIndex] :
+                      wardrobe.find(w => w.id === selectedWardrobe)
+                    return outfit?.reference
+                  })()}
                 </Badge>
               )}
               {selectedProps.map(propId => {
-                const prop = props.find(p => p.id === propId)
+                const propIndex = propId.startsWith('prop-') ?
+                  parseInt(propId.replace('prop-', '')) : null
+                const prop = propIndex !== null ?
+                  props[propIndex] :
+                  props.find(p => p.id === propId)
                 return prop ? (
                   <Badge key={propId} variant="outline" className="border-green-500/30 text-green-300">
                     {prop.reference}

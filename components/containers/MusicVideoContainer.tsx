@@ -182,6 +182,10 @@ export function MusicVideoContainer() {
           setSelectedArtistId={musicVideoStore.setSelectedArtistId}
           selectedArtistProfile={musicVideoStore.selectedArtistProfile}
           setSelectedArtistProfile={musicVideoStore.setSelectedArtistProfile}
+          artistVisualDescription={musicVideoStore.artistVisualDescription}
+          setArtistVisualDescription={musicVideoStore.setArtistVisualDescription}
+          showDescriptions={musicVideoStore.showDescriptions}
+          setShowDescriptions={musicVideoStore.setShowDescriptions}
           selectedMusicVideoDirector={musicVideoStore.selectedMusicVideoDirector}
           setSelectedMusicVideoDirector={musicVideoStore.setSelectedMusicVideoDirector}
           curatedDirectors={curatedMusicVideoDirectors || []}

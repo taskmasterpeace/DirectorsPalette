@@ -7,7 +7,8 @@ export async function generateAdditionalMusicVideoShots(
   section: any,
   songTitle: string,
   director: string = "",
-  customRequest: string = ""
+  customRequest: string = "",
+  artistName: string = "artist"
 ) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Missing OPENAI_API_KEY environment variable")
@@ -35,6 +36,11 @@ Requirements:
 ${customRequest ? `Special request: ${customRequest}` : ''}
 ${director ? `Match the style of ${director}` : ''}
 
+IMPORTANT FORMATTING:
+- Use @artist as a placeholder for the artist's name in ALL shots
+- @artist is a variable that represents the performing artist
+- Never use any actual artist names, always use @artist
+
 Generate creative, complementary shots that enhance the music video.
 Each shot should be a complete, detailed description (2-3 sentences).
 Include camera movement, framing, and visual style details.
@@ -46,7 +52,7 @@ Use location, wardrobe, and prop references where appropriate.
       prompt,
       system: `You are a music video director creating additional shots in ${
         director ? `the style of ${director}` : 'a contemporary music video style'
-      }.`,
+      }. CRITICAL: Always use @artist as a placeholder for the artist's name in shot descriptions, never use the actual artist name.`,
     })
 
     // Parse the response into individual shots
@@ -56,6 +62,7 @@ Use location, wardrobe, and prop references where appropriate.
       .filter(line => /^\d+[\.\)]\s*/.test(line) || line.startsWith('-') || line.startsWith('•'))
       .map(line => line.replace(/^[\d\.\)\-•\s]+/, '').trim())
       .filter(shot => shot.length > 20) // Filter out short/incomplete lines
+      // DO NOT replace @artist - keep it as a variable placeholder
 
     return {
       success: true,

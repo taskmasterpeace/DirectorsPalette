@@ -146,6 +146,8 @@ export function StoryMode({
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [chapterMethod, setChapterMethod] = useState<'auto-detect' | 'user-specified' | 'ai-suggested' | 'single'>('ai-suggested')
   const [userChapterCount, setUserChapterCount] = useState(4)
+  const [selectedShots, setSelectedShots] = useState<Set<string>>(new Set())
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
 
   const allDirectors = [...(curatedDirectors || []), ...(customDirectors || [])]
   const selectedDirectorInfo = allDirectors?.find((d) => d?.id === selectedDirector)
@@ -230,6 +232,84 @@ export function StoryMode({
 
   const toggleChapterExpansion = (chapterId: string) => {
     setExpandedChapters((prev: any) => ({ ...prev, [chapterId]: !prev[chapterId] }))
+  }
+
+  const handleCopyShot = (shot: string) => {
+    navigator.clipboard.writeText(shot)
+    toast({
+      title: "Copied!",
+      description: "Shot copied to clipboard"
+    })
+  }
+
+  const toggleShotSelection = (shotId: string) => {
+    const newSelection = new Set(selectedShots)
+    if (newSelection.has(shotId)) {
+      newSelection.delete(shotId)
+    } else {
+      newSelection.add(shotId)
+    }
+    setSelectedShots(newSelection)
+  }
+
+  const copySelectedShots = () => {
+    const shotsToCopy: string[] = []
+    
+    breakdown?.chapterBreakdowns?.forEach((chapterBreakdown: any, chapterIndex: number) => {
+      const chapter = breakdown.storyStructure.chapters[chapterIndex]
+      chapterBreakdown.shots?.forEach((shot: string, index: number) => {
+        const shotId = `${chapter.id}-${index}`
+        if (selectedShots.has(shotId)) {
+          shotsToCopy.push(shot)
+        }
+      })
+      
+      // Also check additional shots
+      const chapterAdditionalShots = additionalShots[chapter.id] || []
+      chapterAdditionalShots.forEach((shot: string, index: number) => {
+        const shotId = `${chapter.id}-additional-${index}`
+        if (selectedShots.has(shotId)) {
+          shotsToCopy.push(shot)
+        }
+      })
+    })
+    
+    if (shotsToCopy.length > 0) {
+      navigator.clipboard.writeText(shotsToCopy.join('\n\n'))
+      toast({
+        title: "Copied!",
+        description: `${shotsToCopy.length} shots copied to clipboard`
+      })
+      setSelectedShots(new Set())
+      setIsSelectionMode(false)
+    }
+  }
+
+  const selectAllChapterShots = (chapterId: string, chapterBreakdown: any) => {
+    const newSelection = new Set(selectedShots)
+    const allShotsInChapter: string[] = []
+    
+    chapterBreakdown.shots?.forEach((shot: string, index: number) => {
+      allShotsInChapter.push(`${chapterId}-${index}`)
+    })
+    
+    // Also include additional shots
+    const chapterAdditionalShots = additionalShots[chapterId] || []
+    chapterAdditionalShots.forEach((shot: string, index: number) => {
+      allShotsInChapter.push(`${chapterId}-additional-${index}`)
+    })
+    
+    const allSelected = allShotsInChapter.every(id => selectedShots.has(id))
+    
+    if (allSelected) {
+      // Deselect all
+      allShotsInChapter.forEach(id => newSelection.delete(id))
+    } else {
+      // Select all
+      allShotsInChapter.forEach(id => newSelection.add(id))
+    }
+    
+    setSelectedShots(newSelection)
   }
 
   return (
@@ -552,6 +632,34 @@ export function StoryMode({
                             Shot List ({chapterBreakdown.shots.length + chapterAdditionalShots.length} shots)
                           </h4>
                           <div className="flex gap-2">
+                            {selectedShots.size > 0 && (
+                              <Button
+                                size="sm"
+                                onClick={copySelectedShots}
+                                className="bg-amber-600 hover:bg-amber-700 text-white"
+                              >
+                                <Copy className="h-4 w-4 mr-1" />
+                                Copy Selected ({selectedShots.size})
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={isSelectionMode ? "secondary" : "outline"}
+                              onClick={() => {
+                                setIsSelectionMode(!isSelectionMode)
+                                if (isSelectionMode) setSelectedShots(new Set())
+                              }}
+                              className="border-slate-600"
+                            >
+                              {isSelectionMode ? "Cancel Select" : "Select Shots"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => selectAllChapterShots(chapter.id, chapterBreakdown)}
+                              className="bg-slate-700 hover:bg-slate-600 text-white"
+                            >
+                              Select Chapter
+                            </Button>
                             <Button
                               size="sm"
                               onClick={() =>
@@ -575,7 +683,7 @@ export function StoryMode({
                                     .join("\n")
                                   onCopyToClipboard(allShots)
                                 }}
-                                className="bg-amber-600 hover:bg-amber-700 text-white"
+                                className="bg-slate-700 hover:bg-slate-600 text-white"
                               >
                                 <Copy className="h-4 w-4 mr-1" />
                                 Copy All
@@ -584,34 +692,94 @@ export function StoryMode({
                           </div>
                         </div>
                         <div className="space-y-2">
-                          {chapterBreakdown.shots.map((shot: string, shotIndex: number) => (
-                            <div
-                              key={shotIndex}
-                              className="p-3 bg-slate-900/40 rounded-md border border-slate-700"
-                            >
-                              <div className="text-sm text-slate-300">{shot}</div>
-                            </div>
-                          ))}
-                          {chapterAdditionalShots.map((shot: string, shotIndex: number) => (
-                            <div
-                              key={`additional-${shotIndex}`}
-                              className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30"
-                            >
-                              <div className="text-sm text-slate-300">{shot}</div>
-                              <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
-                                Additional Shot
-                              </Badge>
-                            </div>
-                          ))}
+                          {chapterBreakdown.shots.map((shot: string, shotIndex: number) => {
+                            const shotId = `${chapter.id}-${shotIndex}`
+                            const isSelected = selectedShots.has(shotId)
+                            return (
+                              <div
+                                key={shotIndex}
+                                className={`p-3 bg-slate-900/40 rounded-md border ${
+                                  isSelected ? 'border-amber-500 bg-amber-900/20' : 'border-slate-700'
+                                } ${isSelectionMode ? 'cursor-pointer' : ''} relative group`}
+                                onClick={() => isSelectionMode && toggleShotSelection(shotId)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  {isSelectionMode && (
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleShotSelection(shotId)}
+                                      className="mt-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  )}
+                                  <div className="flex-1 text-sm text-slate-300">{shot}</div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopyShot(shot)
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                          {chapterAdditionalShots.map((shot: string, shotIndex: number) => {
+                            const shotId = `${chapter.id}-additional-${shotIndex}`
+                            const isSelected = selectedShots.has(shotId)
+                            return (
+                              <div
+                                key={`additional-${shotIndex}`}
+                                className={`p-3 bg-purple-900/20 rounded-md border ${
+                                  isSelected ? 'border-amber-500 bg-amber-900/20' : 'border-purple-700/30'
+                                } ${isSelectionMode ? 'cursor-pointer' : ''} relative group`}
+                                onClick={() => isSelectionMode && toggleShotSelection(shotId)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  {isSelectionMode && (
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleShotSelection(shotId)}
+                                      className="mt-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="text-sm text-slate-300">{shot}</div>
+                                    <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
+                                      Additional Shot
+                                    </Badge>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopyShot(shot)
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
 
                       {/* Enhanced Shot Generator - Now with ALL references available */}
                       <EnhancedShotGenerator
                         chapterId={chapter.id}
-                        chapterCharacters={Array.from(allRefs.characters.keys())}
-                        chapterLocations={Array.from(allRefs.locations.keys())}
-                        chapterProps={Array.from(allRefs.props.keys())}
+                        chapterCharacters={extractedReferences.characters.map(c => c.name)}
+                        chapterLocations={extractedReferences.locations.map(l => l.name)}
+                        chapterProps={extractedReferences.props.map(p => p.name)}
                         onGenerateShot={(chapterId, shotType, characters, location, customReq) => {
                           // Build categories from shot type
                           const categories = [shotType]

@@ -48,6 +48,10 @@ interface MusicVideoModeProps {
   setSelectedArtistId: (id: string | null) => void
   selectedArtistProfile: ArtistProfile | undefined
   setSelectedArtistProfile: (profile: ArtistProfile | undefined) => void
+  artistVisualDescription: string
+  setArtistVisualDescription: (description: string) => void
+  showDescriptions: boolean
+  setShowDescriptions: (show: boolean) => void
   
   // Director selection
   selectedMusicVideoDirector: string
@@ -99,6 +103,10 @@ export function MusicVideoMode({
   setSelectedArtistId,
   selectedArtistProfile,
   setSelectedArtistProfile,
+  artistVisualDescription,
+  setArtistVisualDescription,
+  showDescriptions,
+  setShowDescriptions,
   selectedMusicVideoDirector,
   setSelectedMusicVideoDirector,
   curatedDirectors,
@@ -121,6 +129,8 @@ export function MusicVideoMode({
   onCopyToClipboard,
 }: MusicVideoModeProps) {
   const { toast } = useToast()
+  const [selectedShots, setSelectedShots] = useState<Set<string>>(new Set())
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
   
   console.log('MusicVideoMode - breakdown:', {
     hasBreakdown: !!musicVideoBreakdown,
@@ -146,6 +156,78 @@ export function MusicVideoMode({
     if (profile?.genres?.length) {
       setGenre(profile.genres[0] || "")
     }
+  }
+
+  // Helper function to process shots with artist descriptions
+  const processShot = (shot: string) => {
+    if (showDescriptions && artistVisualDescription) {
+      return shot.replace(/@artist/gi, artistVisualDescription)
+    }
+    return shot
+  }
+
+  const handleCopyShot = (shot: string) => {
+    // Copy the processed shot (with description if enabled)
+    navigator.clipboard.writeText(processShot(shot))
+    toast({
+      title: "Copied!",
+      description: "Shot copied to clipboard"
+    })
+  }
+
+  const toggleShotSelection = (shotId: string) => {
+    const newSelection = new Set(selectedShots)
+    if (newSelection.has(shotId)) {
+      newSelection.delete(shotId)
+    } else {
+      newSelection.add(shotId)
+    }
+    setSelectedShots(newSelection)
+  }
+
+  const copySelectedShots = () => {
+    const shotsToCopy: string[] = []
+    
+    musicVideoBreakdown?.sectionBreakdowns?.forEach((sectionBreakdown: any) => {
+      sectionBreakdown.shots?.forEach((shot: string, index: number) => {
+        const shotId = `${sectionBreakdown.sectionId}-${index}`
+        if (selectedShots.has(shotId)) {
+          // Process shots with descriptions if enabled
+          shotsToCopy.push(processShot(shot))
+        }
+      })
+    })
+    
+    if (shotsToCopy.length > 0) {
+      navigator.clipboard.writeText(shotsToCopy.join('\n\n'))
+      toast({
+        title: "Copied!",
+        description: `${shotsToCopy.length} shots copied to clipboard`
+      })
+      setSelectedShots(new Set())
+      setIsSelectionMode(false)
+    }
+  }
+
+  const selectAllSectionShots = (sectionId: string, sectionBreakdown: any) => {
+    const newSelection = new Set(selectedShots)
+    const allShotsInSection: string[] = []
+    
+    sectionBreakdown.shots?.forEach((shot: string, index: number) => {
+      allShotsInSection.push(`${sectionId}-${index}`)
+    })
+    
+    const allSelected = allShotsInSection.every(id => selectedShots.has(id))
+    
+    if (allSelected) {
+      // Deselect all
+      allShotsInSection.forEach(id => newSelection.delete(id))
+    } else {
+      // Select all
+      allShotsInSection.forEach(id => newSelection.add(id))
+    }
+    
+    setSelectedShots(newSelection)
   }
 
   return (
@@ -197,6 +279,23 @@ export function MusicVideoMode({
                 className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
               />
             </div>
+          </div>
+
+          {/* Artist Visual Description */}
+          <div>
+            <label className="text-sm font-medium text-white mb-1 block">
+              Artist Visual Description (replaces @artist when enabled)
+            </label>
+            <Textarea
+              placeholder="Detailed visual description: appearance, style, distinctive features (e.g., 'Ron-Ron, a confident Black man with gold chains, designer streetwear, and face tattoos')"
+              value={artistVisualDescription}
+              onChange={(e) => setArtistVisualDescription(e.target.value)}
+              rows={2}
+              className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              This description will replace @artist in shots when "Show Descriptions" is enabled
+            </p>
           </div>
 
           <Textarea
@@ -276,10 +375,32 @@ export function MusicVideoMode({
       {/* Music Video Results - Show if we have any breakdown */}
       {musicVideoBreakdown && musicVideoBreakdown.sectionBreakdowns?.length > 0 && (
         <div className="space-y-6">
-          <div className="text-center mb-4">
+          <div className="text-center mb-4 space-y-3">
             <Badge variant="default" className="bg-green-600">
               ✅ Generated {musicVideoBreakdown.sectionBreakdowns.length} Shot Lists
             </Badge>
+            
+            {/* Toggle for showing descriptions */}
+            {artistVisualDescription && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant={showDescriptions ? "outline" : "default"}
+                  onClick={() => setShowDescriptions(false)}
+                  className={!showDescriptions ? "bg-purple-600 hover:bg-purple-700" : ""}
+                >
+                  Show @artist
+                </Button>
+                <Button
+                  size="sm"
+                  variant={showDescriptions ? "default" : "outline"}
+                  onClick={() => setShowDescriptions(true)}
+                  className={showDescriptions ? "bg-purple-600 hover:bg-purple-700" : ""}
+                >
+                  Show Descriptions
+                </Button>
+              </div>
+            )}
           </div>
           {(musicVideoBreakdown.sections || musicVideoBreakdown.musicVideoStructure?.sections || []).map((section: any, index: number) => {
             const sectionBreakdown = musicVideoBreakdown.sectionBreakdowns?.find(
@@ -334,32 +455,91 @@ export function MusicVideoMode({
                             <Eye className="h-4 w-4 text-purple-400" />
                             Shot List ({(sectionBreakdown?.shots?.length || 0) + sectionAdditionalShots.length} shots)
                           </h4>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              onCopyToClipboard([...(sectionBreakdown?.shots || []), ...sectionAdditionalShots].join("\n"))
-                            }
-                            className="bg-slate-700 hover:bg-slate-600 text-white"
-                          >
-                            <Copy className="h-4 w-4 mr-1" />
-                            Copy
-                          </Button>
+                          <div className="flex gap-2">
+                            {selectedShots.size > 0 && (
+                              <Button
+                                size="sm"
+                                onClick={copySelectedShots}
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                              >
+                                <Copy className="h-4 w-4 mr-1" />
+                                Copy Selected ({selectedShots.size})
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={isSelectionMode ? "secondary" : "outline"}
+                              onClick={() => {
+                                setIsSelectionMode(!isSelectionMode)
+                                if (isSelectionMode) setSelectedShots(new Set())
+                              }}
+                              className="border-slate-600"
+                            >
+                              {isSelectionMode ? "Cancel Select" : "Select Shots"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => selectAllSectionShots(section.id, sectionBreakdown)}
+                              className="bg-slate-700 hover:bg-slate-600 text-white"
+                            >
+                              Select All
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                onCopyToClipboard([...(sectionBreakdown?.shots || []), ...sectionAdditionalShots].join("\n"))
+                              }
+                              className="bg-slate-700 hover:bg-slate-600 text-white"
+                            >
+                              <Copy className="h-4 w-4 mr-1" />
+                              Copy All
+                            </Button>
+                          </div>
                         </div>
                         <div className="space-y-2">
-                          {(sectionBreakdown?.shots || []).map((shot: string, shotIndex: number) => (
-                            <div
-                              key={shotIndex}
-                              className="p-3 bg-slate-900/40 rounded-md border border-slate-700"
-                            >
-                              <div className="text-sm text-slate-300">{shot}</div>
-                            </div>
-                          ))}
+                          {(sectionBreakdown?.shots || []).map((shot: string, shotIndex: number) => {
+                            const shotId = `${section.id}-${shotIndex}`
+                            const isSelected = selectedShots.has(shotId)
+                            return (
+                              <div
+                                key={shotIndex}
+                                className={`p-3 bg-slate-900/40 rounded-md border ${
+                                  isSelected ? 'border-purple-500 bg-purple-900/20' : 'border-slate-700'
+                                } ${isSelectionMode ? 'cursor-pointer' : ''} relative group`}
+                                onClick={() => isSelectionMode && toggleShotSelection(shotId)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  {isSelectionMode && (
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleShotSelection(shotId)}
+                                      className="mt-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  )}
+                                  <div className="flex-1 text-sm text-slate-300">{processShot(shot)}</div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopyShot(shot)
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )
+                          })}
                           {sectionAdditionalShots.map((shot: string, shotIndex: number) => (
                             <div
                               key={`additional-${shotIndex}`}
                               className="p-3 bg-purple-900/20 rounded-md border border-purple-700/30"
                             >
-                              <div className="text-sm text-slate-300">{shot}</div>
+                              <div className="text-sm text-slate-300">{processShot(shot)}</div>
                               <Badge variant="outline" className="mt-2 border-purple-500/30 text-purple-300">
                                 Additional Shot
                               </Badge>

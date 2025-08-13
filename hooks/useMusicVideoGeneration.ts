@@ -144,7 +144,8 @@ export function useMusicVideoGeneration() {
         section,
         musicVideoBreakdown.songTitle || 'Song',
         selectedMusicVideoDirector,
-        customRequest
+        customRequest,
+        musicVideoStore.artist || 'artist'
       )
 
       if (result.success && result.data) {

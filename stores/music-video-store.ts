@@ -16,6 +16,8 @@ interface MusicVideoState {
   // Artist selection
   selectedArtistId: string | null
   selectedArtistProfile: ArtistProfile | undefined
+  artistVisualDescription: string
+  showDescriptions: boolean
   
   // Director selection
   selectedMusicVideoDirector: string
@@ -47,6 +49,8 @@ interface MusicVideoActions {
   // Artist selection actions
   setSelectedArtistId: (id: string | null) => void
   setSelectedArtistProfile: (profile: ArtistProfile | undefined) => void
+  setArtistVisualDescription: (description: string) => void
+  setShowDescriptions: (show: boolean) => void
   
   // Director actions
   setSelectedMusicVideoDirector: (directorId: string) => void
@@ -78,6 +82,8 @@ const initialMusicVideoState: MusicVideoState = {
   mvDirectorNotes: "",
   selectedArtistId: null,
   selectedArtistProfile: undefined,
+  artistVisualDescription: "",
+  showDescriptions: false,
   selectedMusicVideoDirector: "hype-williams",
   musicVideoConfig: null,
   showMusicVideoConfig: false,
@@ -106,6 +112,8 @@ export const useMusicVideoStore = create<MusicVideoState & MusicVideoActions>()(
         // Artist selection actions
         setSelectedArtistId: (selectedArtistId) => set({ selectedArtistId }),
         setSelectedArtistProfile: (selectedArtistProfile) => set({ selectedArtistProfile }),
+        setArtistVisualDescription: (artistVisualDescription) => set({ artistVisualDescription }),
+        setShowDescriptions: (showDescriptions) => set({ showDescriptions }),
         
         // Director actions
         setSelectedMusicVideoDirector: (selectedMusicVideoDirector) => set({ selectedMusicVideoDirector }),

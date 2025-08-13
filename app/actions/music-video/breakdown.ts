@@ -180,6 +180,11 @@ ${includeVisualMetaphors ? "- Include visual metaphors\n" : ""}${
 - Match the treatment's visual theme
 - Progress the narrative
 
+IMPORTANT FORMATTING RULES:
+1. Use @artist as a placeholder for the artist's name in ALL shots
+2. @artist is a variable that represents the performing artist
+3. Never use any actual artist names, always use @artist
+
 IMPORTANT: Return a JSON object with this EXACT structure:
 {
   "sectionId": "${section.id}",
@@ -193,7 +198,10 @@ IMPORTANT: Return a JSON object with this EXACT structure:
 }
 
 CRITICAL: The shots array MUST contain STRINGS, not objects.
-Example shot string: "Wide shot of artist in warehouse, dramatic lighting, slow dolly forward"
+Example shot strings:
+- "Wide shot of @artist in warehouse, dramatic lighting, slow dolly forward"
+- "Close-up of @artist's face, emotional expression, handheld camera"
+- "Tracking shot following @artist through urban streets, golden hour lighting"
 `
 
       // Add config references if available
@@ -225,8 +233,12 @@ Example shot string: "Wide shot of artist in warehouse, dramatic lighting, slow 
             model: openai("gpt-4o-mini"),
             schema: SectionBreakdownSchema,
             prompt: sectionPrompt + configContext,
-            system: `You are a music video director creating a detailed shot list. Always return valid JSON matching the exact schema provided. The shots array must contain string descriptions, not objects.`,
+            system: `You are a music video director creating a detailed shot list. Always return valid JSON matching the exact schema provided. The shots array must contain string descriptions, not objects. CRITICAL: Always use @artist as a placeholder for the artist's name in shot descriptions, never use the actual artist name.`,
           })
+          
+          // DO NOT replace @artist - keep it as a variable placeholder
+          // This makes the prompts reusable and shows the variable nature
+          
           return object
         },
         {
