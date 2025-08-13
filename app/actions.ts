@@ -256,7 +256,8 @@ Ensure new shots reference the configuration items and fit the established visua
   directorStyleGeneration: `A user wants to create a custom music video director profile. Their starting point is a director named "{name}" with the following idea: "{description}". Based on this, expand it into a full profile. Define their visual hallmarks, narrative style, pacing & energy, and associated genres. Be creative and specific. Return ONLY the valid JSON object.`,
 }
 
-export function getDefaultPrompts() {
+// Make it async to comply with server actions requirement
+export async function getDefaultPrompts() {
   return defaultPrompts
 }
 
@@ -409,6 +410,9 @@ export async function generateFullMusicVideoBreakdown(
   if (!selectedTreatment) {
     console.warn("Selected treatment ID from config not found, falling back to the first generated treatment.");
     selectedTreatment = treatments[0];
+  }
+  if (!selectedTreatment) {
+    throw new Error("No treatments available");
   }
 
   const locationString = config.locations.map(l => `${l.reference}: ${l.name} - ${l.description}`).join("\n");

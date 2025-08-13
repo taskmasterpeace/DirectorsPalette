@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { generateBreakdown } from '@/app/actions/story'
+import { generateStoryBreakdown } from '@/app/actions/story'
 import { generateFullMusicVideoBreakdown } from '@/app/actions/music-video'
 
 const TEST_STORY = `
@@ -44,7 +44,7 @@ export default function TestWorkflow() {
     setAnalysis(null)
     try {
       console.log('Testing story generation...')
-      const result = await generateBreakdown(
+      const result = await generateStoryBreakdown(
         TEST_STORY,
         'tarantino',
         'Make it intense and stylized',

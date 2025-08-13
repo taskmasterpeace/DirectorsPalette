@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { generateBreakdown } from '@/app/actions/story'
+import { generateStoryBreakdown } from '@/app/actions/story'
 
 export default function TestGeneration() {
   const [result, setResult] = useState<any>(null)
@@ -12,7 +12,7 @@ export default function TestGeneration() {
     setLoading(true)
     setError(null)
     try {
-      const res = await generateBreakdown(
+      const res = await generateStoryBreakdown(
         "A detective investigates a mysterious crime in a dark city.",
         "tarantino",
         "",

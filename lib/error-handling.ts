@@ -63,7 +63,10 @@ export class ProgressSaver {
 
   constructor(key: string) {
     this.key = `progress:${key}`
-    this.load()
+    // Skip loading in server environment
+    if (typeof window !== 'undefined') {
+      this.load()
+    }
   }
 
   save(step: string, data: any) {
@@ -72,21 +75,29 @@ export class ProgressSaver {
       timestamp: Date.now()
     }
     
-    try {
-      localStorage.setItem(this.key, JSON.stringify(this.data))
-    } catch (e) {
-      console.warn('Failed to save progress:', e)
+    // Only save in browser environment
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(this.key, JSON.stringify(this.data))
+      } catch (e) {
+        console.warn('Failed to save progress:', e)
+      }
     }
   }
 
   load() {
-    try {
-      const saved = localStorage.getItem(this.key)
-      if (saved) {
-        this.data = JSON.parse(saved)
+    // Only load in browser environment
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(this.key)
+        if (saved) {
+          this.data = JSON.parse(saved)
+        }
+      } catch (e) {
+        console.warn('Failed to load progress:', e)
+        this.data = {}
       }
-    } catch (e) {
-      console.warn('Failed to load progress:', e)
+    } else {
       this.data = {}
     }
   }
@@ -106,10 +117,13 @@ export class ProgressSaver {
 
   clear() {
     this.data = {}
-    try {
-      localStorage.removeItem(this.key)
-    } catch (e) {
-      console.warn('Failed to clear progress:', e)
+    // Only clear in browser environment
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(this.key)
+      } catch (e) {
+        console.warn('Failed to clear progress:', e)
+      }
     }
   }
 

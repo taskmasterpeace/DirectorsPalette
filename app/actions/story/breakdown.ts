@@ -97,7 +97,7 @@ function detectChapters(story: string, chapterMethod: string, userChapterCount?:
 }
 
 // ===== Main Export =====
-export async function generateBreakdown(
+export async function generateStoryBreakdown(
   story: string,
   director: string = "",
   directorNotes: string = "",
@@ -135,12 +135,28 @@ ${chapterMethod === 'ai-suggested' ? 'Suggest 3-5 chapters based on natural stor
 ${chapterMethod === 'single' ? 'Treat as a single chapter.' : ''}
 ${detectedChapters ? 'Use these detected chapters: ' + JSON.stringify(detectedChapters.map(c => c.title)) : ''}
 
-For each chapter provide:
-- Clear title
-- Content summary
-- Key characters (names only)
-- Primary location
-- Narrative beat (setup/rising-action/climax/resolution)
+IMPORTANT: Return a JSON object with this EXACT structure:
+{
+  "chapters": [
+    {
+      "id": "chapter-1" (or meaningful id),
+      "title": "Chapter title",
+      "content": "The actual content/text of this chapter from the story",
+      "startPosition": 0 (character position in original story),
+      "endPosition": 1000 (character position in original story),
+      "estimatedDuration": "5 minutes" (reading time),
+      "keyCharacters": ["character1", "character2"],
+      "primaryLocation": "main location",
+      "narrativeBeat": "setup" (must be one of: setup, rising-action, climax, resolution)
+    }
+  ],
+  "detectionMethod": "${detectedChapters ? 'existing' : 'ai-generated'}",
+  "totalChapters": (number of chapters),
+  "fullStory": (the full story text)
+}
+
+Ensure each chapter's content field contains the ACTUAL TEXT from that portion of the story.
+The startPosition and endPosition should indicate where each chapter begins and ends in the original story text.
 `
 
       storyStructure = await withRetry(
@@ -148,8 +164,8 @@ For each chapter provide:
           const { object } = await generateObject({
             model: openai("gpt-4o-mini"),
             schema: StoryStructureSchema,
-            prompt: structurePrompt,
-            system: `You are analyzing a story for film adaptation. Story: """${story}"""`,
+            prompt: structurePrompt + `\n\nSTORY TO ANALYZE:\n"""\n${story}\n"""`,
+            system: `You are analyzing a story for film adaptation. Create a precise chapter structure with all required fields.`,
           })
           return object
         },
@@ -188,20 +204,30 @@ Director Notes (HIGHEST PRIORITY): ${directorNotes || 'None'}
 Chapter: ${chapter.title}
 Content: ${chapter.content}
 
-Create 8-12 detailed shots that:
-1. Follow the director's visual style
-2. Include specific character references (use @name format)
-3. Include location references (use @location format)
-4. Include prop references (use @prop format)
-5. ${promptOptions?.includeCameraStyle ? 'Include camera movement details' : ''}
-6. ${promptOptions?.includeColorPalette ? 'Include color and lighting notes' : ''}
+IMPORTANT: Return a JSON object with this EXACT structure:
+{
+  "chapterId": "${chapter.id}",
+  "characterReferences": [array of character names/IDs referenced in shots],
+  "locationReferences": [array of location names/IDs referenced in shots],
+  "propReferences": [array of prop names/IDs referenced in shots],
+  "shots": [array of 8-12 shot descriptions as STRINGS, not objects],
+  "coverageAnalysis": "analysis of shot coverage",
+  "additionalOpportunities": [array of additional shot opportunities],
+  "characterDescriptions": [{"name": "character name", "description": "how they appear"}],
+  "locationDescriptions": [{"name": "location name", "description": "atmospheric details"}],
+  "propDescriptions": [{"name": "prop name", "description": "visual significance"}]
+  ${titleCardOptions?.enabled ? ',"titleCards": [{"id": "cardId", "styleLabel": "label", "description": "description"}]' : ''}
+}
 
-Also provide:
-- Coverage analysis (what's well covered, what needs more)
-- Character descriptions (how they appear in this director's style)
-- Location descriptions (atmospheric details)
-- Prop descriptions (visual significance)
-${titleCardOptions?.enabled ? '- Title card suggestions' : ''}
+For the shots array, each element should be a single STRING describing the shot, including:
+1. Shot type and framing
+2. Character references (use @name format)
+3. Location references (use @location format)  
+4. Prop references (use @prop format)
+5. ${promptOptions?.includeCameraStyle ? 'Camera movement details' : ''}
+6. ${promptOptions?.includeColorPalette ? 'Color and lighting notes' : ''}
+
+Example shot string: "Medium shot of @protagonist at @warehouse entrance, holding @briefcase. Slow dolly in as shadows fall across face. Cool blue tones with harsh backlighting."
 `
 
       const breakdown = await withRetry(

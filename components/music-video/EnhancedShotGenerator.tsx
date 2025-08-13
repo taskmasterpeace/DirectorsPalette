@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Wand2 } from "lucide-react"
+import { Plus, Wand2, ChevronDown, ChevronUp } from "lucide-react"
 import { type Location } from "./LocationSelector"
 import { type WardrobeItem } from "./WardrobeSelector"
 import { type Prop } from "./PropSelector"
@@ -16,7 +16,8 @@ interface EnhancedShotGeneratorProps {
   locations: Location[]
   wardrobe: WardrobeItem[]
   props: Prop[]
-  onGenerate: (sectionId: string, request: string) => void
+  currentShots?: string[]
+  onGenerateShots: (sectionId: string, request: string) => void
   isLoading: boolean
 }
 
@@ -26,13 +27,15 @@ export function EnhancedShotGenerator({
   locations,
   wardrobe,
   props,
-  onGenerate,
+  currentShots,
+  onGenerateShots,
   isLoading
 }: EnhancedShotGeneratorProps) {
   const [selectedLocation, setSelectedLocation] = useState<string>("none")
   const [selectedWardrobe, setSelectedWardrobe] = useState<string>("none")
   const [selectedProps, setSelectedProps] = useState<string[]>([])
   const [customRequest, setCustomRequest] = useState("")
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const handleGenerate = () => {
     const references = []
@@ -55,23 +58,19 @@ export function EnhancedShotGenerator({
       references.push(`Props: ${propRefs}`)
     }
     
-    let request = ""
-    if (references.length > 0) {
-      request += `Use these references: ${references.join(", ")}. `
-    }
-    if (customRequest.trim()) {
-      request += customRequest.trim()
-    } else {
-      request += "Generate creative additional shots for this section."
-    }
+    const request = customRequest.trim() || `Generate additional shots for ${sectionTitle}`
+    const finalRequest = references.length > 0 
+      ? `${request}\n\nUse these references:\n${references.join('\n')}`
+      : request
     
-    onGenerate(sectionId, request)
+    onGenerateShots(sectionId, finalRequest)
     
     // Reset form
     setSelectedLocation("none")
     setSelectedWardrobe("none")
     setSelectedProps([])
     setCustomRequest("")
+    setIsExpanded(false)
   }
 
   const toggleProp = (propId: string) => {
@@ -82,94 +81,121 @@ export function EnhancedShotGenerator({
     )
   }
 
-  const hasReferences = locations.length > 0 || wardrobe.length > 0 || props.length > 0
-
-  if (!hasReferences) {
-    return (
-      <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
-        <h5 className="font-medium text-white mb-3">Generate Additional Shots</h5>
-        <div className="space-y-3">
-          <Input
-            placeholder="Describe what kind of shots you want..."
-            value={customRequest}
-            onChange={(e) => setCustomRequest(e.target.value)}
-            className="bg-slate-800/50 border-slate-600 text-white text-sm"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && customRequest.trim()) {
-                onGenerate(sectionId, customRequest.trim())
-                setCustomRequest("")
-              }
-            }}
-          />
-          <Button
-            size="sm"
-            onClick={() => {
-              onGenerate(sectionId, customRequest.trim() || "More creative performance shots")
-              setCustomRequest("")
-            }}
-            disabled={isLoading}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Generate More Shots
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  // Quick generate presets - @artist format for the artist parameter
+  const quickGenerateOptions = [
+    {
+      label: "Performance Shots",
+      icon: "🎤",
+      onClick: () => {
+        onGenerateShots(sectionId, `More performance shots of @artist`)
+      }
+    },
+    {
+      label: "Cinematic B-Roll", 
+      icon: "🎬",
+      onClick: () => {
+        onGenerateShots(sectionId, "Cinematic b-roll shots")
+      }
+    },
+    {
+      label: "Emotional Close-ups",
+      icon: "👁️",
+      onClick: () => {
+        onGenerateShots(sectionId, `Emotional close-up shots of @artist`)
+      }
+    }
+  ]
 
   return (
-    <div className="p-4 bg-slate-900/30 rounded-md border border-slate-600">
-      <h5 className="font-medium text-white mb-3">Generate Additional Shots for {sectionTitle}</h5>
+    <div className="mt-4 p-4 bg-slate-900/40 rounded-lg border border-slate-700">
+      <Button
+        onClick={() => setIsExpanded(!isExpanded)}
+        variant="ghost"
+        className="w-full justify-between text-slate-300 hover:text-white hover:bg-slate-800"
+      >
+        <span className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Generate Additional Shots
+        </span>
+        {isExpanded ? (
+          <ChevronUp className="h-4 w-4 text-slate-400" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-slate-400" />
+        )}
+      </Button>
       
-      <div className="space-y-4">
-        {/* Reference Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Location Selection */}
-          {locations.length > 0 && (
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Location (optional)</label>
-              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
-                  <SelectValue placeholder="Choose location..." />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
-                  <SelectItem value="none">No specific location</SelectItem>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.reference} - {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Wardrobe Selection */}
-          {wardrobe.length > 0 && (
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">Wardrobe (optional)</label>
-              <Select value={selectedWardrobe} onValueChange={setSelectedWardrobe}>
-                <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
-                  <SelectValue placeholder="Choose outfit..." />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
-                  <SelectItem value="none">No specific wardrobe</SelectItem>
-                  {wardrobe.map((outfit) => (
-                    <SelectItem key={outfit.id} value={outfit.id}>
-                      {outfit.reference} - {outfit.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+      {isExpanded && (
+      <div className="space-y-4 mt-4">
+        {/* Quick Generate Options */}
+        <div className="grid grid-cols-3 gap-2">
+          {quickGenerateOptions.map((option, index) => (
+            <Button
+              key={`quick-${index}`}
+              size="sm"
+              variant="outline"
+              onClick={option.onClick}
+              disabled={isLoading}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs"
+            >
+              <span className="mr-1">{option.icon}</span>
+              {option.label}
+            </Button>
+          ))}
         </div>
 
-        {/* Props Selection */}
-        {props.length > 0 && (
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-700" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-slate-900/40 px-2 text-slate-400">Or configure custom shot</span>
+          </div>
+        </div>
+
+        {/* Location Selection */}
+        {locations && locations.length > 0 && (
           <div>
-            <label className="text-sm font-medium text-white mb-2 block">Props (optional, multi-select)</label>
+            <label className="text-sm font-medium text-white mb-2 block">Location Reference</label>
+            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+              <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+                <SelectValue placeholder="Select a location..." />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectItem value="none">No specific location</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.reference} - {location.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Wardrobe Selection */}
+        {wardrobe && wardrobe.length > 0 && (
+          <div>
+            <label className="text-sm font-medium text-white mb-2 block">Wardrobe Reference</label>
+            <Select value={selectedWardrobe} onValueChange={setSelectedWardrobe}>
+              <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+                <SelectValue placeholder="Select wardrobe..." />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectItem value="none">No specific wardrobe</SelectItem>
+                {wardrobe.map((outfit) => (
+                  <SelectItem key={outfit.id} value={outfit.id}>
+                    {outfit.reference} - {outfit.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Props Selection */}
+        {props && props.length > 0 && (
+          <div>
+            <label className="text-sm font-medium text-white mb-2 block">Props (click to select)</label>
             <div className="flex flex-wrap gap-2">
               {props.map((prop) => (
                 <Button
@@ -236,16 +262,17 @@ export function EnhancedShotGenerator({
           {isLoading ? (
             <>
               <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-              Generating Shots...
+              Generating...
             </>
           ) : (
             <>
               <Plus className="h-4 w-4 mr-2" />
-              Generate Additional Shots
+              Generate Custom Shots
             </>
           )}
         </Button>
       </div>
+      )}
     </div>
   )
 }

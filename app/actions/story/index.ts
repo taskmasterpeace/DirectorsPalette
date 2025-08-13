@@ -1,5 +1,5 @@
 // Story action exports
-export { generateBreakdown } from './breakdown'
+export { generateStoryBreakdown } from './breakdown'
 export { generateAdditionalChapterShots } from './additional-shots'
 export { extractStoryReferences, generateStoryBreakdownWithReferences } from './references'
 export { extractStoryEntities, generateStoryBreakdownWithEntities } from './entities'

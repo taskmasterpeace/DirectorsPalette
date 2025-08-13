@@ -3,7 +3,7 @@
 import { openai } from "@ai-sdk/openai"
 import { generateObject } from "ai"
 import { z } from "zod"
-import { generateBreakdown } from "./breakdown"
+import { generateStoryBreakdown } from "./breakdown"
 import type { DirectorQuestion } from '@/components/story/DirectorQuestionCards'
 
 const EntitySchema = z.object({
@@ -88,7 +88,7 @@ Use these entities and director answers to inform your shot generation.
   const enhancedNotes = `${directorNotes}\n\n${entityContext}`
 
   // Use the regular generateBreakdown with enhanced notes
-  return generateBreakdown(
+  return generateStoryBreakdown(
     story,
     director,
     enhancedNotes,

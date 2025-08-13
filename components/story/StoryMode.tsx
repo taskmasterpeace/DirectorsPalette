@@ -606,12 +606,12 @@ export function StoryMode({
                         </div>
                       </div>
 
-                      {/* Enhanced Shot Generator */}
+                      {/* Enhanced Shot Generator - Now with ALL references available */}
                       <EnhancedShotGenerator
                         chapterId={chapter.id}
-                        chapterCharacters={chapterBreakdown.characterReferences || []}
-                        chapterLocations={chapterBreakdown.locationReferences || []}
-                        chapterProps={chapterBreakdown.propReferences || []}
+                        chapterCharacters={Array.from(allRefs.characters.keys())}
+                        chapterLocations={Array.from(allRefs.locations.keys())}
+                        chapterProps={Array.from(allRefs.props.keys())}
                         onGenerateShot={(chapterId, shotType, characters, location, customReq) => {
                           // Build categories from shot type
                           const categories = [shotType]
@@ -619,10 +619,12 @@ export function StoryMode({
                           // Build custom request with selected elements
                           let enhancedRequest = customReq
                           if (characters.length > 0) {
-                            enhancedRequest += ` Include characters: ${characters.map(c => `@${c}`).join(', ')}.`
+                            // Add @ only if not already present
+                            enhancedRequest += ` Include characters: ${characters.map(c => c.startsWith('@') ? c : `@${c}`).join(', ')}.`
                           }
                           if (location) {
-                            enhancedRequest += ` Set at location: @${location}.`
+                            // Add @ only if not already present
+                            enhancedRequest += ` Set at location: ${location.startsWith('@') ? location : `@${location}`}.`
                           }
                           
                           onGenerateAdditionalShots(chapterId, categories, enhancedRequest)

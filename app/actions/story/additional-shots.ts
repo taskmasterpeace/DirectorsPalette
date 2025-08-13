@@ -4,12 +4,11 @@ import { openai } from "@ai-sdk/openai"
 import { generateText } from "ai"
 
 export async function generateAdditionalChapterShots(
-  chapterContent: string,
-  existingShots: string[],
-  categories: string[] = [],
-  customRequest: string = "",
+  chapter: any,
+  storyTitle: string,
   director: string = "",
-  directorNotes: string = ""
+  categories: string[] = [],
+  customRequest: string = ""
 ) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Missing OPENAI_API_KEY environment variable")
@@ -65,10 +64,7 @@ Use @character, @location, and @prop references where appropriate.
 
     return {
       success: true,
-      data: {
-        shots,
-        generatedAt: new Date().toISOString()
-      }
+      data: shots
     }
   } catch (error) {
     console.error('Error generating additional shots:', error)

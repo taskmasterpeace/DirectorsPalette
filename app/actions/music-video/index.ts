@@ -2,3 +2,4 @@
 export { generateFullMusicVideoBreakdown } from './breakdown'
 export { generateAdditionalMusicVideoShots } from './additional-shots'
 export { generateMusicVideoSuggestions } from './suggestions'
+export { extractMusicVideoReferences, generateMusicVideoBreakdownWithReferences } from './references'

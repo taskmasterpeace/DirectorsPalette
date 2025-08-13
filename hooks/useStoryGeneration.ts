@@ -2,9 +2,10 @@ import { useCallback, useState } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useStoryStore } from '@/stores/story-store'
 import { useStoryEntitiesStore } from '@/stores/story-entities-store'
+import { useStoryWorkflowStore } from '@/stores/story-workflow-store'
 import { useAppStore } from '@/stores/app-store'
 import { 
-  generateBreakdown, 
+  generateStoryBreakdown, 
   generateAdditionalChapterShots,
   extractStoryEntities,
   generateStoryBreakdownWithEntities
@@ -16,6 +17,7 @@ export function useStoryGeneration() {
   const { setIsLoading } = useAppStore()
   const storyStore = useStoryStore()
   const entitiesStore = useStoryEntitiesStore()
+  const workflowStore = useStoryWorkflowStore()
   
   // Progress tracking state
   const [generationStage, setGenerationStage] = useState<'idle' | 'structure' | 'breakdowns' | 'complete'>('idle')
@@ -54,7 +56,7 @@ export function useStoryGeneration() {
     }, 100)
 
     try {
-      const result = await generateBreakdown(
+      const result = await generateStoryBreakdown(
         story,
         selectedDirector,
         storyDirectorNotes,
@@ -237,10 +239,11 @@ export function useStoryGeneration() {
     entitiesStore.setExtractedEntities(null)
     entitiesStore.setCurrentEntities(null)
     entitiesStore.setShowEntitiesConfig(false)
+    workflowStore.resetWorkflow()
     setGenerationStage('idle')
     setStageProgress({ current: 0, total: 0 })
     setStageMessage('')
-  }, [storyStore, entitiesStore])
+  }, [storyStore, entitiesStore, workflowStore])
 
   return {
     // State

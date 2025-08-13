@@ -1,68 +1,55 @@
 'use client'
 
-import { useState } from 'react'
+import { StoryInputConnected } from '@/components/story/StoryInputConnected'
 import { StoryMode } from '@/components/story/StoryMode'
 import { StoryReferenceConfig } from '@/components/story/StoryReferenceConfig'
 import { DirectorQuestionCards, type DirectorQuestion } from '@/components/story/DirectorQuestionCards'
+import { MultiStageProgress } from '@/components/ui/multi-stage-progress'
 import { useStoryGeneration } from '@/hooks/useStoryGeneration'
 import { useDirectorManagement } from '@/hooks/useDirectorManagement'
 import { useStoryStore } from '@/stores/story-store'
 import { useStoryEntitiesStore } from '@/stores/story-entities-store'
+import { useStoryWorkflowStore } from '@/stores/story-workflow-store'
 import { useAppStore } from '@/stores/app-store'
+import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story/references'
+import { useToast } from '@/components/ui/use-toast'
 import { curatedFilmDirectors } from '@/lib/curated-directors'
-import { extractStoryReferences, generateStoryBreakdownWithReferences } from '@/app/actions/story'
 
+/**
+ * Refactored StoryContainer - now a thin coordinator
+ * Delegates input, workflow, and results to specialized components
+ */
 export function StoryContainer() {
+  const { toast } = useToast()
   const storyStore = useStoryStore()
   const entitiesStore = useStoryEntitiesStore()
-  const { isLoading } = useAppStore()
+  const workflowStore = useStoryWorkflowStore()
+  const { isLoading, setIsLoading } = useAppStore()
+  
+  // Custom hooks for specific concerns
   const {
     generationStage,
     stageProgress,
     stageMessage,
     elapsedTime,
-    handleGenerateBreakdown,
     handleGenerateAdditionalShots,
-    handleExtractEntities,
-    handleGenerateWithEntities,
     handleClearStory
   } = useStoryGeneration()
   
-  const {
-    customDirectors,
-    showCustomDirectorForm,
-    customDirectorName,
-    customDirectorDescription,
-    isGeneratingDirectorStyle,
-    handleCreateCustomDirector,
-    setShowCustomDirectorForm,
-    setCustomDirectorName,
-    setCustomDirectorDescription
-  } = useDirectorManagement()
-
-  const [showDirectorQuestions, setShowDirectorQuestions] = useState(false)
-  const [directorAnswers, setDirectorAnswers] = useState<DirectorQuestion[]>([])
-  const [showReferenceConfig, setShowReferenceConfig] = useState(false)
-  const [extractedReferences, setExtractedReferences] = useState<any>(null)
-  const [isExtractingRefs, setIsExtractingRefs] = useState(false)
-
-  const handleDirectorQuestionsAnswered = async (answers: DirectorQuestion[]) => {
-    setDirectorAnswers(answers)
-    setShowDirectorQuestions(false)
-    await handleGenerateWithEntities(answers)
-  }
-
-  const handleGenerateWithEntitiesClick = () => {
-    if (!storyStore.story.trim()) return
-    entitiesStore.setShowEntitiesConfig(false)
-    setShowDirectorQuestions(true)
-  }
-
-  // New two-stage generation flow
+  const { customDirectors } = useDirectorManagement()
+  
+  // Handle reference extraction with improved error handling
   const handleExtractReferences = async () => {
-    if (!storyStore.story.trim()) return
+    if (!storyStore.story.trim()) {
+      toast({
+        title: "Story Required",
+        description: "Please enter a story to extract references.",
+        variant: "destructive"
+      })
+      return
+    }
     
-    setIsExtractingRefs(true)
+    workflowStore.setIsExtractingRefs(true)
     try {
       const result = await extractStoryReferences(
         storyStore.story,
@@ -71,22 +58,26 @@ export function StoryContainer() {
       )
       
       if (result.success) {
-        setExtractedReferences(result.data)
-        setShowReferenceConfig(true)
+        workflowStore.setExtractedReferences(result.data)
+        workflowStore.setShowReferenceConfig(true)
       } else {
         throw new Error(result.error)
       }
     } catch (error) {
       console.error('Error extracting references:', error)
+      toast({
+        title: "Extraction Failed",
+        description: error instanceof Error ? error.message : "Failed to extract references",
+        variant: "destructive"
+      })
     } finally {
-      setIsExtractingRefs(false)
+      workflowStore.setIsExtractingRefs(false)
     }
   }
-
+  
+  // Handle generation with configured references
   const handleGenerateWithReferences = async (configuredRefs: any) => {
-    const { isLoading: appIsLoading, setIsLoading: setAppIsLoading } = useAppStore.getState()
-    
-    setAppIsLoading(true)
+    setIsLoading(true)
     try {
       const result = await generateStoryBreakdownWithReferences(
         storyStore.story,
@@ -95,96 +86,118 @@ export function StoryContainer() {
         configuredRefs,
         storyStore.titleCardOptions,
         storyStore.promptOptions,
-        'ai-suggested',
-        4
+        workflowStore.chapterMethod,
+        workflowStore.userChapterCount
       )
       
       if (result.success && result.data) {
         storyStore.setBreakdown(result.data)
-        setShowReferenceConfig(false)
+        workflowStore.setShowReferenceConfig(false)
         
+        // Expand all chapters
         const chapters = result.data.chapters || []
         const expandedChapters = chapters.reduce((acc: any, chapter: any) => {
           acc[chapter.id] = true
           return acc
         }, {})
         storyStore.setExpandedChapters(expandedChapters)
+        
+        toast({
+          title: "Breakdown Generated",
+          description: `Successfully generated ${chapters.length} chapters`
+        })
       } else {
         throw new Error(result.error || 'Failed to generate breakdown')
       }
     } catch (error) {
       console.error('Error generating with references:', error)
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate breakdown",
+        variant: "destructive"
+      })
     } finally {
-      setAppIsLoading(false)
+      setIsLoading(false)
     }
   }
-
+  
   return (
-    <>
-      <StoryMode
-        story={storyStore.story}
-        setStory={storyStore.setStory}
-        storyDirectorNotes={storyStore.storyDirectorNotes}
-        setStoryDirectorNotes={storyStore.setStoryDirectorNotes}
-        selectedDirector={storyStore.selectedDirector}
-        setSelectedDirector={storyStore.setSelectedDirector}
-        curatedDirectors={curatedFilmDirectors || []}
-        customDirectors={customDirectors || []}
-        titleCardOptions={storyStore.titleCardOptions}
-        setTitleCardOptions={storyStore.setTitleCardOptions}
-        promptOptions={storyStore.promptOptions}
-        setPromptOptions={storyStore.setPromptOptions}
-        breakdown={storyStore.breakdown}
-        setBreakdown={storyStore.setBreakdown}
-        additionalShots={storyStore.additionalShots}
-        setAdditionalShots={storyStore.setAdditionalShots}
-        expandedChapters={storyStore.expandedChapters}
-        setExpandedChapters={storyStore.setExpandedChapters}
-        isLoading={isLoading}
-        generationStage={generationStage}
-        stageProgress={stageProgress}
-        stageMessage={stageMessage}
-        elapsedTime={elapsedTime}
-        estimatedTime={30000}
-        showEntitiesConfig={entitiesStore.showEntitiesConfig}
-        setShowEntitiesConfig={entitiesStore.setShowEntitiesConfig}
-        currentEntities={entitiesStore.currentEntities}
-        setCurrentEntities={entitiesStore.setCurrentEntities}
-        extractedEntities={entitiesStore.extractedEntities}
-        setExtractedEntities={entitiesStore.setExtractedEntities}
-        isExtracting={entitiesStore.isExtracting}
-        isGeneratingWithEntities={entitiesStore.isGeneratingWithEntities}
-        onGenerateBreakdown={handleExtractReferences}
-        isExtractingReferences={isExtractingRefs}
-        onExtractEntities={handleExtractEntities}
-        onGenerateWithEntities={handleGenerateWithEntitiesClick}
-        onGenerateAdditionalShots={handleGenerateAdditionalShots}
-        onClearStory={handleClearStory}
-        onCopyToClipboard={(text: string) => {
-          navigator.clipboard.writeText(text).catch(console.error)
-        }}
+    <div className="space-y-6">
+      {/* Story Input Section - Now connected directly to stores */}
+      <StoryInputConnected
+        onExtractReferences={handleExtractReferences}
+        onClear={handleClearStory}
       />
       
-      {showDirectorQuestions && storyStore.selectedDirector && (
-        <DirectorQuestionCards
-          director={storyStore.selectedDirector}
-          story={storyStore.story}
-          onAnswersComplete={handleDirectorQuestionsAnswered}
-          onCancel={() => setShowDirectorQuestions(false)}
-        />
-      )}
+      {/* Progress Tracking */}
+      <MultiStageProgress
+        stage={generationStage}
+        currentStep={stageProgress.current}
+        totalSteps={stageProgress.total}
+        message={stageMessage}
+        elapsedTime={elapsedTime / 1000}
+        estimatedTime={30}
+      />
       
-      {showReferenceConfig && (
+      {/* Reference Configuration Dialog */}
+      {workflowStore.showReferenceConfig && (
         <StoryReferenceConfig
-          references={extractedReferences}
+          references={workflowStore.extractedReferences}
           isLoading={isLoading}
           onConfigurationComplete={handleGenerateWithReferences}
           onCancel={() => {
-            setShowReferenceConfig(false)
-            setExtractedReferences(null)
+            workflowStore.setShowReferenceConfig(false)
+            workflowStore.setExtractedReferences(null)
           }}
         />
       )}
-    </>
+      
+      {/* Results Display - Only show if we have a breakdown */}
+      {storyStore.breakdown && (
+        <StoryMode
+          story={storyStore.story}
+          setStory={storyStore.setStory}
+          storyDirectorNotes={storyStore.storyDirectorNotes}
+          setStoryDirectorNotes={storyStore.setStoryDirectorNotes}
+          selectedDirector={storyStore.selectedDirector}
+          setSelectedDirector={storyStore.setSelectedDirector}
+          curatedDirectors={curatedFilmDirectors || []}
+          customDirectors={customDirectors || []}
+          titleCardOptions={storyStore.titleCardOptions}
+          setTitleCardOptions={storyStore.setTitleCardOptions}
+          promptOptions={storyStore.promptOptions}
+          setPromptOptions={storyStore.setPromptOptions}
+          breakdown={storyStore.breakdown}
+          setBreakdown={storyStore.setBreakdown}
+          additionalShots={storyStore.additionalShots}
+          setAdditionalShots={storyStore.setAdditionalShots}
+          expandedChapters={storyStore.expandedChapters}
+          setExpandedChapters={storyStore.setExpandedChapters}
+          isLoading={isLoading}
+          generationStage={generationStage}
+          stageProgress={stageProgress}
+          stageMessage={stageMessage}
+          elapsedTime={elapsedTime}
+          estimatedTime={30000}
+          showEntitiesConfig={entitiesStore.showEntitiesConfig}
+          setShowEntitiesConfig={entitiesStore.setShowEntitiesConfig}
+          currentEntities={entitiesStore.currentEntities}
+          setCurrentEntities={entitiesStore.setCurrentEntities}
+          extractedEntities={entitiesStore.extractedEntities}
+          setExtractedEntities={entitiesStore.setExtractedEntities}
+          isExtracting={entitiesStore.isExtracting}
+          isGeneratingWithEntities={entitiesStore.isGeneratingWithEntities}
+          onGenerateBreakdown={() => {}} // Already handled above
+          isExtractingReferences={workflowStore.isExtractingRefs}
+          onExtractEntities={() => {}}
+          onGenerateWithEntities={() => {}}
+          onGenerateAdditionalShots={handleGenerateAdditionalShots}
+          onClearStory={handleClearStory}
+          onCopyToClipboard={(text: string) => {
+            navigator.clipboard.writeText(text).catch(console.error)
+          }}
+        />
+      )}
+    </div>
   )
 }

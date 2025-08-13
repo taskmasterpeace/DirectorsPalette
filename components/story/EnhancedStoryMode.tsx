@@ -540,15 +540,9 @@ export function EnhancedStoryMode({
                       <EnhancedStoryAdditionalShots
                         chapterId={chapter.chapterId}
                         chapterTitle={chapter.chapterTitle}
-                        characters={referenceConfig.characters.filter(char => 
-                          char.chapters.some(ch => ch.chapterId === chapter.chapterId)
-                        )}
-                        locations={referenceConfig.locations.filter(loc => 
-                          loc.chapters.some(ch => ch.chapterId === chapter.chapterId)
-                        )}
-                        props={referenceConfig.props.filter(prop => 
-                          prop.chapters.some(ch => ch.chapterId === chapter.chapterId)
-                        )}
+                        characters={referenceConfig.characters}
+                        locations={referenceConfig.locations}
+                        props={referenceConfig.props}
                         onGenerate={handleGenerateAdditionalShotsWithReferences}
                         isLoading={isLoading}
                       />

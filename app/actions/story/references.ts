@@ -3,7 +3,7 @@
 import { openai } from "@ai-sdk/openai"
 import { generateObject } from "ai"
 import { z } from "zod"
-import { generateBreakdown } from "./breakdown"
+import { generateStoryBreakdown } from "./breakdown"
 
 const ReferenceSchema = z.object({
   id: z.string(),
@@ -140,7 +140,7 @@ Use the exact @reference handles provided (e.g., @john, @warehouse).
 Focus on creative shot composition using only these approved elements.
 `
 
-  const result = await generateBreakdown(
+  const result = await generateStoryBreakdown(
     story,
     director,
     constrainedNotes,
