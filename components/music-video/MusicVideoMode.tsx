@@ -17,14 +17,19 @@ import {
   Target,
   Eye,
   X,
+  FileText,
 } from "lucide-react"
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
+import { SendToPostProductionEnhanced } from "@/components/shared/SendToPostProductionEnhanced"
+import { TemplateManager } from "@/components/shared/TemplateManager"
 import { EnhancedMusicVideoConfig } from "@/components/music-video/EnhancedMusicVideoConfig"
 import { EnhancedShotGenerator } from "@/components/music-video/EnhancedShotGenerator"
 import ArtistPicker from "@/components/artist-picker"
 import { useToast } from "@/components/ui/use-toast"
 import type { ArtistProfile } from "@/lib/artist-types"
 import type { MusicVideoDirector } from "@/lib/director-types"
+import type { ShotData } from "@/lib/export-processor"
+import { useRouter } from "next/navigation"
 
 interface MusicVideoModeProps {
   // Song details
@@ -129,6 +134,7 @@ export function MusicVideoMode({
   onCopyToClipboard,
 }: MusicVideoModeProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [selectedShots, setSelectedShots] = useState<Set<string>>(new Set())
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   
@@ -183,6 +189,81 @@ export function MusicVideoMode({
       newSelection.add(shotId)
     }
     setSelectedShots(newSelection)
+  }
+
+  // Prepare all shots for bulk export
+  const prepareAllShotsForExport = (): ShotData[] => {
+    if (!musicVideoBreakdown?.sectionBreakdowns) return []
+
+    const allShots: ShotData[] = []
+    let shotCounter = 1
+
+    musicVideoBreakdown.sectionBreakdowns.forEach((sectionBreakdown: any, sectionIndex: number) => {
+      const section = musicVideoBreakdown.musicVideoStructure?.sections?.[sectionIndex] || 
+                     musicVideoBreakdown.sections?.[sectionIndex]
+      
+      // Add main shots from section
+      if (sectionBreakdown.shots) {
+        sectionBreakdown.shots.forEach((shot: string, shotIndex: number) => {
+          allShots.push({
+            id: `section-${sectionIndex}-shot-${shotIndex}`,
+            description: shot,
+            section: section?.title || `Section ${sectionIndex + 1}`,
+            shotNumber: shotCounter++,
+            metadata: {
+              directorStyle: selectedMusicVideoDirectorInfo?.name,
+              timestamp: new Date().toISOString(),
+              sourceType: 'music-video'
+            }
+          })
+        })
+      }
+
+      // Add additional shots if any
+      const sectionId = section?.id || `section-${sectionIndex}`
+      const sectionAdditionalShots = additionalMusicVideoShots[sectionId] || []
+      sectionAdditionalShots.forEach((shot: string, shotIndex: number) => {
+        allShots.push({
+          id: `section-${sectionIndex}-additional-${shotIndex}`,
+          description: shot,
+          section: `${section?.title || `Section ${sectionIndex + 1}`} (Additional)`,
+          shotNumber: shotCounter++,
+          metadata: {
+            directorStyle: selectedMusicVideoDirectorInfo?.name,
+            timestamp: new Date().toISOString(),
+            sourceType: 'music-video'
+          }
+        })
+      })
+    })
+
+    return allShots
+  }
+
+  const handleNavigateToExport = () => {
+    const allShots = prepareAllShotsForExport()
+    
+    if (allShots.length === 0) {
+      toast({
+        title: "No Shots to Export",
+        description: "Please generate shots first.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Store data in localStorage for the export page
+    localStorage.setItem('bulk-export-shots', JSON.stringify(allShots))
+    localStorage.setItem('bulk-export-project-data', JSON.stringify({
+      type: 'music-video',
+      artistName: artist,
+      artistDescription: showDescriptions ? artistVisualDescription : undefined,
+      director: selectedMusicVideoDirectorInfo?.name,
+      projectTitle: songTitle || "Music Video Project"
+    }))
+
+    // Navigate to export page
+    router.push('/export')
   }
 
   const copySelectedShots = () => {
@@ -281,27 +362,17 @@ export function MusicVideoMode({
             </div>
           </div>
 
-          {/* Artist Visual Description */}
-          <div>
-            <label className="text-sm font-medium text-white mb-1 block">
-              Artist Visual Description (replaces @artist when enabled)
-            </label>
-            <Textarea
-              placeholder="Detailed visual description: appearance, style, distinctive features (e.g., 'Ron-Ron, a confident Black man with gold chains, designer streetwear, and face tattoos')"
-              value={artistVisualDescription}
-              onChange={(e) => setArtistVisualDescription(e.target.value)}
-              rows={2}
-              className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-            />
-            <p className="text-xs text-slate-400 mt-1">
-              This description will replace @artist in shots when "Show Descriptions" is enabled
-            </p>
-          </div>
 
           <Textarea
-            placeholder="Enter song lyrics here..."
+            placeholder="Enter song lyrics here... (Ctrl+Enter to generate breakdown)"
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && lyrics.trim() && !isLoading) {
+                e.preventDefault()
+                onGenerateMusicVideoBreakdown()
+              }
+            }}
             className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
           />
 
@@ -335,6 +406,32 @@ export function MusicVideoMode({
               className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
             />
           </div>
+
+          {/* Template Manager */}
+          <TemplateManager
+            type="music-video"
+            currentData={{
+              lyrics,
+              songTitle,
+              artist,
+              genre,
+              mvConcept,
+              mvDirectorNotes,
+              selectedMusicVideoDirector
+            }}
+            onLoadTemplate={(template) => {
+              const content = template.content as any
+              setLyrics(content.lyrics || '')
+              setSongTitle(content.songTitle || '')
+              setArtist(content.artist || '')
+              setGenre(content.genre || '')
+              setMvConcept(content.mvConcept || '')
+              setMvDirectorNotes(content.mvDirectorNotes || '')
+              if (content.selectedMusicVideoDirector) {
+                setSelectedMusicVideoDirector(content.selectedMusicVideoDirector)
+              }
+            }}
+          />
 
           <div className="w-full space-y-3">
             <div className="flex gap-3">
@@ -380,24 +477,45 @@ export function MusicVideoMode({
               ✅ Generated {musicVideoBreakdown.sectionBreakdowns.length} Shot Lists
             </Badge>
             
+            {/* Action Buttons */}
+            <div className="mt-4 flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                onClick={handleNavigateToExport}
+                variant="outline"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                disabled={!musicVideoBreakdown?.sectionBreakdowns || musicVideoBreakdown.sectionBreakdowns.length === 0}
+              >
+                <FileText className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Export All Shots</span>
+              </Button>
+              <div className="w-full sm:w-auto">
+                <SendToPostProductionEnhanced
+                  type="music-video"
+                  data={musicVideoBreakdown.sectionBreakdowns}
+                  projectId={`mv_${Date.now()}`}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+            
             {/* Toggle for showing descriptions */}
             {artistVisualDescription && (
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
                 <Button
                   size="sm"
                   variant={showDescriptions ? "outline" : "default"}
                   onClick={() => setShowDescriptions(false)}
-                  className={!showDescriptions ? "bg-purple-600 hover:bg-purple-700" : ""}
+                  className={`w-full sm:w-auto ${!showDescriptions ? "bg-purple-600 hover:bg-purple-700" : ""}`}
                 >
-                  Show @artist
+                  <span className="truncate">Show @artist</span>
                 </Button>
                 <Button
                   size="sm"
                   variant={showDescriptions ? "default" : "outline"}
                   onClick={() => setShowDescriptions(true)}
-                  className={showDescriptions ? "bg-purple-600 hover:bg-purple-700" : ""}
+                  className={`w-full sm:w-auto ${showDescriptions ? "bg-purple-600 hover:bg-purple-700" : ""}`}
                 >
-                  Show Descriptions
+                  <span className="truncate">Show Descriptions</span>
                 </Button>
               </div>
             )}

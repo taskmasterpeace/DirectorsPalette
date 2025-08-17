@@ -31,6 +31,8 @@ interface MusicVideoInputProps {
   setSelectedArtistId: (id: string | null) => void
   selectedArtistProfile: ArtistProfile | null
   setSelectedArtistProfile: (profile: ArtistProfile | null) => void
+  artistVisualDescription: string
+  setArtistVisualDescription: (description: string) => void
   
   // Director selection
   selectedMusicVideoDirector: string
@@ -61,6 +63,8 @@ export function MusicVideoInput({
   setSelectedArtistId,
   selectedArtistProfile,
   setSelectedArtistProfile,
+  artistVisualDescription,
+  setArtistVisualDescription,
   selectedMusicVideoDirector,
   setSelectedMusicVideoDirector,
   allDirectors,
@@ -136,10 +140,45 @@ export function MusicVideoInput({
         {/* Artist Profile Selection */}
         <ArtistSelector
           selectedArtistId={selectedArtistId}
-          setSelectedArtistId={setSelectedArtistId}
+          setSelectedArtistId={(id) => {
+            setSelectedArtistId(id)
+            // Auto-populate visual description from artist bank
+            if (id && allDirectors) {
+              // Clear if no selection
+              if (!id || id === 'none') {
+                setArtistVisualDescription('')
+                return
+              }
+            }
+          }}
           selectedArtistProfile={selectedArtistProfile}
-          setSelectedArtistProfile={setSelectedArtistProfile}
+          setSelectedArtistProfile={(profile) => {
+            setSelectedArtistProfile(profile)
+            // Auto-populate visual description from profile
+            if (profile?.visual_look?.visual_description) {
+              setArtistVisualDescription(profile.visual_look.visual_description)
+            } else if (!profile) {
+              setArtistVisualDescription('')
+            }
+          }}
         />
+
+        {/* Artist Visual Description */}
+        <div>
+          <label className="text-sm font-medium text-white mb-1 block">
+            Artist Visual Description (optional)
+          </label>
+          <Textarea
+            placeholder="Detailed visual description: appearance, style, distinctive features (e.g., 'Ron-Ron, a confident Black man with gold chains, designer streetwear, and face tattoos')"
+            value={artistVisualDescription}
+            onChange={(e) => setArtistVisualDescription(e.target.value)}
+            rows={2}
+            className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            This description will replace @artist in shots when enabled
+          </p>
+        </div>
 
         {/* MV Concept */}
         <div>

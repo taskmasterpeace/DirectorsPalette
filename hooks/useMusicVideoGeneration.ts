@@ -140,9 +140,20 @@ export function useMusicVideoGeneration() {
       const section = musicVideoBreakdown.sections?.find(s => s.id === sectionId)
       if (!section) throw new Error('Section not found')
 
+      // Get the section breakdown that has the actual shots
+      const sectionBreakdown = musicVideoBreakdown.sectionBreakdowns?.find(
+        sb => sb.sectionId === sectionId
+      )
+
+      // Merge shots into section so AI can see what exists
+      const sectionWithShots = {
+        ...section,
+        shots: sectionBreakdown?.shots || []
+      }
+
       const result = await generateAdditionalMusicVideoShots(
-        section,
-        musicVideoBreakdown.songTitle || 'Song',
+        sectionWithShots,  // Pass enhanced section
+        musicVideoStore.songTitle || 'Song',
         selectedMusicVideoDirector,
         customRequest,
         musicVideoStore.artist || 'artist'

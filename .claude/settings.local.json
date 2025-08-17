@@ -29,8 +29,14 @@
       "Bash(powershell:*)",
       "Bash(find:*)",
       "WebFetch(domain:localhost)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(npm test:*)",
+      "Bash(git rm:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "C:\\c\\git"
+    ]
   }
 }

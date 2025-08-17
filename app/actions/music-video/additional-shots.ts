@@ -33,18 +33,25 @@ Existing Shots (DO NOT DUPLICATE):
 ${existingShots.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n')}
 
 Requirements:
-${customRequest ? `Special request: ${customRequest}` : ''}
+${customRequest ? `IMPORTANT: ${customRequest}` : ''}
 ${director ? `Match the style of ${director}` : ''}
 
-IMPORTANT FORMATTING:
-- Use @artist as a placeholder for the artist's name in ALL shots
-- @artist is a variable that represents the performing artist
-- Never use any actual artist names, always use @artist
+CRITICAL FORMATTING RULES:
+1. ALWAYS use @artist as the placeholder for the artist
+2. NEVER use the actual artist name
+3. @artist will be replaced by the user's toggle preference
+
+If location, wardrobe, or prop references are provided above, you MUST incorporate them into the shots.
 
 Generate creative, complementary shots that enhance the music video.
 Each shot should be a complete, detailed description (2-3 sentences).
 Include camera movement, framing, and visual style details.
-Use location, wardrobe, and prop references where appropriate.
+
+RESPONSE FORMAT - NUMBER YOUR SHOTS:
+1. [Shot description with @artist and any specified references]
+2. [Shot description with @artist and any specified references]
+3. [Shot description with @artist and any specified references]
+(continue for 3-5 shots total)
 `
 
     const { text } = await generateText({
@@ -55,14 +62,48 @@ Use location, wardrobe, and prop references where appropriate.
       }. CRITICAL: Always use @artist as a placeholder for the artist's name in shot descriptions, never use the actual artist name.`,
     })
 
-    // Parse the response into individual shots
-    const shots = text
-      .split('\n')
-      .filter(line => line.trim())
-      .filter(line => /^\d+[\.\)]\s*/.test(line) || line.startsWith('-') || line.startsWith('•'))
-      .map(line => line.replace(/^[\d\.\)\-•\s]+/, '').trim())
-      .filter(shot => shot.length > 20) // Filter out short/incomplete lines
-      // DO NOT replace @artist - keep it as a variable placeholder
+    // Parse the AI response
+
+    // Parse the response into individual shots - be more flexible
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+
+    const shots = lines
+      .map(line => {
+        // Remove various numbering formats but keep the content
+        return line
+          .replace(/^\d+[\.\)]\s*/, '')     // Remove "1. " or "1) "
+          .replace(/^[-•]\s*/, '')           // Remove "- " or "• "
+          .replace(/^Shot \d+:?\s*/i, '')   // Remove "Shot 1:"
+          .replace(/^\[/, '').replace(/\]$/, '') // Remove brackets if used
+          .trim()
+      })
+      .filter(shot => {
+        // Keep only substantial content (not headers or short lines)
+        return shot.length > 20 && 
+               !shot.toLowerCase().startsWith('here') &&
+               !shot.toLowerCase().startsWith('shot')
+      })
+
+
+    // Ensure we have @artist in shots (don't replace with actual name)
+    // The display component will handle the toggle
+
+    if (shots.length === 0) {
+      // No shots could be parsed from AI response
+      // Try to salvage something from the response
+      const fallbackShots = text
+        .split('\n')
+        .filter(line => line.trim().length > 30) // Get any substantial lines
+        .slice(0, 3) // Take up to 3 lines
+      
+      if (fallbackShots.length > 0) {
+        // Using fallback parsing
+        return {
+          success: true,
+          data: fallbackShots
+        }
+      }
+    }
 
     return {
       success: true,

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { MusicVideoInput } from '@/components/music-video/MusicVideoInput'
 import { MusicVideoWorkflow } from '@/components/music-video/MusicVideoWorkflow'
 import { MusicVideoMode } from '@/components/music-video/MusicVideoMode'
@@ -11,6 +12,7 @@ import { useAppStore } from '@/stores/app-store'
 import { curatedMusicVideoDirectors } from '@/lib/curated-directors'
 import { extractMusicVideoReferences } from '@/app/actions/music-video/references'
 import { useToast } from '@/components/ui/use-toast'
+import { getExportedSong } from '@/lib/song-export-utils'
 
 /**
  * Refactored MusicVideoContainer - now a thin coordinator
@@ -21,6 +23,21 @@ export function MusicVideoContainer() {
   const musicVideoStore = useMusicVideoStore()
   const workflowStore = useMusicVideoWorkflowStore()
   const { isLoading, setIsLoading } = useAppStore()
+  
+  // Check for imported song on mount
+  useEffect(() => {
+    const exportedSong = getExportedSong()
+    if (exportedSong) {
+      // Import the song data into the music video store
+      musicVideoStore.importFromSongDNA(exportedSong)
+      
+      // Show success toast
+      toast({
+        title: "Song Imported",
+        description: `Successfully imported "${exportedSong.songTitle}" from Song DNA`,
+      })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
   // Custom hooks for specific concerns
   const {
@@ -131,6 +148,8 @@ export function MusicVideoContainer() {
             setSelectedArtistId={musicVideoStore.setSelectedArtistId}
             selectedArtistProfile={musicVideoStore.selectedArtistProfile}
             setSelectedArtistProfile={musicVideoStore.setSelectedArtistProfile}
+            artistVisualDescription={musicVideoStore.artistVisualDescription}
+            setArtistVisualDescription={musicVideoStore.setArtistVisualDescription}
             selectedMusicVideoDirector={musicVideoStore.selectedMusicVideoDirector}
             setSelectedMusicVideoDirector={musicVideoStore.setSelectedMusicVideoDirector}
             allDirectors={allDirectors}

@@ -24,8 +24,10 @@ import {
   Users,
   MapPin,
   Package,
+  FileText,
 } from "lucide-react"
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
+import { SendToPostProductionEnhanced } from "@/components/shared/SendToPostProductionEnhanced"
 import { useToast } from "@/components/ui/use-toast"
 import { ProgressBar } from "@/components/ui/progress-bar"
 import { MultiStageProgress } from "@/components/ui/multi-stage-progress"
@@ -34,6 +36,8 @@ import { ReferencesPanel } from "./ReferencesPanel"
 import { EnhancedShotGenerator } from "./EnhancedShotGenerator"
 import type { FilmDirector } from "@/lib/director-types"
 import type { StoryEntities, ExtractedEntities } from "./story-entities-config"
+import type { ShotData } from "@/lib/export-processor"
+import { useRouter } from "next/navigation"
 
 interface StoryModeProps {
   // Story input state
@@ -143,6 +147,7 @@ export function StoryMode({
   onCopyToClipboard,
 }: StoryModeProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [chapterMethod, setChapterMethod] = useState<'auto-detect' | 'user-specified' | 'ai-suggested' | 'single'>('ai-suggested')
   const [userChapterCount, setUserChapterCount] = useState(4)
@@ -240,6 +245,77 @@ export function StoryMode({
       title: "Copied!",
       description: "Shot copied to clipboard"
     })
+  }
+
+  // Prepare all shots for bulk export
+  const prepareAllShotsForExport = (): ShotData[] => {
+    if (!breakdown?.chapterBreakdowns) return []
+
+    const allShots: ShotData[] = []
+    let shotCounter = 1
+
+    breakdown.chapterBreakdowns.forEach((chapterBreakdown: any, chapterIndex: number) => {
+      const chapter = breakdown.storyStructure.chapters[chapterIndex]
+      
+      // Add main shots from chapter
+      if (chapterBreakdown.shots) {
+        chapterBreakdown.shots.forEach((shot: string, shotIndex: number) => {
+          allShots.push({
+            id: `chapter-${chapterIndex}-shot-${shotIndex}`,
+            description: shot,
+            chapter: chapter.title,
+            shotNumber: shotCounter++,
+            metadata: {
+              directorStyle: selectedDirectorInfo?.name,
+              timestamp: new Date().toISOString(),
+              sourceType: 'story'
+            }
+          })
+        })
+      }
+
+      // Add additional shots if any
+      const chapterAdditionalShots = additionalShots[chapter.id] || []
+      chapterAdditionalShots.forEach((shot: string, shotIndex: number) => {
+        allShots.push({
+          id: `chapter-${chapterIndex}-additional-${shotIndex}`,
+          description: shot,
+          chapter: `${chapter.title} (Additional)`,
+          shotNumber: shotCounter++,
+          metadata: {
+            directorStyle: selectedDirectorInfo?.name,
+            timestamp: new Date().toISOString(),
+            sourceType: 'story'
+          }
+        })
+      })
+    })
+
+    return allShots
+  }
+
+  const handleNavigateToExport = () => {
+    const allShots = prepareAllShotsForExport()
+    
+    if (allShots.length === 0) {
+      toast({
+        title: "No Shots to Export",
+        description: "Please generate shots first.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Store data in localStorage for the export page
+    localStorage.setItem('bulk-export-shots', JSON.stringify(allShots))
+    localStorage.setItem('bulk-export-project-data', JSON.stringify({
+      type: 'story',
+      director: selectedDirectorInfo?.name,
+      projectTitle: 'Story Project'
+    }))
+
+    // Navigate to export page
+    router.push('/export')
   }
 
   const toggleShotSelection = (shotId: string) => {
@@ -493,26 +569,26 @@ export function StoryMode({
           </div>
           
           {/* Entity Summary */}
-          {(currentEntities.characters.length > 0 || currentEntities.locations.length > 0 || currentEntities.props.length > 0) && (
+          {(currentEntities?.characters?.length > 0 || currentEntities?.locations?.length > 0 || currentEntities?.props?.length > 0) && (
             <Card className="bg-purple-900/20 border-purple-700/30">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-4 text-sm">
-                  {currentEntities.characters.length > 0 && (
+                  {currentEntities?.characters?.length > 0 && (
                     <div className="flex items-center gap-1 text-purple-300">
                       <Users className="h-3 w-3" />
-                      {currentEntities.characters.length} characters
+                      {currentEntities?.characters?.length || 0} characters
                     </div>
                   )}
-                  {currentEntities.locations.length > 0 && (
+                  {currentEntities?.locations?.length > 0 && (
                     <div className="flex items-center gap-1 text-purple-300">
                       <MapPin className="h-3 w-3" />
-                      {currentEntities.locations.length} locations
+                      {currentEntities?.locations?.length || 0} locations
                     </div>
                   )}
-                  {currentEntities.props.length > 0 && (
+                  {currentEntities?.props?.length > 0 && (
                     <div className="flex items-center gap-1 text-purple-300">
                       <Package className="h-3 w-3" />
-                      {currentEntities.props.length} props
+                      {currentEntities?.props?.length || 0} props
                     </div>
                   )}
                 </div>
@@ -553,11 +629,11 @@ export function StoryMode({
       )}
 
       {/* References Panel - Show after generation */}
-      {breakdown && (
+      {breakdown && extractedReferences && (
         <ReferencesPanel
-          characters={extractedReferences.characters}
-          locations={extractedReferences.locations}
-          props={extractedReferences.props}
+          characters={extractedReferences.characters || []}
+          locations={extractedReferences.locations || []}
+          props={extractedReferences.props || []}
           selectedDirector={selectedDirectorInfo?.name}
         />
       )}
@@ -565,6 +641,27 @@ export function StoryMode({
       {/* Story Results */}
       {breakdown && (
         <div className="space-y-6">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <Button
+              onClick={handleNavigateToExport}
+              variant="outline"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto"
+              disabled={!breakdown?.chapterBreakdowns || breakdown.chapterBreakdowns.length === 0}
+            >
+              <FileText className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Export All Shots</span>
+            </Button>
+            <div className="w-full sm:w-auto">
+              <SendToPostProductionEnhanced
+                type="story"
+                data={breakdown.chapterBreakdowns}
+                projectId={`story_${Date.now()}`}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+          
           {breakdown.storyStructure.chapters.map((chapter: any, index: number) => {
             const chapterBreakdown = breakdown.chapterBreakdowns[index]
             const isExpanded = expandedChapters[chapter.id]
@@ -777,9 +874,9 @@ export function StoryMode({
                       {/* Enhanced Shot Generator - Now with ALL references available */}
                       <EnhancedShotGenerator
                         chapterId={chapter.id}
-                        chapterCharacters={extractedReferences.characters.map(c => c.name)}
-                        chapterLocations={extractedReferences.locations.map(l => l.name)}
-                        chapterProps={extractedReferences.props.map(p => p.name)}
+                        chapterCharacters={extractedReferences?.characters?.map(c => c.name) || []}
+                        chapterLocations={extractedReferences?.locations?.map(l => l.name) || []}
+                        chapterProps={extractedReferences?.props?.map(p => p.name) || []}
                         onGenerateShot={(chapterId, shotType, characters, location, customReq) => {
                           // Build categories from shot type
                           const categories = [shotType]

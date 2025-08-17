@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Checkbox } from '@/components/ui/checkbox'
 import { BookOpen, Wand2, Target, Settings, ChevronDown, Camera, Palette } from 'lucide-react'
 import { DirectorSelector } from '@/components/shared/DirectorSelector'
+import { TemplateManager } from '@/components/shared/TemplateManager'
 import { useState } from 'react'
 import { useStoryStore } from '@/stores/story-store'
 import { useStoryWorkflowStore } from '@/stores/story-workflow-store'
@@ -71,9 +72,15 @@ export function StoryInputConnected({
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
-          placeholder="Enter your story here..."
+          placeholder="Enter your story here... (Ctrl+Enter to extract references)"
           value={story}
           onChange={(e) => setStory(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && story.trim() && !isLoading && !isExtractingRefs) {
+              e.preventDefault()
+              onExtractReferences()
+            }
+          }}
           className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
         />
 
@@ -205,6 +212,24 @@ export function StoryInputConnected({
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Template Manager */}
+        <TemplateManager
+          type="story"
+          currentData={{
+            story,
+            storyDirectorNotes,
+            selectedDirector
+          }}
+          onLoadTemplate={(template) => {
+            const content = template.content as any
+            setStory(content.story || '')
+            setStoryDirectorNotes(content.storyDirectorNotes || '')
+            if (content.selectedDirector) {
+              setSelectedDirector(content.selectedDirector)
+            }
+          }}
+        />
 
         {/* Generation Buttons */}
         <div className="flex gap-3">

@@ -72,7 +72,7 @@ export function EnhancedShotGenerator({
     
     const request = customRequest.trim() || `Generate additional shots for ${sectionTitle}`
     const finalRequest = references.length > 0 
-      ? `${request}\n\nUse these references:\n${references.join('\n')}`
+      ? `${request}\n\nYOU MUST INCORPORATE THESE ELEMENTS:\n${references.join('\n')}\nEnsure each shot uses at least one of these references.`
       : request
     
     onGenerateShots(sectionId, finalRequest)

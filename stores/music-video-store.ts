@@ -46,6 +46,15 @@ interface MusicVideoActions {
   setMvConcept: (concept: string) => void
   setMvDirectorNotes: (notes: string) => void
   
+  // Import action
+  importFromSongDNA: (data: {
+    songTitle: string
+    artist: string
+    lyrics: string
+    genre?: string
+    mvConcept?: string
+  }) => void
+  
   // Artist selection actions
   setSelectedArtistId: (id: string | null) => void
   setSelectedArtistProfile: (profile: ArtistProfile | undefined) => void
@@ -141,6 +150,19 @@ export const useMusicVideoStore = create<MusicVideoState & MusicVideoActions>()(
           }
         })),
         setSelectedMusicVideoSection: (selectedMusicVideoSection) => set({ selectedMusicVideoSection }),
+        
+        // Import action
+        importFromSongDNA: (data) => set({
+          songTitle: data.songTitle,
+          artist: data.artist,
+          lyrics: data.lyrics,
+          genre: data.genre || "",
+          mvConcept: data.mvConcept || "",
+          // Clear any existing breakdown when importing new song
+          musicVideoBreakdown: null,
+          additionalMusicVideoShots: {},
+          expandedSections: {}
+        }),
         
         // Reset action
         resetMusicVideoState: () => set(initialMusicVideoState)
