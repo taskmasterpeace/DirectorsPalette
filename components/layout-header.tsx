@@ -2,9 +2,14 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useAppStore } from "@/stores/app-store"
+import { useAuth } from "@/components/auth/AuthProvider"
+import { UserMenu } from "@/components/auth/UserMenu"
+import { Button } from "@/components/ui/button"
+import { LogIn } from "lucide-react"
 
 export function LayoutHeader() {
   const { setShowProjectManager } = useAppStore()
+  const { user, isAuthenticated, isAdmin } = useAuth()
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-700 px-4 shadow-lg">
@@ -29,7 +34,7 @@ export function LayoutHeader() {
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <a 
           href="/help" 
           className="text-slate-300 hover:text-white text-sm flex items-center gap-2 h-10 px-3 rounded-lg hover:bg-slate-700/70 transition-all duration-200 border border-transparent hover:border-slate-600"
@@ -41,16 +46,44 @@ export function LayoutHeader() {
           </svg>
           <span className="hidden sm:inline">Help</span>
         </a>
-        <button 
-          onClick={() => setShowProjectManager(true)}
-          className="text-slate-300 hover:text-white text-sm flex items-center gap-2 h-10 px-3 rounded-lg hover:bg-amber-600/20 hover:border-amber-500/50 transition-all duration-200 border border-transparent"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-            <path d="M8 21v-4a2 2 0 012-2h4a2 2 0 012 2v4"/>
-          </svg>
-          <span className="hidden sm:inline">Projects</span>
-        </button>
+        
+        {isAuthenticated && (
+          <button 
+            onClick={() => setShowProjectManager(true)}
+            className="text-slate-300 hover:text-white text-sm flex items-center gap-2 h-10 px-3 rounded-lg hover:bg-amber-600/20 hover:border-amber-500/50 transition-all duration-200 border border-transparent"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+              <path d="M8 21v-4a2 2 0 012-2h4a2 2 0 012 2v4"/>
+            </svg>
+            <span className="hidden sm:inline">Projects</span>
+          </button>
+        )}
+
+        {isAuthenticated ? (
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex flex-col text-right text-xs">
+              <span className="text-white font-medium">
+                {user?.name || user?.email.split('@')[0]}
+              </span>
+              <span className="text-slate-300 flex items-center gap-1">
+                {isAdmin && <span className="text-blue-400">👑</span>}
+                {user?.role === 'admin' ? 'Admin' : 'User'}
+              </span>
+            </div>
+            <UserMenu />
+          </div>
+        ) : (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 border-slate-600 bg-slate-700/50 hover:bg-slate-600 text-white"
+            onClick={() => window.location.reload()}
+          >
+            <LogIn className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign In</span>
+          </Button>
+        )}
       </div>
     </header>
   )
