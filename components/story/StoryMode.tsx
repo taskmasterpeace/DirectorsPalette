@@ -29,6 +29,8 @@ import {
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
 import { SendToPostProductionEnhanced } from "@/components/shared/SendToPostProductionEnhanced"
 import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
+import { safeClipboardWrite, getClipboardErrorMessage } from "@/lib/clipboard-utils"
 import { ProgressBar } from "@/components/ui/progress-bar"
 import { MultiStageProgress } from "@/components/ui/multi-stage-progress"
 import { StoryEntitiesConfig } from "./story-entities-config"
@@ -36,8 +38,14 @@ import { ReferencesPanel } from "./ReferencesPanel"
 import { EnhancedShotGenerator } from "./EnhancedShotGenerator"
 import type { FilmDirector } from "@/lib/director-types"
 import type { StoryEntities, ExtractedEntities } from "./story-entities-config"
-import type { ShotData } from "@/lib/export-processor"
-import { useRouter } from "next/navigation"
+import type { 
+  StoryBreakdown, 
+  TitleCardOptions, 
+  PromptOptions, 
+  Chapter, 
+  ChapterBreakdown 
+} from "@/lib/types/story-types"
+import type { DirectorType } from "@/lib/types/director-types"
 
 interface StoryModeProps {
   // Story input state
@@ -49,31 +57,24 @@ interface StoryModeProps {
   // Director selection
   selectedDirector: string
   setSelectedDirector: (directorId: string) => void
-  curatedDirectors: any[] // TODO: Type this properly
-  customDirectors: any[] // TODO: Type this properly
+  curatedDirectors: FilmDirector[]
+  customDirectors: FilmDirector[]
   
   // Options
-  titleCardOptions: {
-    enabled: boolean
-    format: "full" | "name-only" | "roman-numerals"
-    approaches: string[]
-  }
-  setTitleCardOptions: (options: any) => void
-  promptOptions: {
-    includeCameraStyle: boolean
-    includeColorPalette: boolean
-  }
-  setPromptOptions: (options: any) => void
+  titleCardOptions: TitleCardOptions
+  setTitleCardOptions: (options: TitleCardOptions) => void
+  promptOptions: PromptOptions
+  setPromptOptions: (options: PromptOptions) => void
   
   // Results
-  breakdown: any // TODO: Type this properly
-  setBreakdown: (breakdown: any) => void
+  breakdown: StoryBreakdown | null
+  setBreakdown: (breakdown: StoryBreakdown | null) => void
   additionalShots: { [key: string]: string[] }
-  setAdditionalShots: (shots: any) => void
+  setAdditionalShots: (shots: { [key: string]: string[] }) => void
   
   // UI state
   expandedChapters: { [key: string]: boolean }
-  setExpandedChapters: (chapters: any) => void
+  setExpandedChapters: (chapters: { [key: string]: boolean }) => void
   
   // Loading
   isLoading: boolean
@@ -239,19 +240,107 @@ export function StoryMode({
     setExpandedChapters((prev: any) => ({ ...prev, [chapterId]: !prev[chapterId] }))
   }
 
-  const handleCopyShot = (shot: string) => {
-    navigator.clipboard.writeText(shot)
-    toast({
-      title: "Copied!",
-      description: "Shot copied to clipboard"
+  const handleCopyShot = async (shot: string) => {
+    const success = await safeClipboardWrite(shot)
+    
+    if (success) {
+      toast({
+        title: "Copied!",
+        description: "Shot copied to clipboard"
+      })
+    } else {
+      toast({
+        title: "Copy Failed",
+        description: getClipboardErrorMessage(),
+        variant: "destructive"
+      })
+    }
+  }
+
+  const toggleShotSelection = (shotId: string) => {
+    const newSelection = new Set(selectedShots)
+    if (newSelection.has(shotId)) {
+      newSelection.delete(shotId)
+    } else {
+      newSelection.add(shotId)
+    }
+    setSelectedShots(newSelection)
+  }
+
+  const copySelectedShots = async () => {
+    const shotsToCopy: string[] = []
+    
+    breakdown?.chapterBreakdowns?.forEach((chapterBreakdown: any, chapterIndex: number) => {
+      const chapter = breakdown.storyStructure.chapters[chapterIndex]
+      chapterBreakdown.shots?.forEach((shot: string, index: number) => {
+        const shotId = `${chapter.id}-${index}`
+        if (selectedShots.has(shotId)) {
+          shotsToCopy.push(shot)
+        }
+      })
+      
+      // Also check additional shots
+      const chapterAdditionalShots = additionalShots[chapter.id] || []
+      chapterAdditionalShots.forEach((shot: string, index: number) => {
+        const shotId = `${chapter.id}-additional-${index}`
+        if (selectedShots.has(shotId)) {
+          shotsToCopy.push(shot)
+        }
+      })
     })
+    
+    if (shotsToCopy.length > 0) {
+      const success = await safeClipboardWrite(shotsToCopy.join('\n\n'))
+      
+      if (success) {
+        toast({
+          title: "Copied!",
+          description: `${shotsToCopy.length} shots copied to clipboard`
+        })
+        setSelectedShots(new Set())
+        setIsSelectionMode(false)
+      } else {
+        toast({
+          title: "Copy Failed",
+          description: getClipboardErrorMessage(),
+          variant: "destructive"
+        })
+      }
+    }
+  }
+
+  const selectAllChapterShots = (chapterId: string, chapterBreakdown: any) => {
+    const newSelection = new Set(selectedShots)
+    const allShotsInChapter: string[] = []
+    
+    chapterBreakdown.shots?.forEach((shot: string, index: number) => {
+      allShotsInChapter.push(`${chapterId}-${index}`)
+    })
+    
+    // Also include additional shots
+    const chapterAdditionalShots = additionalShots[chapterId] || []
+    chapterAdditionalShots.forEach((shot: string, index: number) => {
+      allShotsInChapter.push(`${chapterId}-additional-${index}`)
+    })
+    
+    const allSelected = allShotsInChapter.every(id => selectedShots.has(id))
+    
+    if (allSelected) {
+      // Deselect all
+      allShotsInChapter.forEach(id => newSelection.delete(id))
+    } else {
+      // Select all
+      allShotsInChapter.forEach(id => newSelection.add(id))
+    }
+    
+    setSelectedShots(newSelection)
   }
 
   // Prepare all shots for bulk export
-  const prepareAllShotsForExport = (): ShotData[] => {
+  const prepareAllShotsForExport = (): any[] => {
     if (!breakdown?.chapterBreakdowns) return []
 
-    const allShots: ShotData[] = []
+    const allShots: any[] = []
     let shotCounter = 1
 
     breakdown.chapterBreakdowns.forEach((chapterBreakdown: any, chapterIndex: number) => {
@@ -261,10 +350,13 @@ export function StoryMode({
       if (chapterBreakdown.shots) {
         chapterBreakdown.shots.forEach((shot: string, shotIndex: number) => {
           allShots.push({
-            id: `chapter-${chapterIndex}-shot-${shotIndex}`,
+            id: `story_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_ch${chapterIndex}_s${shotIndex}`,
             description: shot,
-            chapter: chapter.title,
+            sourceChapter: chapter.title,
             shotNumber: shotCounter++,
+            projectType: 'story',
+            projectId: 'story-project',
+            status: 'pending',
             metadata: {
               directorStyle: selectedDirectorInfo?.name,
               timestamp: new Date().toISOString(),
@@ -278,10 +370,13 @@ export function StoryMode({
       const chapterAdditionalShots = additionalShots[chapter.id] || []
       chapterAdditionalShots.forEach((shot: string, shotIndex: number) => {
         allShots.push({
-          id: `chapter-${chapterIndex}-additional-${shotIndex}`,
+          id: `story_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_ch${chapterIndex}_add${shotIndex}`,
           description: shot,
-          chapter: `${chapter.title} (Additional)`,
+          sourceChapter: `${chapter.title} (Additional)`,
           shotNumber: shotCounter++,
+          projectType: 'story',
+          projectId: 'story-project', 
+          status: 'pending',
           metadata: {
             directorStyle: selectedDirectorInfo?.name,
             timestamp: new Date().toISOString(),
@@ -318,286 +413,39 @@ export function StoryMode({
     router.push('/export')
   }
 
-  const toggleShotSelection = (shotId: string) => {
-    const newSelection = new Set(selectedShots)
-    if (newSelection.has(shotId)) {
-      newSelection.delete(shotId)
-    } else {
-      newSelection.add(shotId)
-    }
-    setSelectedShots(newSelection)
-  }
-
-  const copySelectedShots = () => {
-    const shotsToCopy: string[] = []
+  const handleCopyAllShots = async () => {
+    const allShots = prepareAllShotsForExport()
     
-    breakdown?.chapterBreakdowns?.forEach((chapterBreakdown: any, chapterIndex: number) => {
-      const chapter = breakdown.storyStructure.chapters[chapterIndex]
-      chapterBreakdown.shots?.forEach((shot: string, index: number) => {
-        const shotId = `${chapter.id}-${index}`
-        if (selectedShots.has(shotId)) {
-          shotsToCopy.push(shot)
-        }
-      })
-      
-      // Also check additional shots
-      const chapterAdditionalShots = additionalShots[chapter.id] || []
-      chapterAdditionalShots.forEach((shot: string, index: number) => {
-        const shotId = `${chapter.id}-additional-${index}`
-        if (selectedShots.has(shotId)) {
-          shotsToCopy.push(shot)
-        }
-      })
-    })
-    
-    if (shotsToCopy.length > 0) {
-      navigator.clipboard.writeText(shotsToCopy.join('\n\n'))
+    if (allShots.length === 0) {
       toast({
-        title: "Copied!",
-        description: `${shotsToCopy.length} shots copied to clipboard`
+        title: "No Shots to Copy",
+        description: "Please generate shots first.",
+        variant: "destructive"
       })
-      setSelectedShots(new Set())
-      setIsSelectionMode(false)
+      return
     }
-  }
 
-  const selectAllChapterShots = (chapterId: string, chapterBreakdown: any) => {
-    const newSelection = new Set(selectedShots)
-    const allShotsInChapter: string[] = []
+    // Format all shots for clipboard
+    const formattedShots = allShots.map((shot, index) => `${index + 1}. ${shot.description}`).join('\n\n')
+
+    const success = await safeClipboardWrite(formattedShots)
     
-    chapterBreakdown.shots?.forEach((shot: string, index: number) => {
-      allShotsInChapter.push(`${chapterId}-${index}`)
-    })
-    
-    // Also include additional shots
-    const chapterAdditionalShots = additionalShots[chapterId] || []
-    chapterAdditionalShots.forEach((shot: string, index: number) => {
-      allShotsInChapter.push(`${chapterId}-additional-${index}`)
-    })
-    
-    const allSelected = allShotsInChapter.every(id => selectedShots.has(id))
-    
-    if (allSelected) {
-      // Deselect all
-      allShotsInChapter.forEach(id => newSelection.delete(id))
+    if (success) {
+      toast({
+        title: "All Shots Copied!",
+        description: `Copied ${allShots.length} story shots to clipboard`
+      })
     } else {
-      // Select all
-      allShotsInChapter.forEach(id => newSelection.add(id))
+      toast({
+        title: "Copy Failed",
+        description: getClipboardErrorMessage(),
+        variant: "destructive"
+      })
     }
-    
-    setSelectedShots(newSelection)
   }
 
   return (
     <div className="space-y-6">
-      {/* Story Input Section */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-amber-400" />
-            Story Input
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Enter your story here..."
-            value={story}
-            onChange={(e) => setStory(e.target.value)}
-            className="min-h-[200px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-          />
-
-          {/* Director Selection */}
-          <DirectorSelector
-            selectedDirector={selectedDirector}
-            onDirectorChange={setSelectedDirector}
-            allDirectors={allDirectors}
-            selectedDirectorInfo={selectedDirectorInfo}
-            domain="film"
-          />
-
-          {/* Director Notes */}
-          <div>
-            <label className="text-sm font-medium text-white mb-1 block">🎯 Director&apos;s Notes (HIGHEST PRIORITY)</label>
-            <Textarea
-              placeholder="Your specific creative guidance, themes, visual style, mood..."
-              value={storyDirectorNotes}
-              onChange={(e) => setStoryDirectorNotes(e.target.value)}
-              rows={3}
-              className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"
-            />
-            <p className="text-xs text-amber-300 mt-1">
-              These notes guide and enhance the selected director&apos;s style
-            </p>
-          </div>
-
-          {/* Chapter Method Selection */}
-          <div>
-            <label className="text-sm font-medium text-white mb-2 block">📖 Chapter Generation Method</label>
-            <Select value={chapterMethod} onValueChange={(value: any) => setChapterMethod(value)}>
-              <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto-detect">🔍 Auto-detect from headings</SelectItem>
-                <SelectItem value="user-specified">🎚️ User-specified count</SelectItem>
-                <SelectItem value="ai-suggested">🤖 AI-suggested (3-5 chapters)</SelectItem>
-                <SelectItem value="single">📄 Single chapter (no breakdown)</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {chapterMethod === 'user-specified' && (
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Chapter count:</span>
-                  <span className="text-sm font-medium text-white">{userChapterCount} chapters</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="2" 
-                  max="8" 
-                  value={userChapterCount}
-                  onChange={(e) => setUserChapterCount(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-                />
-              </div>
-            )}
-            
-            <p className="text-xs text-slate-400 mt-1">
-              {chapterMethod === 'auto-detect' && 'Looks for existing headings like "Chapter 1", "# Title", etc.'}
-              {chapterMethod === 'user-specified' && `Story will be split into exactly ${userChapterCount} chapters`}
-              {chapterMethod === 'ai-suggested' && 'AI determines optimal chapter count based on story structure'}
-              {chapterMethod === 'single' && 'Treats entire story as one chapter for shot generation'}
-            </p>
-          </div>
-
-          {/* Advanced Options */}
-          <Collapsible open={showAdvancedOptions} onOpenChange={setShowAdvancedOptions}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="text-slate-300 hover:bg-slate-700 p-0">
-                <Settings className="h-4 w-4 mr-2" />
-                Advanced Options
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              {/* Title Card Options */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="title-cards"
-                    checked={titleCardOptions.enabled}
-                    onCheckedChange={(checked) =>
-                      setTitleCardOptions((prev: any) => ({ ...prev, enabled: !!checked }))
-                    }
-                  />
-                  <label htmlFor="title-cards" className="text-sm text-white">
-                    Generate Title Cards
-                  </label>
-                </div>
-              </div>
-
-              {/* Prompt Options */}
-              <div className="space-y-3">
-                <div className="text-sm font-medium text-white">Generation Options</div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="camera-style"
-                      checked={promptOptions.includeCameraStyle}
-                      onCheckedChange={(checked) =>
-                        setPromptOptions((prev: any) => ({ ...prev, includeCameraStyle: !!checked }))
-                      }
-                    />
-                    <label htmlFor="camera-style" className="text-sm text-slate-300 flex items-center gap-1">
-                      <Camera className="h-3 w-3" />
-                      Include Camera Movement Details
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="color-palette"
-                      checked={promptOptions.includeColorPalette}
-                      onCheckedChange={(checked) =>
-                        setPromptOptions((prev: any) => ({ ...prev, includeColorPalette: !!checked }))
-                      }
-                    />
-                    <label htmlFor="color-palette" className="text-sm text-slate-300 flex items-center gap-1">
-                      <Palette className="h-3 w-3" />
-                      Include Color & Lighting Details
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Generation Options */}
-          <div className="flex gap-3">
-            <Button
-              onClick={() => onGenerateBreakdown(chapterMethod, userChapterCount)}
-              disabled={isLoading || isExtractingReferences || !story.trim()}
-              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
-            >
-              {isExtractingReferences ? (
-                <>
-                  <Target className="h-4 w-4 mr-2 animate-spin" />
-                  Extracting References...
-                </>
-              ) : isLoading ? (
-                <>
-                  <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Target className="h-4 w-4 mr-2" />
-                  Extract Story References
-                </>
-              )}
-            </Button>
-
-            {(story.trim() || breakdown) && (
-              <Button
-                onClick={onClearStory}
-                disabled={isLoading}
-                variant="outline"
-                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-          
-          {/* Entity Summary */}
-          {(currentEntities?.characters?.length > 0 || currentEntities?.locations?.length > 0 || currentEntities?.props?.length > 0) && (
-            <Card className="bg-purple-900/20 border-purple-700/30">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-4 text-sm">
-                  {currentEntities?.characters?.length > 0 && (
-                    <div className="flex items-center gap-1 text-purple-300">
-                      <Users className="h-3 w-3" />
-                      {currentEntities?.characters?.length || 0} characters
-                    </div>
-                  )}
-                  {currentEntities?.locations?.length > 0 && (
-                    <div className="flex items-center gap-1 text-purple-300">
-                      <MapPin className="h-3 w-3" />
-                      {currentEntities?.locations?.length || 0} locations
-                    </div>
-                  )}
-                  {currentEntities?.props?.length > 0 && (
-                    <div className="flex items-center gap-1 text-purple-300">
-                      <Package className="h-3 w-3" />
-                      {currentEntities?.props?.length || 0} props
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Multi-Stage Progress Tracking */}
       <MultiStageProgress
         stage={generationStage}
@@ -643,6 +491,15 @@ export function StoryMode({
         <div className="space-y-6">
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <Button
+              onClick={handleCopyAllShots}
+              variant="outline"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto"
+              disabled={!breakdown?.chapterBreakdowns || breakdown.chapterBreakdowns.length === 0}
+            >
+              <Copy className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">Copy All Shots</span>
+            </Button>
             <Button
               onClick={handleNavigateToExport}
               variant="outline"

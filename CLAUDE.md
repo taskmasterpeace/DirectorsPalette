@@ -56,11 +56,13 @@ npm run lint
 
 ### Key Features
 
-1. **Dual Mode Operation**: Story mode and Music Video mode with separate workflows
+1. **Triple Mode Operation**: Story mode, Music Video mode, and Commercial mode with separate workflows
 2. **Director Styles**: Curated and custom director profiles for stylized generation
 3. **Artist Bank**: Artist profile management with persistence
 4. **Shot Generation**: AI-powered shot list generation with director-specific styling
-5. **Session Persistence**: Auto-saves state to localStorage
+5. **Image Editing**: Qwen-Edit AI integration for professional image editing and modification
+6. **Template Systems**: Comprehensive template management for stories, music videos, and commercials
+7. **Session Persistence**: Auto-saves state to localStorage
 
 ### Server Actions Pattern
 
@@ -116,5 +118,6 @@ When modifying this codebase, prioritize:
 - **Build Configuration**: ESLint and TypeScript errors are ignored during builds (`next.config.mjs`)
 - **No Test Suite**: Currently no test files or testing framework configured
 - **AI Integration**: Requires OpenAI API key configuration for server actions
+- **Image Editing**: Requires Replicate API token for Qwen-Edit image editing functionality
 - **Browser Storage**: Heavy reliance on IndexedDB and localStorage for data persistence
 - **No Caching Strategy**: Could lead to performance issues with larger datasets

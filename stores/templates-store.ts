@@ -33,7 +33,26 @@ export interface MusicVideoTemplate {
   updatedAt: Date
 }
 
-export type Template = StoryTemplate | MusicVideoTemplate
+export interface CommercialTemplate {
+  id: string
+  name: string
+  type: 'commercial'
+  category: 'sample' | 'user' | 'test-data'
+  content: {
+    brandDescription: string
+    campaignGoals: string
+    targetAudience: string
+    keyMessages: string
+    constraints: string
+    selectedDirector?: string
+    duration?: '10s' | '30s'
+    platform?: 'tiktok' | 'instagram' | 'youtube'
+  }
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type Template = StoryTemplate | MusicVideoTemplate | CommercialTemplate
 
 interface TemplatesState {
   templates: Template[]
@@ -45,7 +64,7 @@ interface TemplatesActions {
   addTemplate: (template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateTemplate: (id: string, updates: Partial<Template>) => void
   deleteTemplate: (id: string) => void
-  getTemplatesByType: (type: 'story' | 'music-video') => Template[]
+  getTemplatesByType: (type: 'story' | 'music-video' | 'commercial') => Template[]
   getTemplatesByCategory: (category: 'sample' | 'user' | 'test-data') => Template[]
   
   // Load sample templates
@@ -96,6 +115,129 @@ The conversation unfolds slowly, painfully. Maria explains the choices she made,
 As the afternoon sun streams through the window, both women realize that forgiveness isn't about forgetting the past – it's about choosing to move forward together. Claire reaches across the table and takes her mother's hand for the first time in twenty years.`,
       storyDirectorNotes: "Intimate character study focusing on emotional beats, subtle performances, and meaningful dialogue. Natural lighting and close emotional framing.",
       selectedDirector: "greta-gerwig"
+    }
+  }
+]
+
+const sampleCommercialTemplates: Omit<CommercialTemplate, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    name: "Tech Product Launch",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "Apple launches the new iPhone 15 Pro with revolutionary camera technology",
+      campaignGoals: "Generate excitement for product launch and showcase key features",
+      targetAudience: "Tech enthusiasts, early adopters, and mobile photographers",
+      keyMessages: "Revolutionary camera technology, professional-grade capabilities, premium design",
+      constraints: "Keep focus on camera features, avoid comparison claims",
+      selectedDirector: "zach-king-commercial",
+      duration: "10s",
+      platform: "tiktok"
+    }
+  },
+  {
+    name: "SaaS Product Demo",
+    type: "commercial",
+    category: "sample", 
+    content: {
+      brandDescription: "Notion helps teams organize projects and collaborate effectively",
+      campaignGoals: "Demonstrate ease of use and productivity benefits",
+      targetAudience: "Entrepreneurs, small business owners, and creative professionals", 
+      keyMessages: "All-in-one workspace, easy collaboration, improved productivity",
+      constraints: "Show real use cases, avoid technical jargon",
+      selectedDirector: "casey-neistat-commercial",
+      duration: "30s",
+      platform: "youtube"
+    }
+  },
+  {
+    name: "Luxury Brand Heritage",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "Mercedes-Benz S-Class represents 100 years of automotive innovation and luxury",
+      campaignGoals: "Reinforce brand heritage and premium positioning",
+      targetAudience: "Affluent professionals and luxury car buyers",
+      keyMessages: "Heritage of excellence, cutting-edge technology, uncompromising luxury",
+      constraints: "Maintain premium tone, focus on craftsmanship",
+      selectedDirector: "david-droga-commercial",
+      duration: "30s", 
+      platform: "youtube"
+    }
+  },
+  {
+    name: "Food Delivery Service",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "DoorDash delivers restaurant-quality food to your door in 30 minutes",
+      campaignGoals: "Increase app downloads and highlight convenience",
+      targetAudience: "Busy professionals, families, and urban dwellers",
+      keyMessages: "Fast delivery, restaurant variety, convenience and reliability",
+      constraints: "Show real delivery scenarios, emphasize speed and quality",
+      selectedDirector: "casey-neistat-commercial",
+      duration: "30s",
+      platform: "instagram"
+    }
+  },
+  {
+    name: "SaaS Productivity Platform",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "Asana transforms chaotic workflows into organized, collaborative project management. Our platform helps teams track progress, assign tasks, and meet deadlines efficiently.",
+      campaignGoals: "Demonstrate productivity transformation and encourage free trial signups",
+      targetAudience: "Business professionals, project managers, and remote teams seeking better organization",
+      keyMessages: "Workflow transformation, team collaboration, deadline management, productivity gains",
+      constraints: "Show real workplace scenarios, avoid overly technical language, focus on outcomes",
+      selectedDirector: "casey-neistat-commercial",
+      duration: "30s",
+      platform: "youtube"
+    }
+  },
+  {
+    name: "Smart Electronics Integration",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "Samsung Galaxy Watch seamlessly integrates health tracking, communication, and productivity into your daily routine with innovative smart technology.",
+      campaignGoals: "Showcase lifestyle integration and drive retail sales",
+      targetAudience: "Tech-savvy millennials and Gen Z who value connected devices and health tracking",
+      keyMessages: "Seamless integration, health monitoring, smart notifications, lifestyle enhancement",
+      constraints: "Keep youthful and energetic, show diverse usage scenarios, highlight key features",
+      selectedDirector: "zach-king-commercial",
+      duration: "10s",
+      platform: "tiktok"
+    }
+  },
+  {
+    name: "Local Restaurant Community",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "Tony's Family Restaurant has been serving authentic Italian cuisine and bringing families together for three generations in downtown Springfield.",
+      campaignGoals: "Build local community awareness and increase weekend reservations",
+      targetAudience: "Local families, food enthusiasts, and community members seeking authentic dining experiences",
+      keyMessages: "Family tradition, authentic cuisine, community gathering place, warm hospitality",
+      constraints: "Maintain warm, inviting tone, show diverse families, highlight local connection",
+      selectedDirector: "lucia-aniello-commercial",
+      duration: "30s",
+      platform: "instagram"
+    }
+  },
+  {
+    name: "Non-Profit Water Initiative",
+    type: "commercial",
+    category: "sample",
+    content: {
+      brandDescription: "Clean Water Initiative provides sustainable water access solutions to underserved communities, transforming lives through clean, reliable water infrastructure.",
+      campaignGoals: "Inspire donations and volunteer participation through impact storytelling",
+      targetAudience: "Socially conscious individuals, potential donors, community volunteers, and impact investors",
+      keyMessages: "Life-changing impact, community transformation, sustainable solutions, collective action",
+      constraints: "Maintain respectful tone, show real impact, avoid exploitation, include clear call-to-action",
+      selectedDirector: "david-droga-commercial",
+      duration: "30s",
+      platform: "youtube"
     }
   }
 ]
@@ -261,7 +403,13 @@ export const useTemplatesStore = create<TemplatesState & TemplatesActions>()(
               id: `sample_mv_${index}`,
               createdAt: now,
               updatedAt: now
-            } as MusicVideoTemplate))
+            } as MusicVideoTemplate)),
+            ...sampleCommercialTemplates.map((template, index) => ({
+              ...template,
+              id: `sample_commercial_${index}`,
+              createdAt: now,
+              updatedAt: now
+            } as CommercialTemplate))
           ]
           
           set((state) => ({

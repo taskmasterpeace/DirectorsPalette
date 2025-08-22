@@ -31,13 +31,14 @@ import {
   Star,
   User,
   TestTube,
-  Clock
+  Clock,
+  Target
 } from 'lucide-react'
-import { useTemplatesStore, type Template, type StoryTemplate, type MusicVideoTemplate } from '@/stores/templates-store'
+import { useTemplatesStore, type Template, type StoryTemplate, type MusicVideoTemplate, type CommercialTemplate } from '@/stores/templates-store'
 import { useToast } from '@/components/ui/use-toast'
 
 interface TemplateManagerProps {
-  type: 'story' | 'music-video'
+  type: 'story' | 'music-video' | 'commercial'
   currentData?: any
   onLoadTemplate: (template: Template) => void
   trigger?: React.ReactNode
@@ -185,8 +186,8 @@ export function TemplateManager({
       <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {type === 'story' ? <FileText className="w-5 h-5" /> : <Music className="w-5 h-5" />}
-            {type === 'story' ? 'Story' : 'Music Video'} Templates
+            {type === 'story' ? <FileText className="w-5 h-5" /> : type === 'music-video' ? <Music className="w-5 h-5" /> : <Target className="w-5 h-5" />}
+            {type === 'story' ? 'Story' : type === 'music-video' ? 'Music Video' : 'Commercial'} Templates
           </DialogTitle>
           <DialogDescription>
             Save your current work as a template or load a previously saved template.
@@ -268,12 +269,19 @@ export function TemplateManager({
                             <div className="text-sm text-muted-foreground mb-2">
                               {type === 'story' ? (
                                 <span>{(template as StoryTemplate).content.story.substring(0, 100)}...</span>
-                              ) : (
+                              ) : type === 'music-video' ? (
                                 <div>
                                   <span className="font-medium">{(template as MusicVideoTemplate).content.songTitle || 'Untitled'}</span>
                                   {(template as MusicVideoTemplate).content.artist && (
                                     <span> by {(template as MusicVideoTemplate).content.artist}</span>
                                   )}
+                                </div>
+                              ) : (
+                                <div>
+                                  <span className="font-medium">{(template as CommercialTemplate).content.brandDescription.substring(0, 60)}...</span>
+                                  <div className="text-xs">
+                                    Target: {(template as CommercialTemplate).content.targetAudience.substring(0, 40)}...
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -360,7 +368,7 @@ export function TemplateManager({
                             </div>
                           )}
                         </div>
-                      ) : (
+                      ) : type === 'music-video' ? (
                         <div>
                           <div className="flex gap-4 mb-2">
                             {currentData.songTitle && <span className="font-medium">{currentData.songTitle}</span>}
@@ -369,6 +377,22 @@ export function TemplateManager({
                           </div>
                           {currentData.lyrics && (
                             <div className="line-clamp-4">{currentData.lyrics.substring(0, 200)}...</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="font-medium mb-1">Brand Brief:</div>
+                          <div className="line-clamp-2">{currentData.brandDescription?.substring(0, 150)}...</div>
+                          <div className="mt-2">
+                            <div className="font-medium">Target Audience:</div>
+                            <div className="line-clamp-1">{currentData.targetAudience?.substring(0, 100)}...</div>
+                          </div>
+                          {currentData.selectedDirector && (
+                            <div className="mt-2">
+                              <Badge variant="outline">{currentData.selectedDirector}</Badge>
+                              {currentData.platform && <Badge variant="outline" className="ml-2">{currentData.platform}</Badge>}
+                              {currentData.duration && <Badge variant="outline" className="ml-2">{currentData.duration}</Badge>}
+                            </div>
                           )}
                         </div>
                       )}

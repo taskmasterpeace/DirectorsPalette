@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react"
 import { directorDB } from "@/lib/director-db"
 import type { FilmDirector, MusicVideoDirector } from "@/lib/director-types"
 import { curatedFilmDirectors, curatedMusicVideoDirectors } from "@/lib/curated-directors"
+import { commercialDirectors, type EnhancedCommercialDirector } from "@/lib/commercial-directors"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Search, Plus } from "lucide-react"
+import { Search, Plus, Briefcase } from "lucide-react"
 import { DirectorCard } from "@/components/director-card"
 import { DirectorFilmForm } from "@/components/director-film-form"
 import { DirectorMusicForm } from "@/components/director-music-form"
@@ -18,6 +19,7 @@ import { useToast } from "@/components/ui/use-toast"
 type Source = "curated" | "library"
 type FilmListItem = FilmDirector & { source: Source }
 type MusicListItem = MusicVideoDirector & { source: Source }
+type CommercialListItem = EnhancedCommercialDirector & { source: Source }
 
 export default function DirectorLibraryPage() {
   const { toast } = useToast()
@@ -25,7 +27,7 @@ export default function DirectorLibraryPage() {
   // Data
   const [film, setFilm] = useState<FilmDirector[]>([])
   const [music, setMusic] = useState<MusicVideoDirector[]>([])
-  const [tab, setTab] = useState<"film" | "music">("film")
+  const [tab, setTab] = useState<"film" | "music" | "commercial">("film")
 
   // Filters
   const [query, setQuery] = useState("")
@@ -71,7 +73,12 @@ export default function DirectorLibraryPage() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [music])
 
-  const active = tab === "film" ? filmList : musicList
+  const commercialList: CommercialListItem[] = useMemo(() => {
+    // Commercial directors are curated for now
+    return commercialDirectors.map((c) => ({ ...c, source: "curated" }))
+  }, [])
+
+  const active = tab === "film" ? filmList : tab === "music" ? musicList : commercialList
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(active.map((i) => i.category).filter(Boolean)) as Set<string>)],
     [active],
@@ -85,7 +92,9 @@ export default function DirectorLibraryPage() {
       (i.description || "").toLowerCase().includes(q) ||
       (tab === "film"
         ? ((i as FilmDirector).visualLanguage || "").toLowerCase().includes(q)
-        : ((i as MusicVideoDirector).visualHallmarks || "").toLowerCase().includes(q))
+        : tab === "music"
+          ? ((i as MusicVideoDirector).visualHallmarks || "").toLowerCase().includes(q)
+          : ((i as EnhancedCommercialDirector).visualLanguage || "").toLowerCase().includes(q))
     const matchC = category === "All" || i.category === category
     return matchQ && matchC
   })
@@ -214,6 +223,22 @@ export default function DirectorLibraryPage() {
                 {musicList.length}
               </Badge>
             </Button>
+            <Button
+              variant={tab === "commercial" ? "default" : "outline"}
+              onClick={() => setTab("commercial")}
+              className={
+                tab === "commercial"
+                  ? "bg-orange-600 hover:bg-orange-700"
+                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+              }
+              size="sm"
+            >
+              <Briefcase className="w-4 h-4 mr-2" />
+              Commercial Directors
+              <Badge variant="secondary" className="ml-2 bg-slate-600/20 text-slate-300">
+                {commercialList.length}
+              </Badge>
+            </Button>
           </div>
 
           {/* Search + Category */}
@@ -221,7 +246,11 @@ export default function DirectorLibraryPage() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder={tab === "film" ? "Search film directors..." : "Search music video directors..."}
+                placeholder={
+                  tab === "film" ? "Search film directors..." : 
+                  tab === "music" ? "Search music video directors..." : 
+                  "Search commercial directors..."
+                }
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-400"
@@ -280,7 +309,7 @@ export default function DirectorLibraryPage() {
                     )}
                   </div>
                 )
-              } else {
+              } else if (tab === "music") {
                 const item = d as MusicListItem
                 const isLibrary = item.source === "library"
                 return (
@@ -301,6 +330,47 @@ export default function DirectorLibraryPage() {
                         Add to Library
                       </Button>
                     )}
+                  </div>
+                )
+              } else {
+                // Commercial directors
+                const item = d as CommercialListItem
+                return (
+                  <div key={item.id} className="flex flex-col gap-2">
+                    <DirectorCard
+                      director={item}
+                      compact={true}
+                    />
+                    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                      <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                        <div>
+                          <span className="text-green-400">Creativity:</span>
+                          <span className="ml-1 text-white">{item.commercialStats.creativity}/10</span>
+                        </div>
+                        <div>
+                          <span className="text-blue-400">Engagement:</span>
+                          <span className="ml-1 text-white">{item.commercialStats.engagement}/10</span>
+                        </div>
+                        <div>
+                          <span className="text-yellow-400">Authenticity:</span>
+                          <span className="ml-1 text-white">{item.commercialStats.authenticity}/10</span>
+                        </div>
+                        <div>
+                          <span className="text-purple-400">Premium:</span>
+                          <span className="ml-1 text-white">{item.commercialStats.premiumFeel}/10</span>
+                        </div>
+                      </div>
+                      <div className="text-xs">
+                        <div className="mb-1">
+                          <span className="text-slate-400">Platforms:</span>
+                          <span className="ml-1 text-cyan-300">{item.platformStrength.join(', ')}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Best for:</span>
+                          <span className="ml-1 text-orange-300">{item.brandFit.slice(0, 2).join(', ')}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )
               }

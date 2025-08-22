@@ -67,7 +67,7 @@ export function StoryInputConnected({
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-amber-400" />
-          Story Input
+          Story Creator
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -246,7 +246,7 @@ export function StoryInputConnected({
             ) : isLoading ? (
               <>
                 <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
+                Creating your story breakdown...
               </>
             ) : (
               <>

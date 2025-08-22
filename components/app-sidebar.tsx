@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { Home, FolderOpen, Users, Palette, Film, Music, Dna, Mic2, Video, Clapperboard } from "lucide-react"
+import { Home, FolderOpen, Users, Palette, Film, Music, Dna, Mic2, Video, Clapperboard, Briefcase, Settings } from "lucide-react"
 import { useAppStore } from "@/stores/app-store"
 import {
   Sidebar,
@@ -23,7 +23,7 @@ export function AppSidebar() {
   const router = useRouter()
   const { mode = "story", setMode } = useAppStore()
 
-  function handleModeChange(newMode: "story" | "music-video") {
+  function handleModeChange(newMode: "story" | "music-video" | "commercial") {
     if (setMode) {
       setMode(newMode)
     }
@@ -39,6 +39,7 @@ export function AppSidebar() {
   const productionItems = [
     { title: "Story Mode", mode: "story" as const, icon: Film, action: "mode" as const },
     { title: "Music Video Mode", mode: "music-video" as const, icon: Music, action: "mode" as const },
+    { title: "Commercial Mode", mode: "commercial" as const, icon: Briefcase, action: "mode" as const },
     { title: "Post Production", url: "/post-production", icon: Clapperboard, action: "link" as const },
     { title: "Directors Library", url: "/director-library", icon: Users, action: "link" as const },
   ]
@@ -49,17 +50,28 @@ export function AppSidebar() {
     { title: "Artist Bank", url: "/studio/artist-bank", icon: Mic2, action: "link" as const },
   ]
 
-  // Project management
+  // Project management and settings
   const projectItems = [
     { title: "All Projects", url: "/projects", icon: FolderOpen, action: "link" as const },
+    { title: "Settings", url: "/settings", icon: Settings, action: "link" as const },
   ]
 
   return (
     <Sidebar className="border-r border-slate-800">
-      <SidebarHeader className="p-4 border-b border-slate-800 bg-slate-900">
-        <div className="flex items-center gap-3">
-          <Video className="w-6 h-6 text-amber-500" />
-          <span className="text-white font-semibold">Director's Palette</span>
+      <SidebarHeader className="p-4 border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/mkl-logo.png" 
+              alt="Machine King Labs" 
+              className="w-12 h-12 rounded-lg shadow-lg"
+            />
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-xl">Director's Palette</span>
+              <span className="text-amber-400 text-sm font-medium">Machine King Labs</span>
+            </div>
+          </div>
+          <div className="h-px bg-gradient-to-r from-amber-500 to-transparent w-full"></div>
         </div>
       </SidebarHeader>
 

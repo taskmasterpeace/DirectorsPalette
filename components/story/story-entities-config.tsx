@@ -111,12 +111,12 @@ export function StoryEntitiesConfig({
 
     onEntitiesUpdate({
       ...currentEntities,
-      characters: [...currentEntities.characters, newCharacter]
+      characters: [...(currentEntities?.characters || []), newCharacter]
     })
   }
 
   const updateCharacter = (id: string, updates: Partial<Character>) => {
-    const updatedCharacters = currentEntities.characters.map(char =>
+    const updatedCharacters = (currentEntities?.characters || []).map(char =>
       char.id === id 
         ? { 
             ...char, 
@@ -137,13 +137,13 @@ export function StoryEntitiesConfig({
   const deleteCharacter = (id: string) => {
     onEntitiesUpdate({
       ...currentEntities,
-      characters: currentEntities.characters.filter(char => char.id !== id)
+      characters: (currentEntities?.characters || []).filter(char => char.id !== id)
     })
   }
 
   // Location management
   const addLocation = (location?: Partial<Location>) => {
-    const locIndex = currentEntities.locations.length + 1
+    const locIndex = (currentEntities?.locations?.length || 0) + 1
     const newLocation: Location = {
       id: `loc-${Date.now()}`,
       name: location?.name || "",
@@ -155,12 +155,12 @@ export function StoryEntitiesConfig({
 
     onEntitiesUpdate({
       ...currentEntities,
-      locations: [...currentEntities.locations, newLocation]
+      locations: [...(currentEntities?.locations || []), newLocation]
     })
   }
 
   const updateLocation = (id: string, updates: Partial<Location>) => {
-    const updatedLocations = currentEntities.locations.map(loc =>
+    const updatedLocations = (currentEntities?.locations || []).map(loc =>
       loc.id === id ? { ...loc, ...updates } : loc
     )
 
@@ -173,13 +173,13 @@ export function StoryEntitiesConfig({
   const deleteLocation = (id: string) => {
     onEntitiesUpdate({
       ...currentEntities,
-      locations: currentEntities.locations.filter(loc => loc.id !== id)
+      locations: (currentEntities?.locations || []).filter(loc => loc.id !== id)
     })
   }
 
   // Prop management
   const addProp = (prop?: Partial<Prop>) => {
-    const propIndex = currentEntities.props.length + 1
+    const propIndex = (currentEntities?.props?.length || 0) + 1
     const newProp: Prop = {
       id: `prop-${Date.now()}`,
       name: prop?.name || "",
@@ -191,12 +191,12 @@ export function StoryEntitiesConfig({
 
     onEntitiesUpdate({
       ...currentEntities,
-      props: [...currentEntities.props, newProp]
+      props: [...(currentEntities?.props || []), newProp]
     })
   }
 
   const updateProp = (id: string, updates: Partial<Prop>) => {
-    const updatedProps = currentEntities.props.map(prop =>
+    const updatedProps = (currentEntities?.props || []).map(prop =>
       prop.id === id ? { ...prop, ...updates } : prop
     )
 
@@ -209,7 +209,7 @@ export function StoryEntitiesConfig({
   const deleteProp = (id: string) => {
     onEntitiesUpdate({
       ...currentEntities,
-      props: currentEntities.props.filter(prop => prop.id !== id)
+      props: (currentEntities?.props || []).filter(prop => prop.id !== id)
     })
   }
 
@@ -353,15 +353,15 @@ export function StoryEntitiesConfig({
             <TabsList className="grid grid-cols-3 w-full bg-slate-800">
               <TabsTrigger value="characters" className="data-[state=active]:bg-slate-700">
                 <Users className="h-4 w-4 mr-2" />
-                Characters ({currentEntities.characters.length})
+                Characters ({currentEntities?.characters?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="locations" className="data-[state=active]:bg-slate-700">
                 <MapPin className="h-4 w-4 mr-2" />
-                Locations ({currentEntities.locations.length})
+                Locations ({currentEntities?.locations?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="props" className="data-[state=active]:bg-slate-700">
                 <Package className="h-4 w-4 mr-2" />
-                Props ({currentEntities.props.length})
+                Props ({currentEntities?.props?.length || 0})
               </TabsTrigger>
             </TabsList>
 
@@ -376,7 +376,7 @@ export function StoryEntitiesConfig({
                   Add Character
                 </Button>
 
-                {currentEntities.characters.map((character) => (
+                {(currentEntities?.characters || []).map((character) => (
                   <Card key={character.id} className="bg-slate-800/50 border-slate-700">
                     <CardContent className="pt-4">
                       <div className="space-y-3">
@@ -457,7 +457,7 @@ export function StoryEntitiesConfig({
                   Add Location
                 </Button>
 
-                {currentEntities.locations.map((location) => (
+                {(currentEntities?.locations || []).map((location) => (
                   <Card key={location.id} className="bg-slate-800/50 border-slate-700">
                     <CardContent className="pt-4">
                       <div className="space-y-3">
@@ -537,7 +537,7 @@ export function StoryEntitiesConfig({
                   Add Prop
                 </Button>
 
-                {currentEntities.props.map((prop) => (
+                {(currentEntities?.props || []).map((prop) => (
                   <Card key={prop.id} className="bg-slate-800/50 border-slate-700">
                     <CardContent className="pt-4">
                       <div className="space-y-3">
@@ -625,7 +625,7 @@ export function StoryEntitiesConfig({
               {isGenerating ? (
                 <>
                   <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
+                  Building story chapters...
                 </>
               ) : (
                 <>

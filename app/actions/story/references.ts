@@ -99,8 +99,9 @@ export async function generateStoryBreakdownWithReferences(
     locations: Array<{ reference: string; name: string; description: string }>
     props: Array<{ reference: string; name: string; description: string }>
   },
-  titleCardOptions?: any,
-  promptOptions?: any,
+  titleCardsEnabled: boolean = false,
+  cameraStyleEnabled: boolean = false,
+  colorPaletteEnabled: boolean = false,
   chapterMethod: string = "ai-suggested",
   userChapterCount: number = 4
 ) {
@@ -140,6 +141,24 @@ Use the exact @reference handles provided (e.g., @john, @warehouse).
 Focus on creative shot composition using only these approved elements.
 `
 
+  // Reconstruct options objects from boolean flags
+  const titleCardOptions = {
+    enabled: titleCardsEnabled,
+    format: "full",
+    approaches: []
+  }
+  
+  const promptOptions = {
+    includeCameraStyle: cameraStyleEnabled,
+    includeColorPalette: colorPaletteEnabled
+  }
+  
+  console.log('🔍 Server action using primitive boolean flags:', {
+    titleCardsEnabled,
+    cameraStyleEnabled,
+    colorPaletteEnabled
+  })
+  
   const result = await generateStoryBreakdown(
     story,
     director,

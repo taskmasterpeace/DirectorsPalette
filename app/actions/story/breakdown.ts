@@ -224,10 +224,13 @@ For the shots array, each element should be a single STRING describing the shot,
 2. Character references (use @name format)
 3. Location references (use @location format)  
 4. Prop references (use @prop format)
-5. ${promptOptions?.includeCameraStyle ? 'Camera movement details' : ''}
-6. ${promptOptions?.includeColorPalette ? 'Color and lighting notes' : ''}
+5. ${promptOptions?.includeCameraStyle ? 'Camera movement details (dolly, zoom, pan, tilt)' : 'NO camera movements - create static frame descriptions only'}
+6. ${promptOptions?.includeColorPalette ? 'Color and lighting notes' : 'Basic lighting descriptions only'}
 
-Example shot string: "Medium shot of @protagonist at @warehouse entrance, holding @briefcase. Slow dolly in as shadows fall across face. Cool blue tones with harsh backlighting."
+Example shot string: ${promptOptions?.includeCameraStyle 
+  ? '"Medium shot of @protagonist at @warehouse entrance, holding @briefcase. Slow dolly in as shadows fall across face. Cool blue tones with harsh backlighting."'
+  : '"Medium shot of @protagonist at @warehouse entrance, holding @briefcase. Shadows fall across face. Cool blue tones with harsh backlighting."'
+}
 `
 
       const breakdown = await withRetry(

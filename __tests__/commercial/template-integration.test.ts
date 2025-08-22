@@ -1,0 +1,402 @@
+/**
+ * Commercial Template Integration Tests
+ * Tests template system integration with commercial mode functionality
+ */
+
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { useTemplatesStore } from '@/stores/templates-store'
+import type { CommercialTemplate } from '@/stores/templates-store'
+import { commercialTemplates } from '@/lib/commercial-templates'
+
+// Mock the templates store
+vi.mock('@/stores/templates-store', () => ({
+  useTemplatesStore: vi.fn()
+}))
+
+// Mock components
+vi.mock('@/components/shared/TemplateManager', () => ({
+  TemplateManager: ({ onLoadTemplate, trigger }: any) => (
+    <div data-testid="template-manager">
+      <div 
+        data-testid="load-template-trigger"
+        onClick={() => onLoadTemplate && onLoadTemplate({
+          id: 'test-template',
+          type: 'commercial',
+          name: 'Test Template',
+          category: 'sample',
+          content: {
+            brandDescription: 'Test brand description',
+            campaignGoals: 'Test goals',
+            targetAudience: 'Test audience',
+            keyMessages: 'Test messages',
+            constraints: 'Test constraints'
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })}
+      >
+        {trigger}
+      </div>
+    </div>
+  )
+}))
+
+describe('Commercial Template System', () => {
+  const mockAddTemplate = vi.fn()
+  const mockLoadSampleTemplates = vi.fn()
+  const mockGetTemplatesByType = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    
+    // Setup store mock
+    vi.mocked(useTemplatesStore).mockReturnValue({
+      templates: [],
+      isLoading: false,
+      addTemplate: mockAddTemplate,
+      updateTemplate: vi.fn(),
+      deleteTemplate: vi.fn(),
+      getTemplatesByType: mockGetTemplatesByType,
+      getTemplatesByCategory: vi.fn(),
+      loadSampleTemplates: mockLoadSampleTemplates,
+      resetTemplates: vi.fn()
+    })
+  })
+
+  describe('Commercial Template Structure', () => {
+    test('Commercial templates have required fields', () => {
+      const template = commercialTemplates[0]
+      
+      expect(template).toHaveProperty('id')
+      expect(template).toHaveProperty('name')
+      expect(template).toHaveProperty('description')
+      expect(template).toHaveProperty('category')
+      expect(template).toHaveProperty('suggestedDirector')
+      expect(template).toHaveProperty('defaultConfig')
+      expect(template).toHaveProperty('brandPlaceholder')
+      expect(template).toHaveProperty('productPlaceholder')
+      expect(template).toHaveProperty('tags')
+      expect(template).toHaveProperty('industryFit')
+    })
+
+    test('Default config has required platform settings', () => {
+      const template = commercialTemplates[0]
+      
+      expect(template.defaultConfig).toHaveProperty('duration')
+      expect(template.defaultConfig).toHaveProperty('platform')
+      expect(template.defaultConfig).toHaveProperty('audience')
+      expect(template.defaultConfig).toHaveProperty('concept')
+      
+      expect(['10s', '30s']).toContain(template.defaultConfig.duration)
+      expect(['tiktok', 'instagram', 'youtube']).toContain(template.defaultConfig.platform)
+    })
+
+    test('New diverse templates are included', () => {
+      const templateIds = commercialTemplates.map(t => t.id)
+      
+      expect(templateIds).toContain('saas-productivity-demo')
+      expect(templateIds).toContain('electronics-lifestyle-integration')
+      expect(templateIds).toContain('restaurant-community-experience')
+      expect(templateIds).toContain('nonprofit-impact-story')
+    })
+
+    test('Templates span different categories', () => {
+      const categories = [...new Set(commercialTemplates.map(t => t.category))]
+      
+      expect(categories).toContain('product-launch')
+      expect(categories).toContain('service-demo')
+      expect(categories).toContain('brand-story')
+      expect(categories).toContain('testimonial')
+      expect(categories.length).toBeGreaterThan(3) // Should have variety
+    })
+  })
+
+  describe('Template Store Integration', () => {
+    test('Commercial template type is supported', () => {
+      const commercialTemplate: CommercialTemplate = {
+        id: 'test-commercial',
+        name: 'Test Commercial',
+        type: 'commercial',
+        category: 'user',
+        content: {
+          brandDescription: 'Test brand',
+          campaignGoals: 'Test goals',
+          targetAudience: 'Test audience',
+          keyMessages: 'Test messages',
+          constraints: 'Test constraints',
+          selectedDirector: 'zach-king-commercial',
+          duration: '10s',
+          platform: 'tiktok'
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      expect(commercialTemplate.type).toBe('commercial')
+      expect(commercialTemplate.content).toHaveProperty('brandDescription')
+      expect(commercialTemplate.content).toHaveProperty('campaignGoals')
+      expect(commercialTemplate.content).toHaveProperty('targetAudience')
+      expect(commercialTemplate.content).toHaveProperty('keyMessages')
+      expect(commercialTemplate.content).toHaveProperty('constraints')
+    })
+
+    test('Template content structure is valid', () => {
+      const content = {
+        brandDescription: 'Nike Air Max sneakers with revolutionary cushioning',
+        campaignGoals: 'Drive sales and brand awareness',
+        targetAudience: 'Athletes and fitness enthusiasts',
+        keyMessages: 'Performance, comfort, style',
+        constraints: 'Family-friendly content',
+        selectedDirector: 'zach-king-commercial',
+        duration: '10s' as const,
+        platform: 'tiktok' as const
+      }
+
+      expect(content.brandDescription.length).toBeGreaterThan(10)
+      expect(['10s', '30s']).toContain(content.duration)
+      expect(['tiktok', 'instagram', 'youtube']).toContain(content.platform)
+      expect(content.selectedDirector).toBeDefined()
+    })
+  })
+
+  describe('Template Validation', () => {
+    test('SaaS template has B2B characteristics', () => {
+      const saasTemplate = commercialTemplates.find(t => t.id === 'saas-productivity-demo')
+      
+      expect(saasTemplate).toBeDefined()
+      expect(saasTemplate?.industryFit).toContain('SaaS')
+      expect(saasTemplate?.tags).toContain('b2b')
+      expect(saasTemplate?.defaultConfig.audience).toMatch(/business|professional|team/i)
+    })
+
+    test('Electronics template targets consumers', () => {
+      const electronicsTemplate = commercialTemplates.find(t => t.id === 'electronics-lifestyle-integration')
+      
+      expect(electronicsTemplate).toBeDefined()
+      expect(electronicsTemplate?.industryFit).toContain('Consumer Electronics')
+      expect(electronicsTemplate?.tags).toContain('lifestyle')
+      expect(electronicsTemplate?.defaultConfig.platform).toBe('tiktok') // Consumer-focused platform
+    })
+
+    test('Restaurant template emphasizes community', () => {
+      const restaurantTemplate = commercialTemplates.find(t => t.id === 'restaurant-community-experience')
+      
+      expect(restaurantTemplate).toBeDefined()
+      expect(restaurantTemplate?.industryFit).toContain('Local Business')
+      expect(restaurantTemplate?.tags).toContain('community')
+      expect(restaurantTemplate?.category).toBe('brand-story')
+    })
+
+    test('Non-profit template focuses on impact', () => {
+      const nonprofitTemplate = commercialTemplates.find(t => t.id === 'nonprofit-impact-story')
+      
+      expect(nonprofitTemplate).toBeDefined()
+      expect(nonprofitTemplate?.industryFit).toContain('Non-Profit Organizations')
+      expect(nonprofitTemplate?.tags).toContain('social-impact')
+      expect(nonprofitTemplate?.category).toBe('testimonial')
+    })
+  })
+
+  describe('Template Helper Functions', () => {
+    test('getTemplatesByCategory filters correctly', () => {
+      const { getTemplatesByCategory } = require('@/lib/commercial-templates')
+      
+      const productLaunchTemplates = getTemplatesByCategory('product-launch')
+      const serviceDemoTemplates = getTemplatesByCategory('service-demo')
+      
+      expect(productLaunchTemplates.length).toBeGreaterThan(0)
+      expect(serviceDemoTemplates.length).toBeGreaterThan(0)
+      
+      productLaunchTemplates.forEach((template: any) => {
+        expect(template.category).toBe('product-launch')
+      })
+    })
+
+    test('getTemplatesByIndustry finds relevant templates', () => {
+      const { getTemplatesByIndustry } = require('@/lib/commercial-templates')
+      
+      const techTemplates = getTemplatesByIndustry('Technology')
+      const restaurantTemplates = getTemplatesByIndustry('Food')
+      
+      expect(techTemplates.length).toBeGreaterThan(0)
+      expect(restaurantTemplates.length).toBeGreaterThan(0)
+    })
+
+    test('suggestTemplatesForBrief recommends appropriate templates', () => {
+      const { suggestTemplatesForBrief } = require('@/lib/commercial-templates')
+      
+      const brief = {
+        platform: 'tiktok' as const,
+        audience: 'young professionals',
+        brandType: 'technology',
+        goal: 'viral' as const
+      }
+      
+      const suggestions = suggestTemplatesForBrief(brief)
+      expect(suggestions.length).toBeGreaterThan(0)
+      
+      // Should prioritize TikTok-compatible templates
+      const tiktokTemplates = suggestions.filter(t => t.defaultConfig.platform === 'tiktok')
+      expect(tiktokTemplates.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Template Diversity Validation', () => {
+    test('Templates cover different business types', () => {
+      const businessTypes = new Set()
+      
+      commercialTemplates.forEach(template => {
+        template.industryFit.forEach(industry => {
+          businessTypes.add(industry.toLowerCase())
+        })
+      })
+      
+      expect(businessTypes.has('saas')).toBe(true)
+      expect(businessTypes.has('consumer electronics')).toBe(true)
+      expect(businessTypes.has('local business')).toBe(true)
+      expect(businessTypes.has('non-profit organizations')).toBe(true)
+    })
+
+    test('Templates use different directors appropriately', () => {
+      const directorUsage = new Map()
+      
+      commercialTemplates.forEach(template => {
+        const director = template.suggestedDirector
+        directorUsage.set(director, (directorUsage.get(director) || 0) + 1)
+      })
+      
+      // Should have variety in director selection
+      expect(directorUsage.size).toBeGreaterThan(2)
+      
+      // Specific director should be used for appropriate templates
+      const zachKingTemplates = commercialTemplates.filter(t => t.suggestedDirector === 'zach-king-commercial')
+      expect(zachKingTemplates.some(t => t.tags.includes('viral') || t.tags.includes('transformation'))).toBe(true)
+    })
+
+    test('Templates target different platforms', () => {
+      const platforms = commercialTemplates.map(t => t.defaultConfig.platform)
+      const uniquePlatforms = [...new Set(platforms)]
+      
+      expect(uniquePlatforms).toContain('tiktok')
+      expect(uniquePlatforms).toContain('instagram')
+      expect(uniquePlatforms).toContain('youtube')
+      expect(uniquePlatforms.length).toBeGreaterThanOrEqual(3)
+    })
+
+    test('Templates have varied durations', () => {
+      const durations = commercialTemplates.map(t => t.defaultConfig.duration)
+      const uniqueDurations = [...new Set(durations)]
+      
+      expect(uniqueDurations).toContain('10s')
+      expect(uniqueDurations).toContain('30s')
+      expect(uniqueDurations.length).toBe(2) // Should use both available durations
+    })
+  })
+
+  describe('Template Content Quality', () => {
+    test('All templates have meaningful descriptions', () => {
+      commercialTemplates.forEach(template => {
+        expect(template.description.length).toBeGreaterThan(20)
+        expect(template.name.length).toBeGreaterThan(5)
+        expect(template.defaultConfig.concept.length).toBeGreaterThan(20)
+      })
+    })
+
+    test('Brand and product placeholders are realistic', () => {
+      commercialTemplates.forEach(template => {
+        expect(template.brandPlaceholder.length).toBeGreaterThan(2)
+        expect(template.productPlaceholder.length).toBeGreaterThan(3)
+        
+        // Should not contain placeholder text
+        expect(template.brandPlaceholder).not.toMatch(/placeholder|example|test/i)
+        expect(template.productPlaceholder).not.toMatch(/placeholder|example|test/i)
+      })
+    })
+
+    test('Tags are relevant and useful', () => {
+      commercialTemplates.forEach(template => {
+        expect(template.tags.length).toBeGreaterThan(2)
+        expect(template.industryFit.length).toBeGreaterThan(1)
+        
+        // Tags should be lowercase and descriptive
+        template.tags.forEach(tag => {
+          expect(tag.length).toBeGreaterThan(2)
+          expect(tag).not.toMatch(/[A-Z]/) // Should be lowercase or kebab-case
+        })
+      })
+    })
+  })
+
+  describe('Error Handling', () => {
+    test('Handles missing template gracefully', () => {
+      const { getTemplateById } = require('@/lib/commercial-templates')
+      
+      const nonexistentTemplate = getTemplateById('nonexistent-template')
+      expect(nonexistentTemplate).toBeUndefined()
+    })
+
+    test('Empty industry search returns empty array', () => {
+      const { getTemplatesByIndustry } = require('@/lib/commercial-templates')
+      
+      const noResults = getTemplatesByIndustry('NonexistentIndustry')
+      expect(Array.isArray(noResults)).toBe(true)
+      expect(noResults.length).toBe(0)
+    })
+
+    test('Invalid brief parameters handled gracefully', () => {
+      const { suggestTemplatesForBrief } = require('@/lib/commercial-templates')
+      
+      const invalidBrief = {
+        platform: 'invalid-platform' as any,
+        audience: '',
+        brandType: '',
+        goal: 'invalid-goal' as any
+      }
+      
+      const suggestions = suggestTemplatesForBrief(invalidBrief)
+      expect(Array.isArray(suggestions)).toBe(true)
+      // Should return empty array or default suggestions
+    })
+  })
+})
+
+// Integration test helpers
+export function createTestCommercialTemplate(overrides: Partial<CommercialTemplate> = {}): CommercialTemplate {
+  return {
+    id: 'test-template',
+    name: 'Test Template',
+    type: 'commercial',
+    category: 'user',
+    content: {
+      brandDescription: 'Test brand description',
+      campaignGoals: 'Test campaign goals',
+      targetAudience: 'Test target audience',
+      keyMessages: 'Test key messages',
+      constraints: 'Test constraints',
+      selectedDirector: 'zach-king-commercial',
+      duration: '10s',
+      platform: 'tiktok'
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides
+  }
+}
+
+export function validateCommercialTemplate(template: CommercialTemplate) {
+  expect(template.type).toBe('commercial')
+  expect(template.content.brandDescription).toBeDefined()
+  expect(template.content.campaignGoals).toBeDefined()
+  expect(template.content.targetAudience).toBeDefined()
+  expect(template.content.keyMessages).toBeDefined()
+  expect(template.content.constraints).toBeDefined()
+  
+  if (template.content.duration) {
+    expect(['10s', '30s']).toContain(template.content.duration)
+  }
+  
+  if (template.content.platform) {
+    expect(['tiktok', 'instagram', 'youtube']).toContain(template.content.platform)
+  }
+}

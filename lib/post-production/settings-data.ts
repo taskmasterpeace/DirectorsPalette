@@ -30,12 +30,20 @@ export const SEEDANCE_LITE_RESOLUTIONS = [
     name: "720p",
     value: "720p",
   },
+  {
+    name: "1080p",
+    value: "1080p",
+  },
 ];
 
 export const SEEDANCE_PRO_RESOLUTIONS = [
   {
-    name: "480p",
+    name: "480p", 
     value: "480p",
+  },
+  {
+    name: "720p",
+    value: "720p",
   },
   {
     name: "1080p",
@@ -73,12 +81,9 @@ export const GEN4_RESOLUTIONS = [
 export const defaultSettings = {
   seedance: {
     model: "seedance-1-lite",
-    resolution: "480p",
+    resolution: "720p",
     duration: 5,
     cameraFixed: false,
-  },
-  kontext: {
-    model: "dev" as "dev" | "max",
   },
   gen4: {
     model: "gen4-image",

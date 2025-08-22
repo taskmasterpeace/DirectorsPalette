@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Music, Wand2, Target, User } from 'lucide-react'
 import { DirectorSelector } from '@/components/shared/DirectorSelector'
 import { ArtistSelector } from '@/components/shared/ArtistSelector'
+import { GenreSelector } from './GenreSelector'
 import type { ArtistProfile } from '@/lib/artist-types'
 
 interface MusicVideoInputProps {
@@ -80,7 +81,7 @@ export function MusicVideoInput({
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <Music className="h-5 w-5 text-purple-400" />
-          Music Video Input
+          Music Video Creator
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -112,10 +113,9 @@ export function MusicVideoInput({
             <label className="text-sm font-medium text-white mb-1 block">
               Genre
             </label>
-            <Input
-              placeholder="e.g., Pop, Rock, Hip-Hop"
+            <GenreSelector
               value={genre}
-              onChange={(e) => setGenre(e.target.value)}
+              onChange={setGenre}
               className="bg-slate-900/50 border-slate-600 text-white"
             />
           </div>
@@ -230,7 +230,7 @@ export function MusicVideoInput({
             {isLoading ? (
               <>
                 <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
+                Analyzing music video structure...
               </>
             ) : (
               <>

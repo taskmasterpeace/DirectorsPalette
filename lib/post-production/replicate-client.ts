@@ -197,9 +197,7 @@ export const REPLICATE_MODELS = {
   'flux-dev': 'black-forest-labs/flux-dev',
   'flux-schnell': 'black-forest-labs/flux-schnell',
   
-  // Image editing models
-  'flux-kontext-pro': 'black-forest-labs/flux-kontext-pro',
-  'flux-kontext-max': 'black-forest-labs/flux-kontext-max',
+  // Image editing models (now using Qwen-Edit in Image Edit tab)
   
   // Video generation models
   'seedance-1-lite': 'bytedance/seedance-1-lite',

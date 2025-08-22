@@ -111,8 +111,13 @@ export function SendToPostProductionEnhanced({
   }
   
   const handleQuickSend = () => {
+    console.log('🔴 SEND TO POST PRODUCTION BUTTON CLICKED')
+    console.log('🔍 All shots available:', allShots.length)
+    console.log('🔍 Sample shot data:', allShots[0])
+    
     // Quick send all shots without dialog
     if (allShots.length === 0) {
+      console.log('❌ No shots available for transfer')
       toast({
         title: "No Shots Available",
         description: "Generate shots first before sending to Post Production",
@@ -121,11 +126,15 @@ export function SendToPostProductionEnhanced({
       return
     }
     
+    console.log('✅ Proceeding with shot transfer...')
     storeShotsForTransfer(allShots)
+    
     toast({
       title: "All Shots Transferred",
       description: `Sending ${allShots.length} shots to Post Production...`,
     })
+    
+    console.log('🔍 Navigating to post-production...')
     router.push('/post-production')
   }
   

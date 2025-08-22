@@ -79,15 +79,32 @@ export function StoryContainer() {
   const handleGenerateWithReferences = async (configuredRefs: any) => {
     setIsLoading(true)
     try {
+      // Serialize all data to avoid SSR issues
+      const serializedTitleCardOptions = {
+        enabled: Boolean(storyStore.titleCardOptions?.enabled),
+        format: storyStore.titleCardOptions?.format || "full",
+        approaches: Array.isArray(storyStore.titleCardOptions?.approaches) 
+          ? storyStore.titleCardOptions.approaches 
+          : []
+      }
+      
+      const serializedPromptOptions = {
+        includeCameraStyle: Boolean(storyStore.promptOptions?.includeCameraStyle),
+        includeColorPalette: Boolean(storyStore.promptOptions?.includeColorPalette)
+      }
+      
+      console.log('🔍 Calling server action with serialized data...')
+      
       const result = await generateStoryBreakdownWithReferences(
         storyStore.story,
         storyStore.selectedDirector,
         storyStore.storyDirectorNotes,
         configuredRefs,
-        storyStore.titleCardOptions,
-        storyStore.promptOptions,
-        workflowStore.chapterMethod,
-        workflowStore.userChapterCount
+        Boolean(storyStore.titleCardOptions?.enabled),
+        Boolean(storyStore.promptOptions?.includeCameraStyle),
+        Boolean(storyStore.promptOptions?.includeColorPalette),
+        'ai-suggested',
+        4
       )
       
       if (result.success && result.data) {

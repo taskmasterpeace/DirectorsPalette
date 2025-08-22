@@ -164,32 +164,95 @@ function Gen4({
                 <p className="text-sm text-slate-500">
                   You can paste screenshots or images copied to your clipboard, drag and drop, or click to select files. Up to 3 images for style reference.
                 </p>
-                <Button 
-                  variant="secondary" 
-                  className="mt-4 flex items-center gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.read().then(items => {
-                      for (const item of items) {
-                        for (const type of item.types) {
-                          if (type.startsWith('image/')) {
-                            item.getType(type).then(blob => {
-                              const files = new DataTransfer();
-                              files.items.add(new File([blob], `pasted-image-${Date.now()}.${type.split('/')[1]}`, { type }));
-                              handleFileUpload(files.files, true);
-                            });
+                {/* Individual paste buttons for each reference slot */}
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.read().then(items => {
+                        for (const item of items) {
+                          for (const type of item.types) {
+                            if (type.startsWith('image/')) {
+                              item.getType(type).then(blob => {
+                                const files = new DataTransfer();
+                                files.items.add(new File([blob], `pasted-1st-ref-${Date.now()}.${type.split('/')[1]}`, { type }));
+                                handleFileUpload(files.files, true);
+                              });
+                            }
                           }
                         }
-                      }
-                    }).catch(err => {
-                      console.error("Error accessing clipboard:", err);
-                      alert("Unable to access clipboard. Please check permissions or try using Ctrl+V instead.");
-                    });
-                  }}
-                >
-                  <Clipboard className="w-4 h-4" />
-                  Paste from Clipboard
-                </Button>
+                      }).catch(err => {
+                        console.error("Error accessing clipboard:", err);
+                        alert("Unable to paste. Try Ctrl+V instead.");
+                      });
+                    }}
+                    title="Paste to 1st reference slot"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    📌 1st
+                  </Button>
+                  
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.read().then(items => {
+                        for (const item of items) {
+                          for (const type of item.types) {
+                            if (type.startsWith('image/')) {
+                              item.getType(type).then(blob => {
+                                const files = new DataTransfer();
+                                files.items.add(new File([blob], `pasted-2nd-ref-${Date.now()}.${type.split('/')[1]}`, { type }));
+                                handleFileUpload(files.files, true);
+                              });
+                            }
+                          }
+                        }
+                      }).catch(err => {
+                        console.error("Error accessing clipboard:", err);
+                        alert("Unable to paste. Try Ctrl+V instead.");
+                      });
+                    }}
+                    title="Paste to 2nd reference slot"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    📌 2nd
+                  </Button>
+                  
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.read().then(items => {
+                        for (const item of items) {
+                          for (const type of item.types) {
+                            if (type.startsWith('image/')) {
+                              item.getType(type).then(blob => {
+                                const files = new DataTransfer();
+                                files.items.add(new File([blob], `pasted-3rd-ref-${Date.now()}.${type.split('/')[1]}`, { type }));
+                                handleFileUpload(files.files, true);
+                              });
+                            }
+                          }
+                        }
+                      }).catch(err => {
+                        console.error("Error accessing clipboard:", err);
+                        alert("Unable to paste. Try Ctrl+V instead.");
+                      });
+                    }}
+                    title="Paste to 3rd reference slot"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    📌 3rd
+                  </Button>
+                </div>
               </div>
               <input
                 ref={gen4FileInputRef}

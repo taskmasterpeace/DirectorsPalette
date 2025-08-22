@@ -18,7 +18,7 @@ export function convertStoryShots(
   chapterBreakdowns.forEach((chapter) => {
     chapter.shots.forEach((shotDescription, index) => {
       shots.push({
-        id: `${chapter.chapterId}_shot_${index + 1}`,
+        id: `${chapter.chapterId}_shot_${index + 1}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         projectId,
         projectType: 'story',
         shotNumber: index + 1,
@@ -48,7 +48,7 @@ export function convertMusicVideoShots(
     if (section.shots && Array.isArray(section.shots)) {
       section.shots.forEach((shotDescription: string, index: number) => {
         shots.push({
-          id: `${section.sectionId}_shot_${index + 1}`,
+          id: `${section.sectionId}_shot_${index + 1}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
           projectId,
           projectType: 'music-video',
           shotNumber: index + 1,
@@ -70,28 +70,57 @@ export function convertMusicVideoShots(
  * Store shots for transfer to Post Production
  */
 export function storeShotsForTransfer(shots: PostProductionShot[]): void {
-  // Store in sessionStorage for transfer
-  sessionStorage.setItem('postProductionShots', JSON.stringify({
-    shots,
-    transferredAt: new Date().toISOString(),
-    source: 'directors-palette'
-  }))
+  console.log('🔴 STORING SHOTS FOR TRANSFER')
+  console.log('🔍 Number of shots to store:', shots.length)
+  console.log('🔍 Sample shot:', shots[0])
+  
+  try {
+    const transferData = {
+      shots,
+      transferredAt: new Date().toISOString(),
+      source: 'directors-palette'
+    }
+    
+    // Store in sessionStorage for transfer
+    sessionStorage.setItem('postProductionShots', JSON.stringify(transferData))
+    console.log('✅ Shots stored successfully in sessionStorage')
+    console.log('🔍 Storage key: postProductionShots')
+    
+    // Verify storage worked
+    const verification = sessionStorage.getItem('postProductionShots')
+    console.log('🔍 Verification - data stored:', verification ? 'Yes' : 'No')
+    
+  } catch (error) {
+    console.error('❌ Failed to store shots:', error)
+  }
 }
 
 /**
  * Retrieve transferred shots in Post Production
  */
 export function retrieveTransferredShots(): PostProductionShot[] | null {
+  console.log('🔍 RETRIEVING TRANSFERRED SHOTS')
+  
   const stored = sessionStorage.getItem('postProductionShots')
-  if (!stored) return null
+  console.log('🔍 SessionStorage data:', stored ? 'Found' : 'Not found')
+  
+  if (!stored) {
+    console.log('❌ No transferred shots in sessionStorage')
+    return null
+  }
   
   try {
     const data = JSON.parse(stored)
+    console.log('🔍 Parsed shot data:', data)
+    console.log('🔍 Number of shots:', data.shots?.length || 0)
+    
     // Clear after reading to prevent duplicate imports
     sessionStorage.removeItem('postProductionShots')
+    console.log('✅ Successfully retrieved', data.shots?.length || 0, 'shots')
+    
     return data.shots
   } catch (error) {
-    console.error('Error parsing transferred shots:', error)
+    console.error('❌ Error parsing transferred shots:', error)
     return null
   }
 }

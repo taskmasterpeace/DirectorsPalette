@@ -18,6 +18,7 @@ import {
   Eye,
   X,
   FileText,
+  User,
 } from "lucide-react"
 import { DirectorSelector } from "@/components/shared/DirectorSelector"
 import { SendToPostProductionEnhanced } from "@/components/shared/SendToPostProductionEnhanced"
@@ -167,8 +168,13 @@ export function MusicVideoMode({
   // Helper function to process shots with artist descriptions
   const processShot = (shot: string) => {
     if (showDescriptions && artistVisualDescription) {
+      // Use full visual description
       return shot.replace(/@artist/gi, artistVisualDescription)
+    } else if (artist) {
+      // Use artist name by default (not literal @artist)
+      return shot.replace(/@artist/gi, artist)
     }
+    // Fallback to literal @artist only if no artist is set
     return shot
   }
 
@@ -192,10 +198,10 @@ export function MusicVideoMode({
   }
 
   // Prepare all shots for bulk export
-  const prepareAllShotsForExport = (): ShotData[] => {
+  const prepareAllShotsForExport = (): any[] => {
     if (!musicVideoBreakdown?.sectionBreakdowns) return []
 
-    const allShots: ShotData[] = []
+    const allShots: any[] = []
     let shotCounter = 1
 
     musicVideoBreakdown.sectionBreakdowns.forEach((sectionBreakdown: any, sectionIndex: number) => {
@@ -206,10 +212,13 @@ export function MusicVideoMode({
       if (sectionBreakdown.shots) {
         sectionBreakdown.shots.forEach((shot: string, shotIndex: number) => {
           allShots.push({
-            id: `section-${sectionIndex}-shot-${shotIndex}`,
+            id: `mv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_sec${sectionIndex}_s${shotIndex}`,
             description: shot,
-            section: section?.title || `Section ${sectionIndex + 1}`,
+            sourceSection: section?.title || `Section ${sectionIndex + 1}`,
             shotNumber: shotCounter++,
+            projectType: 'music-video',
+            projectId: 'mv-project',
+            status: 'pending',
             metadata: {
               directorStyle: selectedMusicVideoDirectorInfo?.name,
               timestamp: new Date().toISOString(),
@@ -224,10 +233,13 @@ export function MusicVideoMode({
       const sectionAdditionalShots = additionalMusicVideoShots[sectionId] || []
       sectionAdditionalShots.forEach((shot: string, shotIndex: number) => {
         allShots.push({
-          id: `section-${sectionIndex}-additional-${shotIndex}`,
+          id: `mv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_sec${sectionIndex}_add${shotIndex}`,
           description: shot,
-          section: `${section?.title || `Section ${sectionIndex + 1}`} (Additional)`,
+          sourceSection: `${section?.title || `Section ${sectionIndex + 1}`} (Additional)`,
           shotNumber: shotCounter++,
+          projectType: 'music-video',
+          projectId: 'mv-project',
+          status: 'pending',
           metadata: {
             directorStyle: selectedMusicVideoDirectorInfo?.name,
             timestamp: new Date().toISOString(),
@@ -264,6 +276,66 @@ export function MusicVideoMode({
 
     // Navigate to export page
     router.push('/export')
+  }
+
+  const handleCopyAllShots = () => {
+    const allShots = prepareAllShotsForExport()
+    
+    if (allShots.length === 0) {
+      toast({
+        title: "No Shots to Copy",
+        description: "Please generate shots first.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Process all shots with current artist settings
+    const processedShots = allShots.map(shot => processShot(shot.description))
+    const formattedShots = processedShots.map((shot, index) => `${index + 1}. ${shot}`).join('\n\n')
+
+    navigator.clipboard.writeText(formattedShots)
+    toast({
+      title: "All Shots Copied!",
+      description: `Copied ${allShots.length} shots to clipboard with ${showDescriptions ? 'descriptions' : 'artist names'}`
+    })
+  }
+
+  const handleQuickSaveSong = () => {
+    if (!songTitle.trim() || !lyrics.trim()) {
+      toast({
+        title: "Cannot Save",
+        description: "Please enter song title and lyrics first.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Create a quick save template
+    const quickSaveData = {
+      name: `${songTitle} - Quick Save`,
+      type: 'music-video' as const,
+      category: 'user' as const,
+      content: {
+        lyrics,
+        songTitle,
+        artist,
+        genre,
+        mvConcept,
+        mvDirectorNotes,
+        selectedMusicVideoDirector
+      }
+    }
+
+    // Save to templates store (import needed)
+    const templatesStore = require('@/stores/templates-store').useTemplatesStore.getState()
+    templatesStore.addTemplate(quickSaveData)
+
+    toast({
+      title: "Song Saved!",
+      description: `"${songTitle}" saved to your templates`,
+      duration: 2000
+    })
   }
 
   const copySelectedShots = () => {
@@ -329,18 +401,62 @@ export function MusicVideoMode({
               value={selectedArtistId}
               onChange={handleArtistChange}
             />
+            
+            {/* Artist Image Display */}
+            {selectedArtistProfile && (
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 bg-slate-700 rounded-lg overflow-hidden flex-shrink-0">
+                      {selectedArtistProfile.image_data_url ? (
+                        <img 
+                          src={selectedArtistProfile.image_data_url}
+                          alt={artist}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          <User className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-white">{artist}</div>
+                      <div className="text-sm text-slate-400">{genre}</div>
+                      {selectedArtistProfile.visual_look?.visual_description && (
+                        <div className="text-xs text-slate-500 mt-1 line-clamp-2">
+                          {selectedArtistProfile.visual_look.visual_description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Song Details */}
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-white mb-1 block">Song Title</label>
-              <input
-                placeholder="Enter song title..."
-                value={songTitle}
-                onChange={(e) => setSongTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
-              />
+              <div className="flex gap-2">
+                <input
+                  placeholder="Enter song title..."
+                  value={songTitle}
+                  onChange={(e) => setSongTitle(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
+                />
+                <Button
+                  onClick={handleQuickSaveSong}
+                  size="sm"
+                  variant="outline"
+                  className="px-3 border-blue-600/30 text-blue-400 hover:bg-blue-600/10"
+                  disabled={!songTitle.trim() || !lyrics.trim()}
+                  title="Quick save current song"
+                >
+                  💾
+                </Button>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-white mb-1 block">Artist Name</label>
@@ -479,6 +595,15 @@ export function MusicVideoMode({
             
             {/* Action Buttons */}
             <div className="mt-4 flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                onClick={handleCopyAllShots}
+                variant="outline"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                disabled={!musicVideoBreakdown?.sectionBreakdowns || musicVideoBreakdown.sectionBreakdowns.length === 0}
+              >
+                <Copy className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Copy All Shots</span>
+              </Button>
               <Button
                 onClick={handleNavigateToExport}
                 variant="outline"

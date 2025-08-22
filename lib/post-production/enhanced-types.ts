@@ -19,8 +19,11 @@ export interface ImageData {
   outputUrl?: string
   videos?: string[]
   error?: string
-  mode: 'seedance' | 'kontext'
+  mode: 'seedance'
   shotId?: string // Link to Director's Palette shot
+  finalFrame?: string // Final frame preview URL
+  finalFrameFile?: File // Final frame file for API
+  framesSwapped?: boolean // True bidirectional toggle - swap start and end positions
 }
 
 export interface Template {
@@ -81,9 +84,6 @@ export interface SettingsType {
     resolution: string
     duration: number
     cameraFixed: boolean
-  }
-  kontext: {
-    model: 'dev' | 'max'
   }
   general: {
     autoSave: boolean
