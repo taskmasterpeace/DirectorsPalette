@@ -37,26 +37,31 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
   const { toast } = useToast()
   const [openaiKey, setOpenaiKey] = useState('')
   const [replicateKey, setReplicateKey] = useState('')
+  const [openrouterKey, setOpenrouterKey] = useState('')
   const [showOpenaiKey, setShowOpenaiKey] = useState(false)
   const [showReplicateKey, setShowReplicateKey] = useState(false)
-  const [apiStatus, setApiStatus] = useState({ openai: false, replicate: false })
+  const [showOpenrouterKey, setShowOpenrouterKey] = useState(false)
+  const [apiStatus, setApiStatus] = useState({ openai: false, replicate: false, openrouter: false })
 
   // Load saved keys on mount
   useEffect(() => {
     const savedOpenai = localStorage.getItem('directors-palette-openai-key')
     const savedReplicate = localStorage.getItem('directors-palette-replicate-key')
+    const savedOpenrouter = localStorage.getItem('directors-palette-openrouter-key')
     
     if (savedOpenai) setOpenaiKey(savedOpenai)
     if (savedReplicate) setReplicateKey(savedReplicate)
+    if (savedOpenrouter) setOpenrouterKey(savedOpenrouter)
     
     // Check API status
     setApiStatus({
       openai: !!(savedOpenai || process.env.OPENAI_API_KEY),
-      replicate: !!(savedReplicate || process.env.REPLICATE_API_TOKEN)
+      replicate: !!(savedReplicate || process.env.REPLICATE_API_TOKEN),
+      openrouter: !!(savedOpenrouter || process.env.OPENROUTER_API_KEY)
     })
   }, [])
 
-  const handleSaveApiKey = (type: 'openai' | 'replicate', key: string) => {
+  const handleSaveApiKey = (type: 'openai' | 'replicate' | 'openrouter', key: string) => {
     if (!key.trim()) {
       toast({
         title: "Invalid API Key",
@@ -72,26 +77,28 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
     setApiStatus(prev => ({ ...prev, [type]: true }))
     
     toast({
-      title: "API Key Saved",
-      description: `${type === 'openai' ? 'OpenAI' : 'Replicate'} API key saved locally`
+      title: "API Key Saved", 
+      description: `${type === 'openai' ? 'OpenAI' : type === 'replicate' ? 'Replicate' : 'OpenRouter'} API key saved locally`
     })
   }
 
-  const handleRemoveApiKey = (type: 'openai' | 'replicate') => {
+  const handleRemoveApiKey = (type: 'openai' | 'replicate' | 'openrouter') => {
     const storageKey = `directors-palette-${type}-key`
     localStorage.removeItem(storageKey)
     
     if (type === 'openai') {
       setOpenaiKey('')
-    } else {
+    } else if (type === 'replicate') {
       setReplicateKey('')
+    } else {
+      setOpenrouterKey('')
     }
     
     setApiStatus(prev => ({ ...prev, [type]: false }))
     
     toast({
       title: "API Key Removed",
-      description: `${type === 'openai' ? 'OpenAI' : 'Replicate'} API key removed`
+      description: `${type === 'openai' ? 'OpenAI' : type === 'replicate' ? 'Replicate' : 'OpenRouter'} API key removed`
     })
   }
 
@@ -225,6 +232,59 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
             </div>
           </div>
 
+          {/* OpenRouter API Key */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-white flex items-center gap-2">
+                OpenRouter API Key
+                {apiStatus.openrouter ? (
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-orange-400" />
+                )}
+              </Label>
+              <span className="text-xs text-slate-400">
+                Optional - Advanced model selection and cost optimization
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  type={showOpenrouterKey ? "text" : "password"}
+                  value={openrouterKey}
+                  onChange={(e) => setOpenrouterKey(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="bg-slate-700 border-slate-600 text-white pr-10 min-h-[44px]"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute inset-y-0 right-0 px-3 text-slate-400 hover:text-white"
+                  onClick={() => setShowOpenrouterKey(!showOpenrouterKey)}
+                >
+                  {showOpenrouterKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+              <Button
+                onClick={() => handleSaveApiKey('openrouter', openrouterKey)}
+                disabled={!openrouterKey.trim()}
+                className="min-h-[44px] bg-orange-600 hover:bg-orange-700"
+              >
+                Save
+              </Button>
+              {apiStatus.openrouter && (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleRemoveApiKey('openrouter')}
+                  className="min-h-[44px]"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* API Status */}
           <div className="bg-slate-800/50 p-4 rounded border border-slate-600">
             <h4 className="text-white font-medium mb-3">API Status</h4>
@@ -254,6 +314,20 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
                   <span className="text-red-400 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     Need Replicate Token
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Advanced Model Selection (OpenRouter)</span>
+                {apiStatus.openrouter ? (
+                  <span className="text-green-400 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-orange-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Optional
                   </span>
                 )}
               </div>
