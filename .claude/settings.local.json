@@ -52,7 +52,8 @@
       "mcp__playwright__browser_close",
       "WebFetch(domain:openrouter.ai)",
       "mcp__playwright__browser_tab_list",
-      "mcp__playwright__browser_tab_new"
+      "mcp__playwright__browser_tab_new",
+      "mcp__playwright__browser_tab_select"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
