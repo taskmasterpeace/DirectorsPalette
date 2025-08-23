@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { LoginForm } from './LoginForm'
-import { getAuthSession, logoutUser, type User, type AuthSession } from '@/lib/auth'
+import { universalGetSession, universalLogout, isSupabaseReady, getAuthMode, type User, type AuthSession } from '@/lib/auth-supabase'
 
 interface AuthContextType extends AuthSession {
   login: (user: User) => void
@@ -34,9 +34,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Load session on mount
   useEffect(() => {
-    const currentSession = getAuthSession()
-    setSession(currentSession)
-    setIsLoading(false)
+    const loadSession = async () => {
+      const currentSession = await universalGetSession()
+      setSession(currentSession)
+      setIsLoading(false)
+    }
+    loadSession()
   }, [])
 
   const login = (user: User) => {
@@ -48,8 +51,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setSession(newSession)
   }
 
-  const logout = () => {
-    logoutUser()
+  const logout = async () => {
+    await universalLogout()
     setSession({
       user: null,
       isAuthenticated: false,
@@ -57,8 +60,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })
   }
 
-  const refreshSession = () => {
-    const currentSession = getAuthSession()
+  const refreshSession = async () => {
+    const currentSession = await universalGetSession()
     setSession(currentSession)
   }
 

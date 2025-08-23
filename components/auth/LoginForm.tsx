@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, Shield, Users } from 'lucide-react'
-import { loginUser, hasAdminUser, type User } from '@/lib/auth'
+import { universalLogin, universalGoogleLogin, hasAdminUser, isSupabaseReady, getAuthMode, type User } from '@/lib/auth-supabase'
 import { useToast } from '@/components/ui/use-toast'
 
 interface LoginFormProps {
@@ -28,7 +28,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     setError('')
 
     try {
-      const result = loginUser(email)
+      const result = await universalLogin(email)
       
       if (result.success && result.user) {
         toast({
@@ -75,9 +75,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             onClick={async () => {
               setIsLoading(true)
               try {
-                // For now, use localStorage auth
-                // TODO: Replace with Supabase Google OAuth when configured
-                const result = loginUser('taskmasterpeace@gmail.com')
+                const result = await universalGoogleLogin()
                 if (result.success && result.user) {
                   onLogin(result.user)
                 }
@@ -179,6 +177,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
           <div className="text-center pt-4 border-t border-slate-700">
             <div className="text-xs text-slate-500">
               Machine King Labs Research Project
+            </div>
+            <div className="text-xs text-slate-600">
+              Auth Mode: {isSupabaseReady() ? '🗄️ Supabase + OAuth' : '💾 localStorage'} 
             </div>
             <div className="text-xs text-slate-600">
               Open Source AI Creativity Platform
