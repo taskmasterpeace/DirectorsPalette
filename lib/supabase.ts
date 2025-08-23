@@ -1,16 +1,9 @@
-// Conditional import for Supabase - only when installed
-let createClient: any
-try {
-  createClient = require('@supabase/supabase-js').createClient
-} catch (e) {
-  // Fallback when Supabase not installed
-  createClient = null
-}
+import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient && supabaseUrl && supabaseAnonKey 
+export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
