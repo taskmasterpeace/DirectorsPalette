@@ -15,7 +15,7 @@ export function ModeSelector() {
   }, [mode])
 
   return (
-    <div className="grid grid-cols-3 gap-1 p-1 bg-slate-800 rounded-xl border border-slate-700 shadow-lg">
+    <div className="grid grid-cols-4 gap-1 p-1 bg-slate-800 rounded-xl border border-slate-700 shadow-lg">
       <Button
         variant={mode === 'story' ? 'default' : 'ghost'}
         size="default"
@@ -63,6 +63,22 @@ export function ModeSelector() {
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-transparent"></div>
         )}
         <span className="relative">💼 Commercial</span>
+      </Button>
+      <Button
+        variant={mode === 'children-book' ? 'default' : 'ghost'}
+        size="default"
+        onClick={() => setMode('children-book')}
+        className={cn(
+          "transition-all min-h-[48px] relative overflow-hidden",
+          mode === 'children-book' 
+            ? "bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 shadow-md text-white" 
+            : "hover:bg-slate-700 text-slate-300 hover:text-white"
+        )}
+      >
+        {mode === 'children-book' && (
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-transparent"></div>
+        )}
+        <span className="relative">📚 Children's Book</span>
       </Button>
     </div>
   )

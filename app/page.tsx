@@ -11,6 +11,7 @@ import { ModeSelector } from "@/components/containers/ModeSelector"
 import { StoryContainer } from "@/components/containers/StoryContainer"
 import { MusicVideoContainer } from "@/components/containers/MusicVideoContainer"
 import { CommercialContainer } from "@/components/containers/CommercialContainer"
+import { ChildrenBookContainer } from "@/components/containers/ChildrenBookContainer"
 import { ActiveArtistIndicator } from "@/components/shared/ActiveArtistIndicator"
 import { useSessionManagement } from "@/hooks/useSessionManagement"
 import { useAppStore } from "@/stores/app-store"
@@ -43,6 +44,7 @@ export default function Home() {
                 {mode === "story" && <StoryContainer />}
                 {mode === "music-video" && <MusicVideoContainer />}
                 {mode === "commercial" && <CommercialContainer />}
+                {mode === "children-book" && <ChildrenBookContainer />}
               </AsyncBoundary>
             </div>
 

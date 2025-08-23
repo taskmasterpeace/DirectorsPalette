@@ -274,7 +274,7 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
 
 // Function-specific model assignments
 export interface FunctionModelConfig {
-  function: 'story-breakdown' | 'music-analysis' | 'director-creation' | 'entity-extraction' | 'commercial-generation' | 'image-analysis' | 'reasoning-tasks'
+  function: 'story-breakdown' | 'music-analysis' | 'director-creation' | 'entity-extraction' | 'commercial-generation' | 'image-analysis' | 'reasoning-tasks' | 'children-book-generation'
   defaultModel: string
   suggestedModels: string[]
   freeAlternatives: string[]
@@ -337,6 +337,13 @@ export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
     suggestedModels: ['baidu/ernie-4.5-vl-28b-a3b', 'z-ai/glm-4.5v'],
     freeAlternatives: ['moonshotai/kimi-vl-a3b-thinking:free', 'qwen/qwen2.5-vl-32b-instruct:free'],
     description: 'Image analysis and visual understanding (Future Use)'
+  },
+  'children-book-generation': {
+    function: 'children-book-generation',
+    defaultModel: 'openai/gpt-4o', // Keep GPT-4o as requested
+    suggestedModels: ['anthropic/claude-3.5-sonnet', 'deepseek/deepseek-chat-v3.1'],
+    freeAlternatives: ['moonshotai/kimi-k2:free', 'meta-llama/llama-3.3-70b-instruct:free'],
+    description: 'Children\'s book story analysis and illustration generation'
   }
 }
 
