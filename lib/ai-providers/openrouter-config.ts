@@ -39,7 +39,127 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
     isReasoning: false
   },
 
-  // SUGGESTED ALTERNATIVES
+  // 🆓 FREE MODELS (Perfect for Testing)
+  'meta-llama/llama-3.3-70b-instruct:free': {
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    name: 'Llama 3.3 70B (Free)',
+    provider: 'Meta',
+    pricing: { prompt: 0, completion: 0 },
+    context: 128000,
+    capabilities: ['text', 'reasoning'],
+    isFree: true,
+    isReasoning: true
+  },
+  'google/gemma-2-9b-it:free': {
+    id: 'google/gemma-2-9b-it:free',
+    name: 'Gemma 2 9B (Free)',
+    provider: 'Google',
+    pricing: { prompt: 0, completion: 0 },
+    context: 8000,
+    capabilities: ['text', 'fast'],
+    isFree: true,
+    isReasoning: false
+  },
+  'mistralai/mistral-7b-instruct:free': {
+    id: 'mistralai/mistral-7b-instruct:free',
+    name: 'Mistral 7B (Free)',
+    provider: 'Mistral',
+    pricing: { prompt: 0, completion: 0 },
+    context: 32000,
+    capabilities: ['text', 'creative', 'fast'],
+    isFree: true,
+    isReasoning: false
+  },
+  'microsoft/phi-3-mini-128k-instruct:free': {
+    id: 'microsoft/phi-3-mini-128k-instruct:free',
+    name: 'Phi-3 Mini (Free)',
+    provider: 'Microsoft',
+    pricing: { prompt: 0, completion: 0 },
+    context: 128000,
+    capabilities: ['text', 'fast'],
+    isFree: true,
+    isReasoning: false
+  },
+
+  // 💰 SUPER CHEAP MODELS (Best Value)
+  'baidu/ernie-4.5-21b-a3b': {
+    id: 'baidu/ernie-4.5-21b-a3b',
+    name: 'ERNIE 4.5 21B A3B (Cheapest!)',
+    provider: 'Baidu',
+    pricing: { prompt: 0.07, completion: 0.28 },
+    context: 120000,
+    capabilities: ['text', 'reasoning', 'fast'],
+    isFree: false,
+    isReasoning: true
+  },
+  'baidu/ernie-4.5-vl-28b-a3b': {
+    id: 'baidu/ernie-4.5-vl-28b-a3b',
+    name: 'ERNIE 4.5 VL (Cheapest Vision)',
+    provider: 'Baidu',
+    pricing: { prompt: 0.14, completion: 0.56 },
+    context: 30000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: false,
+    isReasoning: true
+  },
+
+  // 🧠 REASONING SPECIALISTS (DeepSeek Focus)
+  'deepseek/deepseek-chat-v3.1': {
+    id: 'deepseek/deepseek-chat-v3.1',
+    name: 'DeepSeek V3.1 (Hybrid Reasoning)',
+    provider: 'DeepSeek',
+    pricing: { prompt: 0.20, completion: 0.80 },
+    context: 164000,
+    capabilities: ['text', 'reasoning'],
+    isFree: false,
+    isReasoning: true
+  },
+  'deepseek/deepseek-v3.1-base': {
+    id: 'deepseek/deepseek-v3.1-base',
+    name: 'DeepSeek V3.1 Base',
+    provider: 'DeepSeek',
+    pricing: { prompt: 0.20, completion: 0.80 },
+    context: 164000,
+    capabilities: ['text', 'reasoning'],
+    isFree: false,
+    isReasoning: true
+  },
+
+  // 🎨 CREATIVE & EFFICIENT MODELS
+  'ai21/jamba-mini-1.7': {
+    id: 'ai21/jamba-mini-1.7',
+    name: 'Jamba Mini 1.7 (Best Value)',
+    provider: 'AI21',
+    pricing: { prompt: 0.20, completion: 0.40 },
+    context: 256000,
+    capabilities: ['text', 'creative', 'fast'],
+    isFree: false,
+    isReasoning: false
+  },
+  'mistralai/mistral-medium-3.1': {
+    id: 'mistralai/mistral-medium-3.1',
+    name: 'Mistral Medium 3.1',
+    provider: 'Mistral',
+    pricing: { prompt: 0.40, completion: 2.00 },
+    context: 262000,
+    capabilities: ['text', 'reasoning', 'creative'],
+    isFree: false,
+    isReasoning: true
+  },
+
+  // 👁️ VISION/MULTIMODAL
+  'z-ai/glm-4.5v': {
+    id: 'z-ai/glm-4.5v',
+    name: 'GLM 4.5V (Advanced Vision)',
+    provider: 'Z.AI',
+    pricing: { prompt: 0.50, completion: 1.80 },
+    context: 66000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: false,
+    isReasoning: true
+  },
+
+  // PREMIUM MODELS
   'anthropic/claude-3.5-sonnet': {
     id: 'anthropic/claude-3.5-sonnet',
     name: 'Claude 3.5 Sonnet',
@@ -69,44 +189,12 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
     capabilities: ['text', 'reasoning'],
     isFree: false,
     isReasoning: true
-  },
-
-  // FREE MODELS
-  'meta-llama/llama-3.3-70b-instruct:free': {
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
-    name: 'Llama 3.3 70B (Free)',
-    provider: 'Meta',
-    pricing: { prompt: 0, completion: 0 },
-    context: 128000,
-    capabilities: ['text', 'reasoning'],
-    isFree: true,
-    isReasoning: true
-  },
-  'google/gemini-2.0-flash-exp:free': {
-    id: 'google/gemini-2.0-flash-exp:free',
-    name: 'Gemini 2.0 Flash (Free)',
-    provider: 'Google',
-    pricing: { prompt: 0, completion: 0 },
-    context: 1000000,
-    capabilities: ['text', 'fast'],
-    isFree: true,
-    isReasoning: false
-  },
-  'deepseek/deepseek-r1:free': {
-    id: 'deepseek/deepseek-r1:free',
-    name: 'DeepSeek R1 (Free)',
-    provider: 'DeepSeek',
-    pricing: { prompt: 0, completion: 0 },
-    context: 64000,
-    capabilities: ['text', 'reasoning'],
-    isFree: true,
-    isReasoning: true
   }
 }
 
 // Function-specific model assignments
 export interface FunctionModelConfig {
-  function: 'story-breakdown' | 'music-analysis' | 'director-creation' | 'entity-extraction' | 'commercial-generation'
+  function: 'story-breakdown' | 'music-analysis' | 'director-creation' | 'entity-extraction' | 'commercial-generation' | 'image-analysis' | 'reasoning-tasks'
   defaultModel: string
   suggestedModels: string[]
   freeAlternatives: string[]
@@ -116,38 +204,52 @@ export interface FunctionModelConfig {
 export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   'story-breakdown': {
     function: 'story-breakdown',
-    defaultModel: 'openai/gpt-4o',
-    suggestedModels: ['anthropic/claude-3.5-sonnet', 'meta-llama/llama-3.3-70b-instruct'],
-    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free'],
+    defaultModel: 'deepseek/deepseek-chat-v3.1', // DeepSeek for reasoning
+    suggestedModels: ['baidu/ernie-4.5-21b-a3b', 'anthropic/claude-3.5-sonnet'],
+    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Complex narrative analysis and chapter generation'
   },
   'music-analysis': {
     function: 'music-analysis',
-    defaultModel: 'openai/gpt-4o-mini',
-    suggestedModels: ['google/gemini-pro-1.5', 'meta-llama/llama-3.3-70b-instruct'],
-    freeAlternatives: ['google/gemini-2.0-flash-exp:free'],
+    defaultModel: 'ai21/jamba-mini-1.7', // Best value for creative tasks
+    suggestedModels: ['baidu/ernie-4.5-21b-a3b', 'mistralai/mistral-medium-3.1'],
+    freeAlternatives: ['google/gemma-2-9b-it:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Music video structure and lyric analysis'
   },
   'director-creation': {
     function: 'director-creation',
-    defaultModel: 'openai/gpt-4o',
-    suggestedModels: ['anthropic/claude-3.5-sonnet'],
-    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free'],
+    defaultModel: 'anthropic/claude-3.5-sonnet', // Keep premium for creative quality
+    suggestedModels: ['deepseek/deepseek-chat-v3.1', 'mistralai/mistral-medium-3.1'],
+    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Creative director style generation'
   },
   'entity-extraction': {
     function: 'entity-extraction',
-    defaultModel: 'openai/gpt-4o-mini',
-    suggestedModels: ['google/gemini-pro-1.5'],
-    freeAlternatives: ['google/gemini-2.0-flash-exp:free'],
+    defaultModel: 'baidu/ernie-4.5-21b-a3b', // Super cheap for simple tasks
+    suggestedModels: ['microsoft/phi-3-mini-128k-instruct:free', 'ai21/jamba-mini-1.7'],
+    freeAlternatives: ['google/gemma-2-9b-it:free', 'microsoft/phi-3-mini-128k-instruct:free'],
     description: 'Character, location, and prop extraction'
   },
   'commercial-generation': {
     function: 'commercial-generation',
-    defaultModel: 'openai/gpt-4o',
-    suggestedModels: ['anthropic/claude-3.5-sonnet'],
-    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free'],
+    defaultModel: 'mistralai/mistral-medium-3.1', // Good balance for marketing content
+    suggestedModels: ['deepseek/deepseek-chat-v3.1', 'ai21/jamba-mini-1.7'],
+    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Commercial concept and campaign generation'
+  },
+  'image-analysis': {
+    function: 'image-analysis',
+    defaultModel: 'baidu/ernie-4.5-vl-28b-a3b', // Cheapest vision model
+    suggestedModels: ['z-ai/glm-4.5v', 'google/gemini-pro-1.5'],
+    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free'], // No free vision models
+    description: 'Image understanding and visual analysis'
+  },
+  'reasoning-tasks': {
+    function: 'reasoning-tasks',
+    defaultModel: 'deepseek/deepseek-chat-v3.1', // Best reasoning model
+    suggestedModels: ['deepseek/deepseek-v3.1-base', 'baidu/ernie-4.5-21b-a3b'],
+    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free'],
+    description: 'Complex reasoning and problem-solving tasks'
   }
 }
 
