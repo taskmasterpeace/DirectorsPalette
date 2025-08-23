@@ -1,9 +1,18 @@
-import { createClient } from '@supabase/supabase-js'
+// Conditional import for Supabase - only when installed
+let createClient: any
+try {
+  createClient = require('@supabase/supabase-js').createClient
+} catch (e) {
+  // Fallback when Supabase not installed
+  createClient = null
+}
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient && supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 // Database Types
 export interface User {
@@ -48,11 +57,13 @@ export interface AIUsage {
 
 // Auth helpers
 export const getCurrentUser = async () => {
+  if (!supabase) return null
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
 
 export const signInWithGoogle = async () => {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -63,12 +74,14 @@ export const signInWithGoogle = async () => {
 }
 
 export const signOut = async () => {
+  if (!supabase) return { error: null }
   const { error } = await supabase.auth.signOut()
   return { error }
 }
 
 // Database helpers
 export const createUserProfile = async (user: any) => {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
   const { data, error } = await supabase
     .from('users')
     .insert({
@@ -85,6 +98,7 @@ export const createUserProfile = async (user: any) => {
 }
 
 export const saveProject = async (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
   const { data, error } = await supabase
     .from('projects')
     .insert(project)
@@ -95,6 +109,7 @@ export const saveProject = async (project: Omit<Project, 'id' | 'created_at' | '
 }
 
 export const getUserProjects = async (userId: string) => {
+  if (!supabase) return { data: [], error: null }
   const { data, error } = await supabase
     .from('projects')
     .select('*')
@@ -106,6 +121,7 @@ export const getUserProjects = async (userId: string) => {
 
 // Storage helpers
 export const uploadImage = async (file: File, bucket: string = 'images') => {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
   const fileExt = file.name.split('.').pop()
   const fileName = `${Date.now()}.${fileExt}`
   const filePath = `${bucket}/${fileName}`
@@ -124,6 +140,7 @@ export const uploadImage = async (file: File, bucket: string = 'images') => {
 }
 
 export const deleteImage = async (path: string, bucket: string = 'images') => {
+  if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
   const { data, error } = await supabase.storage
     .from(bucket)
     .remove([path])
