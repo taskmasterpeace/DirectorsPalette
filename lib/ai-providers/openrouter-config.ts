@@ -39,7 +39,27 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
     isReasoning: false
   },
 
-  // 🆓 FREE MODELS (Perfect for Testing)
+  // 🆓 FREE MODELS (Perfect for Testing) - 20 req/min, 50-1000 daily
+  'moonshotai/kimi-k2:free': {
+    id: 'moonshotai/kimi-k2:free',
+    name: 'KIMI K2 (FREE) ⭐',
+    provider: 'MoonshotAI',
+    pricing: { prompt: 0, completion: 0 },
+    context: 33000,
+    capabilities: ['text', 'reasoning'],
+    isFree: true,
+    isReasoning: true
+  },
+  'moonshotai/kimi-dev-72b:free': {
+    id: 'moonshotai/kimi-dev-72b:free',
+    name: 'KIMI Dev 72B (FREE)',
+    provider: 'MoonshotAI',
+    pricing: { prompt: 0, completion: 0 },
+    context: 131000,
+    capabilities: ['text', 'reasoning'],
+    isFree: true,
+    isReasoning: true
+  },
   'meta-llama/llama-3.3-70b-instruct:free': {
     id: 'meta-llama/llama-3.3-70b-instruct:free',
     name: 'Llama 3.3 70B (Free)',
@@ -81,10 +101,30 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
     isReasoning: false
   },
 
-  // 💰 SUPER CHEAP MODELS (Best Value)
+  // 💰 ULTRA CHEAP MODELS (Insane Value)
+  'moonshotai/kimi-vl-a3b-thinking': {
+    id: 'moonshotai/kimi-vl-a3b-thinking',
+    name: 'KIMI VL A3B (CHEAPEST EVER!) ⭐⭐⭐',
+    provider: 'MoonshotAI',
+    pricing: { prompt: 0.025, completion: 0.10 },
+    context: 131000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: false,
+    isReasoning: true
+  },
+  'qwen/qwen-turbo': {
+    id: 'qwen/qwen-turbo',
+    name: 'Qwen Turbo (Ultra Cheap)',
+    provider: 'Alibaba',
+    pricing: { prompt: 0.05, completion: 0.20 },
+    context: 1000000,
+    capabilities: ['text', 'fast'],
+    isFree: false,
+    isReasoning: false
+  },
   'baidu/ernie-4.5-21b-a3b': {
     id: 'baidu/ernie-4.5-21b-a3b',
-    name: 'ERNIE 4.5 21B A3B (Cheapest!)',
+    name: 'ERNIE 4.5 21B A3B',
     provider: 'Baidu',
     pricing: { prompt: 0.07, completion: 0.28 },
     context: 120000,
@@ -92,13 +132,13 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
     isFree: false,
     isReasoning: true
   },
-  'baidu/ernie-4.5-vl-28b-a3b': {
-    id: 'baidu/ernie-4.5-vl-28b-a3b',
-    name: 'ERNIE 4.5 VL (Cheapest Vision)',
-    provider: 'Baidu',
-    pricing: { prompt: 0.14, completion: 0.56 },
-    context: 30000,
-    capabilities: ['text', 'image', 'reasoning'],
+  'qwen/qwen3-30b-a3b-instruct-2507': {
+    id: 'qwen/qwen3-30b-a3b-instruct-2507',
+    name: 'Qwen3 30B A3B (Cheap MoE)',
+    provider: 'Alibaba',
+    pricing: { prompt: 0.20, completion: 0.80 },
+    context: 131000,
+    capabilities: ['text', 'reasoning'],
     isFree: false,
     isReasoning: true
   },
@@ -147,7 +187,47 @@ export const OPENROUTER_MODELS: Record<string, ModelConfig> = {
     isReasoning: true
   },
 
-  // 👁️ VISION/MULTIMODAL
+  // 👁️ VISION/MULTIMODAL (Separate Category - Not in Main Workflow)
+  'moonshotai/kimi-vl-a3b-thinking:free': {
+    id: 'moonshotai/kimi-vl-a3b-thinking:free',
+    name: 'KIMI VL A3B Thinking (FREE Vision)',
+    provider: 'MoonshotAI',
+    pricing: { prompt: 0, completion: 0 },
+    context: 131000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: true,
+    isReasoning: true
+  },
+  'qwen/qwen2.5-vl-32b-instruct:free': {
+    id: 'qwen/qwen2.5-vl-32b-instruct:free',
+    name: 'Qwen2.5 VL 32B (FREE Vision)',
+    provider: 'Alibaba',
+    pricing: { prompt: 0, completion: 0 },
+    context: 8000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: true,
+    isReasoning: true
+  },
+  'qwen/qwen2.5-vl-72b-instruct:free': {
+    id: 'qwen/qwen2.5-vl-72b-instruct:free',
+    name: 'Qwen2.5 VL 72B (FREE Vision)',
+    provider: 'Alibaba',
+    pricing: { prompt: 0, completion: 0 },
+    context: 131000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: true,
+    isReasoning: true
+  },
+  'baidu/ernie-4.5-vl-28b-a3b': {
+    id: 'baidu/ernie-4.5-vl-28b-a3b',
+    name: 'ERNIE 4.5 VL (Cheap Vision)',
+    provider: 'Baidu',
+    pricing: { prompt: 0.14, completion: 0.56 },
+    context: 30000,
+    capabilities: ['text', 'image', 'reasoning'],
+    isFree: false,
+    isReasoning: true
+  },
   'z-ai/glm-4.5v': {
     id: 'z-ai/glm-4.5v',
     name: 'GLM 4.5V (Advanced Vision)',
@@ -205,8 +285,8 @@ export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   'story-breakdown': {
     function: 'story-breakdown',
     defaultModel: 'deepseek/deepseek-chat-v3.1', // DeepSeek for reasoning
-    suggestedModels: ['baidu/ernie-4.5-21b-a3b', 'anthropic/claude-3.5-sonnet'],
-    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-7b-instruct:free'],
+    suggestedModels: ['moonshotai/kimi-vl-a3b-thinking', 'baidu/ernie-4.5-21b-a3b'],
+    freeAlternatives: ['moonshotai/kimi-k2:free', 'moonshotai/kimi-dev-72b:free'],
     description: 'Complex narrative analysis and chapter generation'
   },
   'music-analysis': {
@@ -225,8 +305,8 @@ export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   },
   'entity-extraction': {
     function: 'entity-extraction',
-    defaultModel: 'baidu/ernie-4.5-21b-a3b', // Super cheap for simple tasks
-    suggestedModels: ['microsoft/phi-3-mini-128k-instruct:free', 'ai21/jamba-mini-1.7'],
+    defaultModel: 'qwen/qwen-turbo', // Ultra cheap for simple tasks
+    suggestedModels: ['moonshotai/kimi-vl-a3b-thinking', 'baidu/ernie-4.5-21b-a3b'],
     freeAlternatives: ['google/gemma-2-9b-it:free', 'microsoft/phi-3-mini-128k-instruct:free'],
     description: 'Character, location, and prop extraction'
   },
@@ -247,9 +327,16 @@ export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   'reasoning-tasks': {
     function: 'reasoning-tasks',
     defaultModel: 'deepseek/deepseek-chat-v3.1', // Best reasoning model
-    suggestedModels: ['deepseek/deepseek-v3.1-base', 'baidu/ernie-4.5-21b-a3b'],
-    freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free'],
+    suggestedModels: ['qwen/qwen3-30b-a3b-instruct-2507', 'baidu/ernie-4.5-21b-a3b'],
+    freeAlternatives: ['moonshotai/kimi-k2:free', 'moonshotai/kimi-dev-72b:free'],
     description: 'Complex reasoning and problem-solving tasks'
+  },
+  'vision-tasks': {
+    function: 'vision-tasks',
+    defaultModel: 'moonshotai/kimi-vl-a3b-thinking', // Cheapest vision ever
+    suggestedModels: ['baidu/ernie-4.5-vl-28b-a3b', 'z-ai/glm-4.5v'],
+    freeAlternatives: ['moonshotai/kimi-vl-a3b-thinking:free', 'qwen/qwen2.5-vl-32b-instruct:free'],
+    description: 'Image analysis and visual understanding (Future Use)'
   }
 }
 
