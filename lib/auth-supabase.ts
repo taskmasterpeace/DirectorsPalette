@@ -1,6 +1,6 @@
 // Enhanced Authentication with Supabase Integration
 import { supabase, getCurrentUser, signInWithGoogle, signOut, createUserProfile } from './supabase'
-import { getAuthSession, loginUser, logoutUser, type User, type AuthSession } from './auth'
+import { getAuthSession, loginUser, logoutUser, hasAdminUser, type User, type AuthSession } from './auth'
 
 // Feature flag for Supabase integration
 const USE_SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -156,3 +156,8 @@ export function isSupabaseReady(): boolean {
 export function getAuthMode(): 'supabase' | 'localStorage' {
   return USE_SUPABASE ? 'supabase' : 'localStorage'
 }
+
+/**
+ * Re-export functions needed by components
+ */
+export { hasAdminUser, type User, type AuthSession } from './auth'
