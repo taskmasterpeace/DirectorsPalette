@@ -98,9 +98,21 @@ export function ModelConfiguration({ isAdmin }: ModelConfigurationProps) {
                     <Settings className="w-4 h-4 text-purple-400" />
                     <span className="capitalize">{config.function.replace('-', ' ')}</span>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {currentModel?.isFree ? '🆓 FREE' : `$${currentModel?.pricing.prompt}/1M`}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {/* Context Indicator */}
+                    <Badge 
+                      variant={currentModel?.context >= 100000 ? "default" : "secondary"} 
+                      className={`text-xs ${currentModel?.context >= 100000 ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}
+                    >
+                      {currentModel?.context >= 1000000 ? '🟢 1M+' : 
+                       currentModel?.context >= 100000 ? '🟡 100K+' : 
+                       '🟠 <100K'} 
+                    </Badge>
+                    {/* Pricing */}
+                    <Badge variant="outline" className="text-xs">
+                      {currentModel?.isFree ? '🆓 FREE' : `$${currentModel?.pricing.prompt}/1M`}
+                    </Badge>
+                  </div>
                 </CardTitle>
                 <p className="text-slate-400 text-sm">{config.description}</p>
               </CardHeader>
@@ -112,7 +124,14 @@ export function ModelConfiguration({ isAdmin }: ModelConfigurationProps) {
                     <div className="text-slate-400 text-xs flex items-center gap-2">
                       <span>{currentModel?.provider}</span>
                       <span>•</span>
-                      <span>{currentModel?.context.toLocaleString()} tokens</span>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs ${currentModel?.context >= 100000 ? 'bg-green-900/50 text-green-300' : 'bg-yellow-900/50 text-yellow-300'}`}
+                      >
+                        {currentModel?.context >= 1000000 ? '🟢 1M+' : 
+                         currentModel?.context >= 100000 ? '🟡 100K+' : 
+                         '🟠 ' + currentModel?.context.toLocaleString()} tokens
+                      </Badge>
                       {currentModel?.isReasoning && (
                         <>
                           <span>•</span>
@@ -164,9 +183,16 @@ export function ModelConfiguration({ isAdmin }: ModelConfigurationProps) {
                     <SelectContent>
                       {/* Current Default */}
                       <SelectItem value={config.defaultModel}>
-                        <div className="flex items-center gap-2">
-                          <span>🎯 {OPENROUTER_MODELS[config.defaultModel]?.name}</span>
-                          <Badge variant="secondary" className="text-xs">Default</Badge>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2">
+                            <span>🎯 {OPENROUTER_MODELS[config.defaultModel]?.name}</span>
+                            <Badge variant="secondary" className="text-xs">Default</Badge>
+                          </div>
+                          <span className={`text-xs ${OPENROUTER_MODELS[config.defaultModel]?.context >= 100000 ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {OPENROUTER_MODELS[config.defaultModel]?.context >= 1000000 ? '🟢 1M+' : 
+                             OPENROUTER_MODELS[config.defaultModel]?.context >= 100000 ? '🟡 100K+' : 
+                             '🟠 <100K'}
+                          </span>
                         </div>
                       </SelectItem>
                       
@@ -175,11 +201,18 @@ export function ModelConfiguration({ isAdmin }: ModelConfigurationProps) {
                       {/* Suggested Models */}
                       {config.suggestedModels.map(modelId => (
                         <SelectItem key={modelId} value={modelId}>
-                          <div className="flex items-center gap-2">
-                            <span>💡 {OPENROUTER_MODELS[modelId]?.name}</span>
-                            {OPENROUTER_MODELS[modelId]?.isReasoning && (
-                              <Brain className="w-3 h-3 text-blue-400" />
-                            )}
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <span>💡 {OPENROUTER_MODELS[modelId]?.name}</span>
+                              {OPENROUTER_MODELS[modelId]?.isReasoning && (
+                                <Brain className="w-3 h-3 text-blue-400" />
+                              )}
+                            </div>
+                            <span className={`text-xs ${OPENROUTER_MODELS[modelId]?.context >= 100000 ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {OPENROUTER_MODELS[modelId]?.context >= 1000000 ? '🟢 1M+' : 
+                               OPENROUTER_MODELS[modelId]?.context >= 100000 ? '🟡 100K+' : 
+                               '🟠 <100K'}
+                            </span>
                           </div>
                         </SelectItem>
                       ))}
@@ -189,11 +222,18 @@ export function ModelConfiguration({ isAdmin }: ModelConfigurationProps) {
                       {/* Free Alternatives */}
                       {config.freeAlternatives.map(modelId => (
                         <SelectItem key={modelId} value={modelId}>
-                          <div className="flex items-center gap-2">
-                            <span>🆓 {OPENROUTER_MODELS[modelId]?.name}</span>
-                            {OPENROUTER_MODELS[modelId]?.isReasoning && (
-                              <Badge variant="outline" className="text-xs">Slow but Smart</Badge>
-                            )}
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <span>🆓 {OPENROUTER_MODELS[modelId]?.name}</span>
+                              {OPENROUTER_MODELS[modelId]?.isReasoning && (
+                                <Badge variant="outline" className="text-xs">Reasoning</Badge>
+                              )}
+                            </div>
+                            <span className={`text-xs ${OPENROUTER_MODELS[modelId]?.context >= 100000 ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {OPENROUTER_MODELS[modelId]?.context >= 1000000 ? '🟢 1M+' : 
+                               OPENROUTER_MODELS[modelId]?.context >= 100000 ? '🟡 100K+' : 
+                               '🟠 <100K'}
+                            </span>
                           </div>
                         </SelectItem>
                       ))}
