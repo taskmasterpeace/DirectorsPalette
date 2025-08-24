@@ -201,32 +201,82 @@ export default function EnhancedPostProductionPage() {
           </div>
         </div>
         
-        {/* Main Tabs */}
+        {/* Mobile-First Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-6 w-full max-w-none min-h-[44px]">
+          {/* Mobile: Dropdown Selector + Primary Tabs */}
+          <div className="block sm:hidden">
+            <div className="mb-3">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full h-12 text-base bg-slate-800 border-slate-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shot-list">
+                    <div className="flex items-center gap-2">
+                      <List className="w-4 h-4" />
+                      Shot List Manager
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="image-edit">
+                    <div className="flex items-center gap-2">
+                      <Film className="w-4 h-4" />
+                      Shot Editor
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="gen4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Shot Creator
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="workspace">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      Shot Animator
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="layout">
+                    <div className="flex items-center gap-2">
+                      <Layout className="w-4 h-4" />
+                      Storyboarding
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="entity-manager">
+                    <div className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Entity Manager
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Desktop: Original Tab Layout */}
+          <TabsList className="hidden sm:grid grid-cols-6 w-full max-w-none min-h-[44px]">
             <TabsTrigger value="shot-list" className="flex items-center gap-2 min-h-[44px]">
               <List className="w-4 h-4" />
-              Shot List
+              <span className="hidden lg:inline">Shot List</span>
             </TabsTrigger>
             <TabsTrigger value="image-edit" className="flex items-center gap-2 min-h-[44px]">
               <Film className="w-4 h-4" />
-              Shot Editor
+              <span className="hidden lg:inline">Shot Editor</span>
             </TabsTrigger>
             <TabsTrigger value="gen4" className="flex items-center gap-2 min-h-[44px]">
               <Sparkles className="w-4 h-4" />
-              Shot Creator
+              <span className="hidden lg:inline">Shot Creator</span>
             </TabsTrigger>
             <TabsTrigger value="workspace" className="flex items-center gap-2 min-h-[44px]">
               <ImageIcon className="w-4 h-4" />
-              Shot Animator
+              <span className="hidden lg:inline">Shot Animator</span>
             </TabsTrigger>
             <TabsTrigger value="layout" className="flex items-center gap-2 min-h-[44px]">
               <Layout className="w-4 h-4" />
-              Storyboarding
+              <span className="hidden lg:inline">Storyboarding</span>
             </TabsTrigger>
             <TabsTrigger value="entity-manager" className="flex items-center gap-2 min-h-[44px]">
               <Settings className="w-4 h-4" />
-              Entity Manager
+              <span className="hidden lg:inline">Entity Manager</span>
             </TabsTrigger>
           </TabsList>
           
