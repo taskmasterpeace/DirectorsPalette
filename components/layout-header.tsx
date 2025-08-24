@@ -28,9 +28,9 @@ export function LayoutHeader() {
             }}
             title="Triple-click for admin access"
           />
-          <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-white">Director's Palette</h1>
-            <div className="text-xs text-amber-400">Machine King Labs</div>
+          <div className="flex flex-col">
+            <h1 className="text-base sm:text-lg font-bold text-white">Director's Palette</h1>
+            <div className="text-xs text-amber-400 hidden sm:block">Machine King Labs</div>
           </div>
         </div>
       </div>
@@ -61,8 +61,8 @@ export function LayoutHeader() {
         )}
 
         {isAuthenticated ? (
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex flex-col text-right text-xs">
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex flex-col text-right text-xs">
               <span className="text-white font-medium">
                 {user?.name || user?.email.split('@')[0]}
               </span>
