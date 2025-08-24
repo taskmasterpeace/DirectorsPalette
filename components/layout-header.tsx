@@ -5,11 +5,17 @@ import { useAppStore } from "@/stores/app-store"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { UserMenu } from "@/components/auth/UserMenu"
 import { Button } from "@/components/ui/button"
+import { CreditMeter } from "@/components/shared/CreditMeter"
 import { LogIn } from "lucide-react"
 
 export function LayoutHeader() {
   const { setShowProjectManager } = useAppStore()
   const { user, isAuthenticated, isAdmin } = useAuth()
+
+  const handleBoostPurchase = async (boostPackId: string) => {
+    console.log('Purchasing boost pack:', boostPackId)
+    // TODO: Integrate with payment processor
+  }
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-700 px-4 shadow-lg">
@@ -61,7 +67,15 @@ export function LayoutHeader() {
         )}
 
         {isAuthenticated ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Credit Meter */}
+            <CreditMeter
+              currentCredits={2500} // TODO: Get from user data
+              monthlyAllocation={2500}
+              tier="pro"
+              onBoostPurchase={handleBoostPurchase}
+            />
+            
             <div className="hidden sm:flex flex-col text-right text-xs">
               <span className="text-white font-medium">
                 {user?.name || user?.email.split('@')[0]}
