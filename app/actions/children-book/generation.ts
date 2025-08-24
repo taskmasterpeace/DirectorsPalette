@@ -4,13 +4,14 @@ import { openai } from "@ai-sdk/openai"
 import { generateObject } from "ai"
 import { z } from "zod"
 
-// Children's Book Schemas
+// Children's Book Schemas (No chapters, focus on pages)
 const BookPageSchema = z.object({
   pageNumber: z.number(),
   pageText: z.string(),
-  illustrationPrompt: z.string(),
-  characters: z.array(z.string()),
-  setting: z.string(),
+  sceneDescription: z.string(), // Background/setting description, no lighting/camera
+  characters: z.array(z.string()), // @character references
+  location: z.string(), // @location reference  
+  props: z.array(z.string()), // @prop references
   mood: z.string(),
   ageAppropriate: z.boolean()
 })
@@ -20,28 +21,25 @@ const ChildrenBookSchema = z.object({
   targetAge: z.string(),
   theme: z.string().optional(),
   pages: z.array(BookPageSchema),
-  characterDescriptions: z.array(z.object({
-    name: z.string(),
-    description: z.string(),
-    consistencyNotes: z.string()
-  })),
-  illustrationStyle: z.string(),
   totalPages: z.number()
 })
 
 interface BookGenerationOptions {
   story: string
-  illustratorStyle: string
   ageGroup: string
   theme?: string
   aspectRatio: string
-  characters?: any[]
+  references: {
+    characters: any[]
+    locations: any[]
+    props: any[]
+  }
   illustrationNotes?: string
 }
 
 export async function generateChildrenBook(options: BookGenerationOptions) {
   try {
-    const { story, illustratorStyle, ageGroup, theme, aspectRatio, characters, illustrationNotes } = options
+    const { story, ageGroup, theme, aspectRatio, references, illustrationNotes } = options
     
     // Create age-appropriate prompt based on target age group
     const ageGuidelines = {
@@ -53,31 +51,32 @@ export async function generateChildrenBook(options: BookGenerationOptions) {
 
     const ageGuide = ageGuidelines[ageGroup as keyof typeof ageGuidelines] || ageGuidelines['3-7']
 
-    const charactersText = characters && characters.length > 0 
-      ? `\nEXTRACTED CHARACTERS:\n${characters.map(c => `${c.tagName || '@' + c.name.toLowerCase().replace(/\s+/g, '_')}: ${c.description}`).join('\n')}`
-      : ''
+    const referencesText = `
+EXTRACTED REFERENCES:
+CHARACTERS: ${references.characters.map(c => `${c.reference}: ${c.name} - ${c.description}`).join('\n')}
+LOCATIONS: ${references.locations.map(l => `${l.reference}: ${l.name} - ${l.description}`).join('\n')}
+PROPS: ${references.props.map(p => `${p.reference}: ${p.name} - ${p.description}`).join('\n')}`
 
     const prompt = `Create a children's book from this story, adapting it for ${ageGroup}-year-olds.
 
-STORY: ${story}${charactersText}
+STORY: ${story}${referencesText}
 
-ILLUSTRATION STYLE: ${illustratorStyle}
 ASPECT RATIO: ${aspectRatio}
 AGE GUIDELINES: ${ageGuide}
 ${theme ? `THEME/LESSON: ${theme}` : ''}
 ${illustrationNotes ? `ILLUSTRATION NOTES: ${illustrationNotes}` : ''}
 
-Instructions:
+Instructions for CHILDREN'S BOOK ILLUSTRATIONS (NOT FILM):
 1. Break the story into 6-12 book pages with age-appropriate text per page
-2. Create detailed illustration prompts that maintain character consistency using @character_name format
-3. Use the extracted character descriptions to ensure consistency across all pages
-4. Ensure illustrations are suitable for ${ageGroup}-year-olds
-5. Make sure each illustration prompt includes the specified aspect ratio (${aspectRatio})
-6. Include setting, mood, and character emotions for each page
-7. Ensure content is completely age-appropriate and positive
-8. For character consistency, always reference characters using their @tag_name format
+2. For each page, create a SCENE DESCRIPTION (not cinematic shots)
+3. Focus on BACKGROUND/SETTING descriptions, character positions, and mood
+4. DO NOT include lighting, camera angles, or cinematic techniques
+5. Use the extracted references (@character, @location, @prop) for consistency
+6. Include simple, clear descriptions of what the illustration should show
+7. Ensure all content is age-appropriate and positive for ${ageGroup}-year-olds
+8. Each scene should be in ${aspectRatio} aspect ratio format
 
-Focus on creating engaging illustrations that will captivate young readers while maintaining story and character consistency throughout the book.`
+Create ILLUSTRATION SCENES, not movie shots. Focus on what children will see in the picture.`
 
     const result = await generateObject({
       model: openai('gpt-4o'), // Use GPT-4o as requested
@@ -98,46 +97,64 @@ Focus on creating engaging illustrations that will captivate young readers while
   }
 }
 
-// Extract characters from book story (reuse existing logic)
-export async function extractBookCharacters(story: string) {
+// Use EXACT same extraction system as story mode
+const ReferenceSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  name: z.string(),
+  description: z.string(),
+  appearances: z.array(z.string()).optional(),
+})
+
+const BookReferencesSchema = z.object({
+  characters: z.array(ReferenceSchema),
+  locations: z.array(ReferenceSchema),
+  props: z.array(ReferenceSchema),
+  themes: z.array(z.string()),
+})
+
+export async function extractBookReferences(story: string) {
   try {
-    const prompt = `Extract all characters from this children's book story and provide consistent descriptions for illustration:
+    const prompt = `
+Analyze this CHILDREN'S BOOK story and extract ONLY the actual characters, locations, and props that appear in the text.
+DO NOT invent or add any elements not explicitly mentioned in the story.
 
-STORY: ${story}
+For each element, provide:
+- A unique ID (e.g., "char-1", "loc-1", "prop-1")
+- A reference handle (e.g., "@teddy_bear", "@bedroom", "@magic_wand")
+- The actual name from the story
+- A brief visual description suitable for children's book illustration
+- Appearances (which parts of the story they appear in)
 
-Extract:
-1. All character names (use @character_name format for consistency)
-2. Physical descriptions suitable for children's book illustration
-3. Personality traits that should show in illustrations
-4. Any important visual characteristics (clothing, accessories, etc.)
+Also identify:
+- Key themes appropriate for children (friendship, kindness, courage, etc.)
 
-Return characters that can be consistently illustrated throughout the book.`
+CRITICAL RULES FOR CHILDREN'S BOOKS:
+1. ONLY extract elements that are EXPLICITLY mentioned in the story text
+2. Do NOT create or imagine any characters, locations, or props not in the story
+3. Keep descriptions age-appropriate and positive
+4. Focus on visual consistency for illustrations
+5. Use child-friendly reference names (e.g., @little_rabbit instead of @rabbit_protagonist)
 
-    const CharacterSchema = z.object({
-      characters: z.array(z.object({
-        name: z.string(),
-        tagName: z.string(), // @character_name format
-        description: z.string(),
-        visualTraits: z.array(z.string()),
-        personality: z.string()
-      }))
-    })
+Return ONLY the actual elements found in the story text.
+`
 
-    const result = await generateObject({
-      model: openai('gpt-4o'),
+    const { object: references } = await generateObject({
+      model: openai("gpt-4o"), // Use GPT-4o for structured output compatibility
+      schema: BookReferencesSchema,
       prompt,
-      schema: CharacterSchema,
+      system: `You are extracting elements from a children's book story for illustration consistency. STORY: """${story}"""`,
     })
 
     return {
       success: true,
-      data: result.object.characters
+      data: references
     }
   } catch (error) {
-    console.error('Character extraction error:', error)
+    console.error('Book references extraction error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to extract characters'
+      error: error instanceof Error ? error.message : 'Failed to extract references'
     }
   }
 }

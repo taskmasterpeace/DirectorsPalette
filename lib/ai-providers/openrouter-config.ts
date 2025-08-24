@@ -340,10 +340,10 @@ export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   },
   'children-book-generation': {
     function: 'children-book-generation',
-    defaultModel: 'openai/gpt-4o', // Keep GPT-4o as requested
-    suggestedModels: ['anthropic/claude-3.5-sonnet', 'deepseek/deepseek-chat-v3.1'],
-    freeAlternatives: ['moonshotai/kimi-k2:free', 'meta-llama/llama-3.3-70b-instruct:free'],
-    description: 'Children\'s book story analysis and illustration generation'
+    defaultModel: 'openai/gpt-4o', // Keep GPT-4o as requested - supports structured output
+    suggestedModels: ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o-mini'], // Both support structured output
+    freeAlternatives: ['moonshotai/kimi-k2:free'], // KIMI supports structured output, some others may not
+    description: 'Children\'s book story analysis and scene generation (requires structured output)'
   }
 }
 

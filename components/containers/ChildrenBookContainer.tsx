@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BookOpen, Palette, Image, Sparkles, Copy, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
-import { generateChildrenBook, extractBookCharacters } from '@/app/actions/children-book/generation'
+import { generateChildrenBook, extractBookReferences } from '@/app/actions/children-book/generation'
 
 // Children's Book Configuration
 const DEFAULT_BOOK_STYLE = {
@@ -36,16 +36,15 @@ export function ChildrenBookContainer() {
   const [illustrationNotes, setIllustrationNotes] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [bookPages, setBookPages] = useState<any[]>([])
-  const [extractedCharacters, setExtractedCharacters] = useState<any[]>([])
-  const [extractedLocations, setExtractedLocations] = useState<any[]>([])
+  const [extractedReferences, setExtractedReferences] = useState<any>(null)
   const [isExtracting, setIsExtracting] = useState(false)
 
-  // Extract characters and locations from story (like existing system)
+  // Extract characters, locations, and props (EXACT same system as story mode)
   const handleExtractReferences = async () => {
     if (!story.trim()) {
       toast({
         title: "Story Required",
-        description: "Please enter a story to extract characters and locations.",
+        description: "Please enter a story to extract references.",
         variant: "destructive"
       })
       return
@@ -53,13 +52,14 @@ export function ChildrenBookContainer() {
 
     setIsExtracting(true)
     try {
-      const result = await extractBookCharacters(story)
+      const result = await extractBookReferences(story)
       
       if (result.success && result.data) {
-        setExtractedCharacters(result.data)
+        setExtractedReferences(result.data)
+        const totalRefs = result.data.characters.length + result.data.locations.length + result.data.props.length
         toast({
-          title: "Characters Extracted!",
-          description: `Found ${result.data.length} characters for consistent illustration`
+          title: "References Extracted!",
+          description: `Found ${result.data.characters.length} characters, ${result.data.locations.length} locations, ${result.data.props.length} props`
         })
       } else {
         throw new Error(result.error || 'Extraction failed')
@@ -67,7 +67,7 @@ export function ChildrenBookContainer() {
     } catch (error) {
       toast({
         title: "Extraction Failed",
-        description: error instanceof Error ? error.message : "Failed to extract characters",
+        description: error instanceof Error ? error.message : "Failed to extract references",
         variant: "destructive"
       })
     } finally {
@@ -92,14 +92,22 @@ export function ChildrenBookContainer() {
         description: "Creating illustrations with consistent characters..."
       })
       
-      // Generate children's book using our server action with extracted characters
+      if (!extractedReferences) {
+        toast({
+          title: "Extract References First",
+          description: "Please extract characters, locations, and props before generating the book.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Generate children's book using our server action with extracted references
       const result = await generateChildrenBook({
         story,
-        illustratorStyle: DEFAULT_BOOK_STYLE.style,
         ageGroup,
         theme: theme || undefined,
         aspectRatio: selectedFormat.id,
-        characters: extractedCharacters,
+        references: extractedReferences,
         illustrationNotes
       })
       
@@ -108,9 +116,10 @@ export function ChildrenBookContainer() {
         const pages = bookData.pages.map(page => ({
           pageNum: page.pageNumber,
           text: page.pageText,
-          illustration: page.illustrationPrompt,
+          scene: page.sceneDescription,
           characters: page.characters,
-          setting: page.setting,
+          location: page.location,
+          props: page.props,
           mood: page.mood
         }))
         
@@ -267,18 +276,67 @@ export function ChildrenBookContainer() {
                 )}
               </Button>
 
-              {/* Show extracted characters */}
-              {extractedCharacters.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-white text-sm">Extracted Characters:</Label>
-                  <div className="space-y-2">
-                    {extractedCharacters.map((char, index) => (
-                      <div key={index} className="p-2 bg-slate-900/50 rounded border border-slate-600">
-                        <div className="text-white font-medium">{char.tagName || `@${char.name.toLowerCase().replace(/\s+/g, '_')}`}</div>
-                        <div className="text-slate-300 text-xs">{char.description}</div>
+              {/* Show extracted references (same as story mode) */}
+              {extractedReferences && (
+                <div className="space-y-4">
+                  {/* Characters */}
+                  {extractedReferences.characters.length > 0 && (
+                    <div>
+                      <Label className="text-white text-sm">Characters ({extractedReferences.characters.length}):</Label>
+                      <div className="space-y-2 mt-2">
+                        {extractedReferences.characters.map((char: any, index: number) => (
+                          <div key={index} className="p-2 bg-slate-900/50 rounded border border-slate-600">
+                            <div className="text-white font-medium">{char.reference}</div>
+                            <div className="text-slate-300 text-xs">{char.name}: {char.description}</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+                  
+                  {/* Locations */}
+                  {extractedReferences.locations.length > 0 && (
+                    <div>
+                      <Label className="text-white text-sm">Locations ({extractedReferences.locations.length}):</Label>
+                      <div className="space-y-2 mt-2">
+                        {extractedReferences.locations.map((loc: any, index: number) => (
+                          <div key={index} className="p-2 bg-slate-900/50 rounded border border-slate-600">
+                            <div className="text-white font-medium">{loc.reference}</div>
+                            <div className="text-slate-300 text-xs">{loc.name}: {loc.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Props */}
+                  {extractedReferences.props.length > 0 && (
+                    <div>
+                      <Label className="text-white text-sm">Props ({extractedReferences.props.length}):</Label>
+                      <div className="space-y-2 mt-2">
+                        {extractedReferences.props.map((prop: any, index: number) => (
+                          <div key={index} className="p-2 bg-slate-900/50 rounded border border-slate-600">
+                            <div className="text-white font-medium">{prop.reference}</div>
+                            <div className="text-slate-300 text-xs">{prop.name}: {prop.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Themes */}
+                  {extractedReferences.themes.length > 0 && (
+                    <div>
+                      <Label className="text-white text-sm">Detected Themes:</Label>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {extractedReferences.themes.map((theme: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {theme}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -372,16 +430,16 @@ export function ChildrenBookContainer() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              navigator.clipboard.writeText(page.illustration)
+                              navigator.clipboard.writeText(page.scene)
                               toast({
                                 title: "Copied!",
-                                description: "Illustration prompt copied to clipboard"
+                                description: "Scene description copied to clipboard"
                               })
                             }}
                             className="h-7 px-2 text-xs"
                           >
                             <Copy className="w-3 h-3 mr-1" />
-                            Copy Prompt
+                            Copy Scene
                           </Button>
                         </div>
                       </div>
@@ -393,14 +451,14 @@ export function ChildrenBookContainer() {
                         </div>
                       </div>
                       
-                      {/* Illustration Details */}
+                      {/* Scene Description */}
                       <div className="space-y-2">
-                        <div className="text-orange-300 text-sm font-medium">Illustration Prompt:</div>
+                        <div className="text-orange-300 text-sm font-medium">Scene Description:</div>
                         <div className="text-slate-300 text-sm p-2 bg-slate-800/30 rounded border border-slate-600">
-                          {page.illustration}
+                          {page.scene}
                         </div>
                         
-                        {/* Additional Details */}
+                        {/* Reference Details */}
                         <div className="grid grid-cols-3 gap-2 mt-3">
                           {page.characters && page.characters.length > 0 && (
                             <div>
@@ -408,19 +466,26 @@ export function ChildrenBookContainer() {
                               <div className="text-xs text-slate-300">{page.characters.join(', ')}</div>
                             </div>
                           )}
-                          {page.setting && (
+                          {page.location && (
                             <div>
-                              <div className="text-xs text-slate-400">Setting:</div>
-                              <div className="text-xs text-slate-300">{page.setting}</div>
+                              <div className="text-xs text-slate-400">Location:</div>
+                              <div className="text-xs text-slate-300">{page.location}</div>
                             </div>
                           )}
-                          {page.mood && (
+                          {page.props && page.props.length > 0 && (
                             <div>
-                              <div className="text-xs text-slate-400">Mood:</div>
-                              <div className="text-xs text-slate-300">{page.mood}</div>
+                              <div className="text-xs text-slate-400">Props:</div>
+                              <div className="text-xs text-slate-300">{page.props.join(', ')}</div>
                             </div>
                           )}
                         </div>
+                        
+                        {page.mood && (
+                          <div className="mt-2">
+                            <div className="text-xs text-slate-400">Mood:</div>
+                            <div className="text-xs text-slate-300">{page.mood}</div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -431,19 +496,19 @@ export function ChildrenBookContainer() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          const allPrompts = bookPages.map(page => 
-                            `Page ${page.pageNum}: ${page.illustration}`
+                          const allScenes = bookPages.map(page => 
+                            `Page ${page.pageNum}: ${page.scene}`
                           ).join('\n\n')
-                          navigator.clipboard.writeText(allPrompts)
+                          navigator.clipboard.writeText(allScenes)
                           toast({
-                            title: "All Prompts Copied!",
-                            description: "All illustration prompts copied to clipboard"
+                            title: "All Scenes Copied!",
+                            description: "All scene descriptions copied to clipboard"
                           })
                         }}
                         className="flex-1"
                       >
                         <Copy className="w-4 h-4 mr-2" />
-                        Copy All Prompts
+                        Copy All Scenes
                       </Button>
                     </div>
                   </div>
