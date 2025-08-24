@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Checkbox } from '@/components/ui/checkbox'
-import { BookOpen, Wand2, Target, Settings, ChevronDown, Camera, Palette } from 'lucide-react'
+import { BookOpen, Wand2, Target, Settings, ChevronDown, Camera, Palette, Trash2 } from 'lucide-react'
 import { DirectorSelector } from '@/components/shared/DirectorSelector'
 import { useState } from 'react'
 
@@ -219,8 +219,46 @@ export function StoryInput({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Generation Buttons */}
-        <div className="flex gap-3">
+        {/* Mobile: Stack buttons vertically to prevent overflow */}
+        <div className="flex flex-col gap-2 sm:hidden">
+          <Button
+            onClick={onExtractReferences}
+            disabled={isLoading || isExtractingReferences || !story.trim()}
+            className="w-full h-11 bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            {isExtractingReferences ? (
+              <>
+                <Target className="h-4 w-4 mr-2 animate-spin" />
+                Extracting...
+              </>
+            ) : isLoading ? (
+              <>
+                <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Target className="h-4 w-4 mr-2" />
+                Extract References
+              </>
+            )}
+          </Button>
+
+          {(story.trim() || hasBreakdown) && (
+            <Button
+              onClick={onClear}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full h-11 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear Story
+            </Button>
+          )}
+        </div>
+
+        {/* Desktop: Side-by-side layout */}
+        <div className="hidden sm:flex gap-3">
           <Button
             onClick={onExtractReferences}
             disabled={isLoading || isExtractingReferences || !story.trim()}

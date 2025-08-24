@@ -27,7 +27,7 @@ function ModeButton({ mode, icon, label, isActive, onClick, className }: ModeBut
       variant={isActive ? 'default' : 'ghost'}
       onClick={onClick}
       className={cn(
-        "transition-all relative overflow-hidden h-14 sm:h-12 text-base sm:text-sm font-medium",
+        "transition-all relative overflow-hidden h-11 sm:h-12 text-sm sm:text-sm font-medium",
         isActive 
           ? `bg-gradient-to-r ${gradientColors[mode as keyof typeof gradientColors]} hover:opacity-90 shadow-md text-white` 
           : "hover:bg-slate-700 text-slate-300 hover:text-white",
@@ -37,9 +37,9 @@ function ModeButton({ mode, icon, label, isActive, onClick, className }: ModeBut
       {isActive && (
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
       )}
-      <span className="relative flex items-center gap-2">
-        <span className="text-lg sm:text-base">{icon}</span>
-        <span className="hidden xs:inline sm:inline">{label}</span>
+      <span className="relative flex items-center gap-1">
+        <span className="text-base">{icon}</span>
+        <span className="text-xs">{label}</span>
       </span>
     </Button>
   )
@@ -57,7 +57,7 @@ export function ModeSelector() {
   return (
     <div className="w-full max-w-lg mx-auto">
       {/* Mobile Layout: 2x2 Grid for better touch targets */}
-      <div className="grid grid-cols-2 gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 shadow-lg sm:hidden">
+      <div className="grid grid-cols-2 gap-2 p-2 bg-slate-800 rounded-lg border border-slate-700 shadow-lg sm:hidden">
         <ModeButton 
           mode="story" 
           icon="📖" 

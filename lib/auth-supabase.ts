@@ -93,7 +93,7 @@ export async function universalGoogleLogin(): Promise<{ success: boolean; user?:
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: 'https://v0-director-style-workflow.vercel.app/auth/callback',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
