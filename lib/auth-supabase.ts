@@ -90,10 +90,24 @@ export async function universalGoogleLogin(): Promise<{ success: boolean; user?:
     try {
       console.log('🚀 Attempting Supabase Google OAuth...')
       
+      // Get the correct redirect URL based on environment
+      const getRedirectUrl = () => {
+        if (typeof window === 'undefined') return 'https://v0-director-style-workflow.vercel.app/auth/callback'
+        
+        const { protocol, host } = window.location
+        
+        // Use production URL for production, current host for development
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+          return `${protocol}//${host}/auth/callback`
+        } else {
+          return 'https://v0-director-style-workflow.vercel.app/auth/callback'
+        }
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://v0-director-style-workflow.vercel.app/auth/callback',
+          redirectTo: getRedirectUrl(),
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
