@@ -82,19 +82,41 @@ export async function universalLogin(email: string): Promise<{ success: boolean;
 }
 
 export async function universalGoogleLogin(): Promise<{ success: boolean; user?: User; error?: string }> {
-  if (USE_SUPABASE) {
+  console.log('🔐 universalGoogleLogin called')
+  console.log('🔍 USE_SUPABASE:', USE_SUPABASE)
+  console.log('🔍 supabase client exists:', !!supabase)
+  
+  if (USE_SUPABASE && supabase) {
     try {
-      const { data, error } = await signInWithGoogle()
+      console.log('🚀 Attempting Supabase Google OAuth...')
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      })
+      
+      console.log('🔍 OAuth response:', { data, error })
+      
       if (error) {
+        console.error('❌ OAuth error:', error)
         return { success: false, error: error.message }
       }
       
-      // Supabase will handle the redirect
+      console.log('✅ OAuth initiated - should redirect')
+      // Supabase will handle the redirect - don't return user yet
       return { success: true }
     } catch (error) {
-      return { success: false, error: 'Google sign-in failed' }
+      console.error('💥 OAuth exception:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Google sign-in failed' }
     }
   } else {
+    console.log('⚠️ Falling back to localStorage auth')
     // Fallback to localStorage (temporary for demo)
     return loginUser('taskmasterpeace@gmail.com')
   }
