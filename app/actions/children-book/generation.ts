@@ -35,11 +35,13 @@ interface BookGenerationOptions {
   ageGroup: string
   theme?: string
   aspectRatio: string
+  characters?: any[]
+  illustrationNotes?: string
 }
 
 export async function generateChildrenBook(options: BookGenerationOptions) {
   try {
-    const { story, illustratorStyle, ageGroup, theme, aspectRatio } = options
+    const { story, illustratorStyle, ageGroup, theme, aspectRatio, characters, illustrationNotes } = options
     
     // Create age-appropriate prompt based on target age group
     const ageGuidelines = {
@@ -51,25 +53,31 @@ export async function generateChildrenBook(options: BookGenerationOptions) {
 
     const ageGuide = ageGuidelines[ageGroup as keyof typeof ageGuidelines] || ageGuidelines['3-7']
 
+    const charactersText = characters && characters.length > 0 
+      ? `\nEXTRACTED CHARACTERS:\n${characters.map(c => `${c.tagName || '@' + c.name.toLowerCase().replace(/\s+/g, '_')}: ${c.description}`).join('\n')}`
+      : ''
+
     const prompt = `Create a children's book from this story, adapting it for ${ageGroup}-year-olds.
 
-STORY: ${story}
+STORY: ${story}${charactersText}
 
 ILLUSTRATION STYLE: ${illustratorStyle}
 ASPECT RATIO: ${aspectRatio}
 AGE GUIDELINES: ${ageGuide}
 ${theme ? `THEME/LESSON: ${theme}` : ''}
+${illustrationNotes ? `ILLUSTRATION NOTES: ${illustrationNotes}` : ''}
 
 Instructions:
 1. Break the story into 6-12 book pages with age-appropriate text per page
 2. Create detailed illustration prompts that maintain character consistency using @character_name format
-3. Ensure illustrations are suitable for ${ageGroup}-year-olds
-4. Include character descriptions for consistent illustration across pages
+3. Use the extracted character descriptions to ensure consistency across all pages
+4. Ensure illustrations are suitable for ${ageGroup}-year-olds
 5. Make sure each illustration prompt includes the specified aspect ratio (${aspectRatio})
 6. Include setting, mood, and character emotions for each page
 7. Ensure content is completely age-appropriate and positive
+8. For character consistency, always reference characters using their @tag_name format
 
-Focus on creating engaging illustrations that will captivate young readers while maintaining story consistency.`
+Focus on creating engaging illustrations that will captivate young readers while maintaining story and character consistency throughout the book.`
 
     const result = await generateObject({
       model: openai('gpt-4o'), // Use GPT-4o as requested

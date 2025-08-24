@@ -11,44 +11,12 @@ import { BookOpen, Palette, Image, Sparkles, Copy, Download } from 'lucide-react
 import { useToast } from '@/components/ui/use-toast'
 import { generateChildrenBook, extractBookCharacters } from '@/app/actions/children-book/generation'
 
-// Children's Book Illustrator Styles
-const BOOK_ILLUSTRATORS = [
-  {
-    id: 'maurice-sendak',
-    name: 'Maurice Sendak Style',
-    description: 'Classic crosshatching and pen-and-ink illustrations',
-    style: 'Detailed line art with emotional depth, crosshatching techniques, and expressive character faces. Muted earth tones with selective color highlights.',
-    tags: ['classic', 'emotional', 'detailed']
-  },
-  {
-    id: 'eric-carle',
-    name: 'Eric Carle Style', 
-    description: 'Colorful tissue paper collage technique',
-    style: 'Bright tissue paper collage textures, bold primary colors, simple shapes with rich textural details. Playful and vibrant compositions.',
-    tags: ['colorful', 'textural', 'playful']
-  },
-  {
-    id: 'beatrix-potter',
-    name: 'Beatrix Potter Style',
-    description: 'Delicate watercolor with natural settings',
-    style: 'Soft watercolor paintings with delicate brushwork, natural outdoor settings, gentle pastel colors, and detailed botanical elements.',
-    tags: ['watercolor', 'natural', 'gentle']
-  },
-  {
-    id: 'modern-digital',
-    name: 'Modern Digital Style',
-    description: 'Contemporary digital illustration with bold colors',
-    style: 'Clean digital artwork with bold colors, geometric shapes, diverse characters, and inclusive representation. Bright, engaging visuals.',
-    tags: ['modern', 'digital', 'diverse']
-  },
-  {
-    id: 'whimsical-fantasy',
-    name: 'Whimsical Fantasy Style',
-    description: 'Magical and fantastical illustration style',
-    style: 'Imaginative fantasy elements, magical creatures, dreamy landscapes, soft glowing effects, and enchanting color palettes.',
-    tags: ['fantasy', 'magical', 'dreamy']
-  }
-]
+// Children's Book Configuration
+const DEFAULT_BOOK_STYLE = {
+  name: 'Children\'s Book Illustration',
+  description: 'Age-appropriate illustrations with consistent characters',
+  style: 'Child-friendly illustration style with bright colors, clear characters, and age-appropriate content. Focus on character consistency using @character_name system.'
+}
 
 // Aspect Ratios for Children's Books
 const BOOK_FORMATS = [
@@ -62,12 +30,50 @@ const BOOK_FORMATS = [
 export function ChildrenBookContainer() {
   const { toast } = useToast()
   const [story, setStory] = useState('')
-  const [selectedIllustrator, setSelectedIllustrator] = useState(BOOK_ILLUSTRATORS[0])
   const [selectedFormat, setSelectedFormat] = useState(BOOK_FORMATS[0])
   const [ageGroup, setAgeGroup] = useState('3-7')
   const [theme, setTheme] = useState('')
+  const [illustrationNotes, setIllustrationNotes] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [bookPages, setBookPages] = useState<any[]>([])
+  const [extractedCharacters, setExtractedCharacters] = useState<any[]>([])
+  const [extractedLocations, setExtractedLocations] = useState<any[]>([])
+  const [isExtracting, setIsExtracting] = useState(false)
+
+  // Extract characters and locations from story (like existing system)
+  const handleExtractReferences = async () => {
+    if (!story.trim()) {
+      toast({
+        title: "Story Required",
+        description: "Please enter a story to extract characters and locations.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsExtracting(true)
+    try {
+      const result = await extractBookCharacters(story)
+      
+      if (result.success && result.data) {
+        setExtractedCharacters(result.data)
+        toast({
+          title: "Characters Extracted!",
+          description: `Found ${result.data.length} characters for consistent illustration`
+        })
+      } else {
+        throw new Error(result.error || 'Extraction failed')
+      }
+    } catch (error) {
+      toast({
+        title: "Extraction Failed",
+        description: error instanceof Error ? error.message : "Failed to extract characters",
+        variant: "destructive"
+      })
+    } finally {
+      setIsExtracting(false)
+    }
+  }
 
   const handleGenerateBook = async () => {
     if (!story.trim()) {
@@ -86,13 +92,15 @@ export function ChildrenBookContainer() {
         description: "Creating illustrations with consistent characters..."
       })
       
-      // Generate children's book using our server action
+      // Generate children's book using our server action with extracted characters
       const result = await generateChildrenBook({
         story,
-        illustratorStyle: selectedIllustrator.style,
+        illustratorStyle: DEFAULT_BOOK_STYLE.style,
         ageGroup,
         theme: theme || undefined,
-        aspectRatio: selectedFormat.id
+        aspectRatio: selectedFormat.id,
+        characters: extractedCharacters,
+        illustrationNotes
       })
       
       if (result.success && result.data) {
@@ -217,48 +225,62 @@ export function ChildrenBookContainer() {
                   rows={2}
                 />
               </div>
+
+              <div>
+                <Label className="text-white">Illustration Notes (Optional)</Label>
+                <Textarea
+                  value={illustrationNotes}
+                  onChange={(e) => setIllustrationNotes(e.target.value)}
+                  placeholder="Specific illustration guidance: art style, color preferences, mood, etc."
+                  className="bg-slate-900 border-slate-600 text-white"
+                  rows={2}
+                />
+              </div>
             </CardContent>
           </Card>
 
-          {/* Illustration Style */}
+          {/* Character & Location Extraction */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <Palette className="w-4 h-4 text-orange-400" />
-                Illustration Style
+                <Sparkles className="w-4 h-4 text-orange-400" />
+                Story References
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={selectedIllustrator.id} onValueChange={(value) => {
-                const illustrator = BOOK_ILLUSTRATORS.find(i => i.id === value)
-                if (illustrator) setSelectedIllustrator(illustrator)
-              }}>
-                <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {BOOK_ILLUSTRATORS.map(illustrator => (
-                    <SelectItem key={illustrator.id} value={illustrator.id}>
-                      <div className="space-y-1">
-                        <div className="font-medium">{illustrator.name}</div>
-                        <div className="text-xs text-muted-foreground">{illustrator.description}</div>
+              <Button
+                onClick={handleExtractReferences}
+                disabled={isExtracting || !story.trim()}
+                variant="outline"
+                className="w-full"
+              >
+                {isExtracting ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Extracting Characters...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Extract Characters & Locations
+                  </>
+                )}
+              </Button>
+
+              {/* Show extracted characters */}
+              {extractedCharacters.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-white text-sm">Extracted Characters:</Label>
+                  <div className="space-y-2">
+                    {extractedCharacters.map((char, index) => (
+                      <div key={index} className="p-2 bg-slate-900/50 rounded border border-slate-600">
+                        <div className="text-white font-medium">{char.tagName || `@${char.name.toLowerCase().replace(/\s+/g, '_')}`}</div>
+                        <div className="text-slate-300 text-xs">{char.description}</div>
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <div className="p-3 bg-slate-900/50 rounded border border-slate-600">
-                <div className="text-white font-medium mb-2">{selectedIllustrator.name}</div>
-                <div className="text-slate-300 text-sm mb-2">{selectedIllustrator.style}</div>
-                <div className="flex gap-1">
-                  {selectedIllustrator.tags.map(tag => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
