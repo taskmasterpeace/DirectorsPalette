@@ -48,6 +48,7 @@ import {
 } from 'lucide-react'
 import { usePostProductionStore } from '@/stores/post-production-store'
 import { useToast } from '@/components/ui/use-toast'
+import { MobileReferenceSelector } from '@/components/mobile/MobileReferenceSelector'
 import type { PostProductionShot } from '@/lib/post-production/types'
 import { validateAndNormalizeShotArray, validateExportConfig } from '@/lib/validation/data-validators'
 
@@ -381,6 +382,14 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
     })
   }
 
+  const handleSendToReference = (position: 1 | 2 | 3, shot?: PostProductionShot) => {
+    // Send shot or image to reference position
+    toast({
+      title: `Sent to ${position === 1 ? '1st' : position === 2 ? '2nd' : '3rd'} Reference`,
+      description: shot ? `Shot "${shot.description.substring(0, 30)}..." assigned to reference position ${position}` : `Image assigned to reference position ${position}`
+    })
+  }
+
   const handleClearAll = () => {
     if (confirm('Clear all shots from the queue? This cannot be undone.')) {
       clearQueue()
@@ -520,11 +529,94 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
         </Card>
       )}
 
-      {/* Search and filter controls */}
+      {/* Mobile-First Search and Filter Controls */}
       <Card>
-        <CardContent className="pt-3">
-          {/* Compact Professional Toolbar - Single Row */}
-          <div className="flex items-center gap-3 flex-wrap">
+        <CardContent className="pt-4">
+          {/* Mobile Layout: Stacked Controls */}
+          <div className="space-y-3 sm:hidden">
+            {/* Search Bar - Full Width on Mobile */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder="Search shots..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 h-12 text-base bg-slate-900 border-slate-600 text-white"
+              />
+            </div>
+            
+            {/* Group By */}
+            <Select value={groupBy} onValueChange={setGroupBy}>
+              <SelectTrigger className="h-11 text-base bg-slate-900 border-slate-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chapter">📚 Group by Chapter</SelectItem>
+                <SelectItem value="section">🎵 Group by Section</SelectItem>
+                <SelectItem value="none">📋 No Grouping</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Status Filters - Mobile Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant={filterBy === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilterBy('all')}
+                className="h-11 text-sm"
+              >
+                All ({allShots.length})
+              </Button>
+              <Button
+                variant={filterBy === 'pending' ? 'default' : 'outline'}
+                onClick={() => setFilterBy('pending')}
+                className="h-11 text-sm"
+              >
+                Pending ({shotQueue.length})
+              </Button>
+              <Button
+                variant={filterBy === 'completed' ? 'default' : 'outline'}
+                onClick={() => setFilterBy('completed')}
+                className="h-11 text-sm"
+              >
+                Done ({completedShots.length})
+              </Button>
+            </div>
+            
+            {/* Entity Filters - Mobile Grid */}
+            <div className="grid grid-cols-4 gap-2">
+              <Button
+                variant={filterByEntity === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilterByEntity('all')}
+                className="h-11 text-sm"
+              >
+                All
+              </Button>
+              <Button
+                variant={filterByEntity === 'people' ? 'default' : 'outline'}
+                onClick={() => setFilterByEntity('people')}
+                className="h-11 flex items-center justify-center border-blue-600/30 text-blue-400 hover:bg-blue-600/10"
+              >
+                <Users className="w-5 h-5" />
+              </Button>
+              <Button
+                variant={filterByEntity === 'places' ? 'default' : 'outline'}
+                onClick={() => setFilterByEntity('places')}
+                className="h-11 flex items-center justify-center border-green-600/30 text-green-400 hover:bg-green-600/10"
+              >
+                <MapPin className="w-5 h-5" />
+              </Button>
+              <Button
+                variant={filterByEntity === 'props' ? 'default' : 'outline'}
+                onClick={() => setFilterByEntity('props')}
+                className="h-11 flex items-center justify-center border-orange-600/30 text-orange-400 hover:bg-orange-600/10"
+              >
+                <Package className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Desktop Layout: Compact Horizontal Toolbar */}
+          <div className="hidden sm:flex items-center gap-3 flex-wrap">
             {/* Search Section */}
             <div className="flex-1 min-w-64">
               <div className="relative">
@@ -643,7 +735,16 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                 {selectedShots.size > 0 ? `${selectedShots.size} selected` : `${filteredShots.length} shots`}
               </span>
             </div>
-            <div className="flex gap-2">
+            {/* Mobile Actions */}
+            <div className="flex gap-2 sm:hidden">
+              <Button size="sm" variant="outline" className="h-9">
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+            </div>
+            
+            {/* Desktop Actions */}
+            <div className="hidden sm:flex gap-2">
               <Button size="sm" variant="outline">
                 <Filter className="w-4 h-4 mr-1" />
                 Group by Chapter
@@ -705,7 +806,38 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                     </span>
                                   </Badge>
                                 </div>
-                                <div className="flex gap-1">
+                                {/* Mobile Actions - Large Touch Targets */}
+                                <div className="flex flex-col gap-2 sm:hidden w-full">
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleCopyShot(shot)}
+                                      className="h-9 flex-1"
+                                    >
+                                      <Copy className="w-4 h-4 mr-1" />
+                                      Copy
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditShot(shot)}
+                                      className="h-9 flex-1"
+                                    >
+                                      <Edit className="w-4 h-4 mr-1" />
+                                      Edit
+                                    </Button>
+                                  </div>
+                                  <div className="w-full">
+                                    <MobileReferenceSelector
+                                      onSendToPosition={(position) => handleSendToReference(position, shot)}
+                                      triggerLabel="Send to Reference"
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {/* Desktop Actions - Compact */}
+                                <div className="hidden sm:flex gap-1">
                                   <Button
                                     size="sm"
                                     variant="ghost"
