@@ -13,60 +13,109 @@ import { LoginModal } from '@/components/auth/LoginModal'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-// Three.js animated background component
+// Professional Three.js background using app colors
 function AnimatedBackground() {
   const meshRef = useRef<any>()
+  const particlesRef = useRef<any>()
   
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.1
-      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.1
+      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.05
+      meshRef.current.rotation.y = state.clock.elapsedTime * 0.05
+    }
+    if (particlesRef.current) {
+      particlesRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.02
     }
   })
 
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <mesh ref={meshRef} scale={[4, 4, 4]}>
-        <sphereGeometry args={[1, 64, 64]} />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 5, 5]} intensity={0.8} color="#f59e0b" />
+      <pointLight position={[-5, 5, 5]} intensity={0.4} color="#3b82f6" />
+      
+      {/* Subtle background mesh with app colors */}
+      <mesh ref={meshRef} position={[0, 0, -8]} scale={[15, 15, 1]}>
+        <planeGeometry args={[1, 1, 32, 32]} />
         <MeshDistortMaterial
-          color="#3b82f6"
+          color="#334155"
           attach="material"
-          distort={0.3}
-          speed={2}
-          roughness={0.2}
+          distort={0.1}
+          speed={1}
+          roughness={0.8}
+          transparent
+          opacity={0.3}
         />
       </mesh>
+      
+      {/* Floating elements representing creativity */}
+      <group ref={particlesRef}>
+        {[...Array(20)].map((_, i) => (
+          <Float key={i} speed={1 + Math.random()} rotationIntensity={0.5} floatIntensity={1}>
+            <mesh position={[
+              (Math.random() - 0.5) * 25,
+              (Math.random() - 0.5) * 25, 
+              (Math.random() - 0.5) * 10
+            ]}>
+              <boxGeometry args={[0.2, 0.2, 0.2]} />
+              <meshStandardMaterial 
+                color={i % 3 === 0 ? "#f59e0b" : i % 3 === 1 ? "#3b82f6" : "#64748b"} 
+                transparent
+                opacity={0.6}
+              />
+            </mesh>
+          </Float>
+        ))}
+      </group>
     </>
   )
 }
 
-// Floating particles component
-function CreativeParticles() {
-  const particlesRef = useRef<any>()
-  
-  useFrame((state) => {
-    if (particlesRef.current) {
-      particlesRef.current.rotation.y = state.clock.elapsedTime * 0.1
-    }
-  })
+// Professional navigation header for landing page
+function LandingHeader() {
+  const { isAuthenticated, user } = useAuth()
+  const router = useRouter()
 
   return (
-    <group ref={particlesRef}>
-      {[...Array(50)].map((_, i) => (
-        <Float key={i} speed={2} rotationIntensity={1} floatIntensity={2}>
-          <mesh position={[
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 20, 
-            (Math.random() - 0.5) * 20
-          ]}>
-            <sphereGeometry args={[0.05, 8, 8]} />
-            <meshStandardMaterial color="#fbbf24" />
-          </mesh>
-        </Float>
-      ))}
-    </group>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/50">
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo and Brand */}
+          <div className="flex items-center gap-3">
+            <img 
+              src="/mkl-logo.png" 
+              alt="Machine King Labs" 
+              className="w-8 h-8 rounded-md"
+            />
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold text-white">Director's Palette</h1>
+              <div className="text-xs text-amber-400">Machine King Labs</div>
+            </div>
+          </div>
+          
+          {/* Navigation */}
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-white">Welcome, {user?.name || user?.email}</span>
+                <Button 
+                  onClick={() => router.push('/create')}
+                  className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500"
+                >
+                  Open App
+                </Button>
+              </div>
+            ) : (
+              <LoginModal onLoginSuccess={() => router.push('/create')}>
+                <Button className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500">
+                  Sign In
+                </Button>
+              </LoginModal>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
   )
 }
 
@@ -101,65 +150,108 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen bg-slate-950">
+      {/* Professional Navigation */}
+      <LandingHeader />
+      
       {/* Three.js Background */}
       <div className="fixed inset-0 -z-10">
-        <Canvas camera={{ position: [0, 0, 8] }}>
+        <Canvas camera={{ position: [0, 0, 12], fov: 45 }}>
           <AnimatedBackground />
-          <CreativeParticles />
-          <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
         </Canvas>
       </div>
 
       {/* Hero Section */}
-      <ScrollSection className="flex items-center justify-center">
-        <div className="text-center space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-6xl md:text-8xl font-bold text-white">
-              Director's <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">Palette</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto">
-              Create stories, music videos, commercials, and children's books with AI-powered character consistency
-            </p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <Badge variant="outline" className="text-green-400 border-green-400 px-4 py-2">
-              6 FREE Models
-            </Badge>
-            <Badge variant="outline" className="text-blue-400 border-blue-400 px-4 py-2">
-              Character Consistency
-            </Badge>
-            <Badge variant="outline" className="text-purple-400 border-purple-400 px-4 py-2">
-              4 Creative Formats
-            </Badge>
-          </div>
-
-          <div className="space-y-4">
-            {isAuthenticated ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <Crown className="w-5 h-5 text-amber-400" />
-                  <span className="text-white">Welcome back, {user?.name || user?.email}!</span>
-                </div>
-                <Link href="/create">
-                  <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-                    <Play className="w-5 h-5 mr-2" />
-                    Continue Creating
-                  </Button>
-                </Link>
+      <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900/50 via-slate-900/80 to-slate-900/95">
+        <div className="container mx-auto px-6 py-24 text-center">
+          <div className="max-w-4xl mx-auto space-y-12">
+            {/* Hero Content */}
+            <div className="space-y-8">
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <img 
+                  src="/mkl-logo.png" 
+                  alt="Machine King Labs" 
+                  className="w-20 h-20 md:w-28 md:h-28 rounded-2xl shadow-2xl ring-2 ring-amber-400/20"
+                />
               </div>
-            ) : (
-              <LoginModal onLoginSuccess={() => router.push('/create')}>
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-                  Start Creating Free
-                  <ArrowDown className="w-5 h-5 ml-2" />
-                </Button>
-              </LoginModal>
-            )}
+              
+              <div className="space-y-6">
+                <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight">
+                  Director's{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600">
+                    Palette
+                  </span>
+                </h1>
+                <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                  Transform stories into professional visual content across{' '}
+                  <span className="text-amber-400 font-semibold">multiple formats</span> with{' '}
+                  <span className="text-blue-400 font-semibold">AI-powered character consistency</span>
+                </p>
+              </div>
+
+              {/* Value Props */}
+              <div className="flex flex-wrap justify-center gap-4">
+                <Badge className="bg-green-900/30 text-green-400 border-green-400/30 px-6 py-3 text-base">
+                  6 FREE AI Models
+                </Badge>
+                <Badge className="bg-blue-900/30 text-blue-400 border-blue-400/30 px-6 py-3 text-base">
+                  Character Consistency
+                </Badge>
+                <Badge className="bg-amber-900/30 text-amber-400 border-amber-400/30 px-6 py-3 text-base">
+                  4 Creative Formats
+                </Badge>
+              </div>
+            </div>
+
+            {/* CTA Section */}
+            <div className="space-y-6">
+              {isAuthenticated ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center gap-3 text-lg">
+                    <Crown className="w-6 h-6 text-amber-400" />
+                    <span className="text-white">Welcome back, {user?.name || user?.email}!</span>
+                  </div>
+                  <Link href="/create">
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white px-8 py-4 text-lg rounded-xl shadow-xl"
+                    >
+                      <Play className="w-6 h-6 mr-3" />
+                      Continue Creating
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <LoginModal onLoginSuccess={() => router.push('/create')}>
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white px-12 py-6 text-xl rounded-xl shadow-2xl transform hover:scale-105 transition-all"
+                    >
+                      <Sparkles className="w-6 h-6 mr-3" />
+                      Start Creating Free
+                    </Button>
+                  </LoginModal>
+                  <p className="text-slate-400 text-sm">
+                    No credit card required • Start with unlimited FREE models
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Social Proof */}
+            <div className="pt-8 border-t border-slate-800/50">
+              <p className="text-slate-500 text-sm mb-4">Trusted by creators worldwide</p>
+              <div className="flex items-center justify-center gap-8 opacity-60">
+                <div className="text-slate-600 text-xs">CREATORS</div>
+                <div className="text-slate-600 text-xs">AGENCIES</div>
+                <div className="text-slate-600 text-xs">STUDIOS</div>
+                <div className="text-slate-600 text-xs">EDUCATORS</div>
+              </div>
+            </div>
           </div>
         </div>
-      </ScrollSection>
+      </section>
 
       {/* Features Showcase */}
       <ScrollSection background="bg-slate-800/95">

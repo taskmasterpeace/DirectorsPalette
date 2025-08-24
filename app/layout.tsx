@@ -8,6 +8,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { LayoutHeader } from "@/components/layout-header"
 import { AuthProvider } from "@/components/auth/AuthProvider"
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout"
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
@@ -24,15 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <AuthProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset>
-                <LayoutHeader />
-                <ErrorBoundary>
-                  {children}
-                </ErrorBoundary>
-              </SidebarInset>
-            </SidebarProvider>
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>

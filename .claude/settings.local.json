@@ -55,7 +55,8 @@
       "mcp__playwright__browser_tab_new",
       "mcp__playwright__browser_tab_select",
       "mcp__playwright__browser_evaluate",
-      "Bash(yarn add:*)"
+      "Bash(yarn add:*)",
+      "Bash(pnpm info:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
