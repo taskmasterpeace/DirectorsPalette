@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Text, Float, MeshDistortMaterial, OrbitControls } from '@react-three/drei'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Text, Float, MeshDistortMaterial, OrbitControls, Stars, Sphere, Box, useScroll } from '@react-three/drei'
+import * as THREE from 'three'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,60 +14,206 @@ import { LoginModal } from '@/components/auth/LoginModal'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-// Professional Three.js background using app colors
-function AnimatedBackground() {
-  const meshRef = useRef<any>()
-  const particlesRef = useRef<any>()
-  
+// Dynamic creative visualization scene
+function CreativeVisualization() {
+  const storyElementsRef = useRef<any>()
+  const characterOrbitRef = useRef<any>()
+  const formatShapesRef = useRef<any>()
+  const [scrollOffset, setScrollOffset] = useState(0)
+  const [isHeroHovered, setIsHeroHovered] = useState(false)
+
   useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.05
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.05
+    const time = state.clock.elapsedTime
+
+    // Story elements flowing and transforming
+    if (storyElementsRef.current) {
+      storyElementsRef.current.rotation.y = time * 0.1
+      storyElementsRef.current.position.y = Math.sin(time * 0.5) * 0.5
     }
-    if (particlesRef.current) {
-      particlesRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.02
+
+    // Character consistency orbiting system
+    if (characterOrbitRef.current) {
+      characterOrbitRef.current.rotation.z = time * 0.15
+      characterOrbitRef.current.children.forEach((child: any, i: number) => {
+        child.position.x = Math.cos(time * 0.3 + i * Math.PI * 2 / 3) * 3
+        child.position.y = Math.sin(time * 0.3 + i * Math.PI * 2 / 3) * 1.5
+        child.rotation.y = time * 0.5
+      })
+    }
+
+    // Format shapes morphing
+    if (formatShapesRef.current) {
+      formatShapesRef.current.children.forEach((child: any, i: number) => {
+        child.rotation.x = time * 0.2 + i * 0.5
+        child.rotation.y = time * 0.15 + i * 0.3
+        child.scale.setScalar(1 + Math.sin(time * 0.4 + i) * 0.2)
+      })
     }
   })
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollOffset(window.scrollY / window.innerHeight)
+    }
+    
+    const handleHeroHover = (e: any) => {
+      setIsHeroHovered(e.detail.active)
+    }
+    
+    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('hero-button-hover', handleHeroHover)
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('hero-button-hover', handleHeroHover)
+    }
+  }, [])
+
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[5, 5, 5]} intensity={0.8} color="#f59e0b" />
-      <pointLight position={[-5, 5, 5]} intensity={0.4} color="#3b82f6" />
+      <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade />
       
-      {/* Subtle background mesh with app colors */}
-      <mesh ref={meshRef} position={[0, 0, -8]} scale={[15, 15, 1]}>
-        <planeGeometry args={[1, 1, 32, 32]} />
-        <MeshDistortMaterial
-          color="#334155"
-          attach="material"
-          distort={0.1}
-          speed={1}
-          roughness={0.8}
-          transparent
-          opacity={0.3}
-        />
-      </mesh>
-      
-      {/* Floating elements representing creativity */}
-      <group ref={particlesRef}>
-        {[...Array(20)].map((_, i) => (
-          <Float key={i} speed={1 + Math.random()} rotationIntensity={0.5} floatIntensity={1}>
-            <mesh position={[
-              (Math.random() - 0.5) * 25,
-              (Math.random() - 0.5) * 25, 
-              (Math.random() - 0.5) * 10
-            ]}>
-              <boxGeometry args={[0.2, 0.2, 0.2]} />
-              <meshStandardMaterial 
-                color={i % 3 === 0 ? "#f59e0b" : i % 3 === 1 ? "#3b82f6" : "#64748b"} 
+      {/* Dynamic lighting that responds to scroll and interaction */}
+      <ambientLight intensity={0.4 + scrollOffset * 0.2 + (isHeroHovered ? 0.3 : 0)} />
+      <directionalLight 
+        position={[10, 10, 5]} 
+        intensity={0.8 + (isHeroHovered ? 0.5 : 0)} 
+        color={new THREE.Color(isHeroHovered ? "#f59e0b" : "#64748b")}
+      />
+      <pointLight 
+        position={[-5, 5, 5]} 
+        intensity={0.6 + (isHeroHovered ? 0.4 : 0)} 
+        color={new THREE.Color("#3b82f6")}
+      />
+      <spotLight
+        position={[0, 15, 0]}
+        angle={0.3}
+        intensity={1 + (isHeroHovered ? 1 : 0)}
+        color={new THREE.Color(isHeroHovered ? "#f59e0b" : "#10b981")}
+        castShadow
+      />
+
+      {/* Story elements flowing through space */}
+      <group ref={storyElementsRef} position={[0, 0, -5]}>
+        {/* Text fragments representing stories */}
+        <Float speed={2} rotationIntensity={0.5}>
+          <Text
+            position={[-4, 2, 0]}
+            fontSize={0.5}
+            color="#f1f5f9"
+            fontWeight="bold"
+          >
+            @character
+          </Text>
+        </Float>
+        <Float speed={1.5} rotationIntensity={0.3}>
+          <Text
+            position={[4, -1, 0]}
+            fontSize={0.4}
+            color="#f59e0b"
+            fontWeight="bold"
+          >
+            @location
+          </Text>
+        </Float>
+        <Float speed={1.8} rotationIntensity={0.4}>
+          <Text
+            position={[0, 3, -2]}
+            fontSize={0.3}
+            color="#3b82f6"
+            fontWeight="bold"
+          >
+            @prop
+          </Text>
+        </Float>
+      </group>
+
+      {/* Character consistency visualization */}
+      <group ref={characterOrbitRef} position={[6, -2, -3]}>
+        {[0, 1, 2].map((i) => (
+          <Float key={i} speed={1 + i * 0.2} rotationIntensity={0.8}>
+            <Sphere args={[0.3, 16, 16]} position={[0, 0, 0]}>
+              <meshStandardMaterial
+                color={i === 0 ? "#10b981" : i === 1 ? "#3b82f6" : "#f59e0b"}
+                emissive={i === 0 ? "#10b981" : i === 1 ? "#3b82f6" : "#f59e0b"}
+                emissiveIntensity={0.1}
                 transparent
-                opacity={0.6}
+                opacity={0.8}
+              />
+            </Sphere>
+          </Float>
+        ))}
+      </group>
+
+      {/* Creative format shapes */}
+      <group ref={formatShapesRef} position={[-6, 1, -4]}>
+        {/* Story format - Book shape */}
+        <Float speed={1.2} rotationIntensity={0.3}>
+          <Box args={[1, 1.4, 0.1]} position={[0, 1, 0]}>
+            <meshStandardMaterial color="#64748b" transparent opacity={0.7} />
+          </Box>
+        </Float>
+        
+        {/* Music format - Note shape */}
+        <Float speed={1.5} rotationIntensity={0.4}>
+          <Sphere args={[0.4, 16, 16]} position={[0, -1, 0]}>
+            <meshStandardMaterial color="#8b5cf6" transparent opacity={0.7} />
+          </Sphere>
+        </Float>
+        
+        {/* Commercial format - Cube */}
+        <Float speed={1.3} rotationIntensity={0.5}>
+          <Box args={[0.6, 0.6, 0.6]} position={[1.5, 0, 0]}>
+            <meshStandardMaterial color="#10b981" transparent opacity={0.7} />
+          </Box>
+        </Float>
+        
+        {/* Children's book format - Heart shape */}
+        <Float speed={1.4} rotationIntensity={0.3}>
+          <Sphere args={[0.3, 8, 8]} position={[-1.5, 0, 0]}>
+            <meshStandardMaterial color="#f59e0b" transparent opacity={0.7} />
+          </Sphere>
+        </Float>
+      </group>
+
+      {/* Particle system representing AI models */}
+      <group>
+        {[...Array(100)].map((_, i) => (
+          <Float key={i} speed={0.5 + Math.random()} rotationIntensity={0.2}>
+            <mesh position={[
+              (Math.random() - 0.5) * 40,
+              (Math.random() - 0.5) * 40,
+              (Math.random() - 0.5) * 20
+            ]}>
+              <sphereGeometry args={[0.02 + Math.random() * 0.03, 8, 8]} />
+              <meshStandardMaterial
+                color={
+                  i % 6 === 0 ? "#10b981" : // FREE models - green
+                  i % 6 === 1 ? "#3b82f6" : // Premium - blue  
+                  i % 6 === 2 ? "#f59e0b" : // Creative - amber
+                  i % 6 === 3 ? "#64748b" : // Standard - slate
+                  i % 6 === 4 ? "#8b5cf6" : // Advanced - purple
+                  "#f1f5f9"                 // Pro - white
+                }
+                transparent
+                opacity={0.6 + Math.random() * 0.4}
               />
             </mesh>
           </Float>
         ))}
       </group>
+
+      {/* Background depth layers */}
+      <mesh position={[0, 0, -15]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[50, 50, 64, 64]} />
+        <MeshDistortMaterial
+          color="#1e293b"
+          distort={0.05}
+          speed={1}
+          transparent
+          opacity={0.3}
+        />
+      </mesh>
     </>
   )
 }
@@ -154,10 +301,23 @@ export default function LandingPage() {
       {/* Professional Navigation */}
       <LandingHeader />
       
-      {/* Three.js Background */}
+      {/* Enhanced Three.js Background */}
       <div className="fixed inset-0 -z-10">
-        <Canvas camera={{ position: [0, 0, 12], fov: 45 }}>
-          <AnimatedBackground />
+        <Canvas 
+          camera={{ position: [0, 0, 12], fov: 45 }}
+          style={{ background: 'transparent' }}
+          dpr={[1, 2]}
+          performance={{ min: 0.5 }}
+        >
+          <CreativeVisualization />
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false} 
+            autoRotate 
+            autoRotateSpeed={0.2}
+            enableDamping
+            dampingFactor={0.05}
+          />
         </Canvas>
       </div>
 
@@ -226,9 +386,16 @@ export default function LandingPage() {
                   <LoginModal onLoginSuccess={() => router.push('/create')}>
                     <Button 
                       size="lg" 
-                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white px-12 py-6 text-xl rounded-xl shadow-2xl transform hover:scale-105 transition-all"
+                      className="group bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 text-white px-12 py-6 text-xl rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-amber-500/25"
+                      onMouseEnter={() => {
+                        // Trigger Three.js animation enhancement on hover
+                        window.dispatchEvent(new CustomEvent('hero-button-hover', { detail: { active: true } }))
+                      }}
+                      onMouseLeave={() => {
+                        window.dispatchEvent(new CustomEvent('hero-button-hover', { detail: { active: false } }))
+                      }}
                     >
-                      <Sparkles className="w-6 h-6 mr-3" />
+                      <Sparkles className="w-6 h-6 mr-3 group-hover:animate-pulse" />
                       Start Creating Free
                     </Button>
                   </LoginModal>
