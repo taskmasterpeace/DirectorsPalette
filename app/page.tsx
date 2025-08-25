@@ -11,6 +11,7 @@ import { ArrowDown, Play, Zap, Rocket, Sparkles, Crown } from 'lucide-react'
 import { BoostPacks } from '@/components/billing/BoostPacks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { LoginModal } from '@/components/auth/LoginModal'
+import { AnimatedSocialProof } from '@/components/landing/AnimatedSocialProof'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -406,149 +407,223 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Social Proof */}
-            <div className="pt-8 border-t border-slate-800/50">
-              <p className="text-slate-500 text-sm mb-4">Trusted by creators worldwide</p>
-              <div className="flex items-center justify-center gap-8 opacity-60">
-                <div className="text-slate-600 text-xs">CREATORS</div>
-                <div className="text-slate-600 text-xs">AGENCIES</div>
-                <div className="text-slate-600 text-xs">STUDIOS</div>
-                <div className="text-slate-600 text-xs">EDUCATORS</div>
+            {/* Quick Social Proof */}
+            <div className="pt-12 border-t border-slate-800/50">
+              <p className="text-slate-500 text-sm mb-6">Join thousands of creators worldwide</p>
+              <div className="flex items-center justify-center gap-12 opacity-70">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">1000+</div>
+                  <div className="text-slate-400 text-xs">Creators</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">500+</div>
+                  <div className="text-slate-400 text-xs">Agencies</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">200+</div>
+                  <div className="text-slate-400 text-xs">Studios</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Showcase */}
-      <ScrollSection background="bg-slate-800/95">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h2 className="text-4xl font-bold text-white">
-              One Story, Every Medium
-            </h2>
-            <p className="text-xl text-slate-300">
-              Transform your stories into professional shot lists for films, music videos, 
-              commercials, and children's books - all with consistent characters.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-4">
+      {/* Features Showcase - Better Aligned */}
+      <section className="relative py-24 bg-slate-900/95">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            {/* Section Header - Centered */}
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                One Story, Every Medium
+              </h2>
+              <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                Transform your stories into professional shot lists for films, music videos, 
+                commercials, and children's books - all with consistent characters.
+              </p>
+            </div>
+
+            {/* Features Grid - Properly Aligned */}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              {/* Left: Format Cards */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  {[
+                    { icon: '📖', name: 'Stories', desc: 'Cinematic breakdowns', color: 'from-blue-500/20 to-blue-600/20 border-blue-500/30' },
+                    { icon: '🎵', name: 'Music Videos', desc: 'Lyric-to-visual', color: 'from-purple-500/20 to-purple-600/20 border-purple-500/30' },
+                    { icon: '💼', name: 'Commercials', desc: 'Campaign concepts', color: 'from-green-500/20 to-green-600/20 border-green-500/30' },
+                    { icon: '📚', name: "Children's Books", desc: 'Age-appropriate illustrations', color: 'from-orange-500/20 to-orange-600/20 border-orange-500/30' }
+                  ].map((format, index) => (
+                    <Card key={index} className={`bg-gradient-to-br ${format.color} border transform hover:scale-105 transition-all duration-300`}>
+                      <CardContent className="p-6 text-center">
+                        <div className="text-3xl mb-3">{format.icon}</div>
+                        <div className="text-white font-semibold text-lg mb-2">{format.name}</div>
+                        <div className="text-slate-400 text-sm">{format.desc}</div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Character Consistency Demo */}
+              <div className="relative">
+                <Card className="bg-gradient-to-br from-slate-800/80 to-slate-700/80 border-slate-600/50 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white text-xl text-center">Character Consistency System</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        <div className="text-green-400 text-sm font-medium">@main_character</div>
+                      </div>
+                      <div className="text-white text-sm pl-6">A young detective with piercing blue eyes and weathered coat</div>
+                      
+                      <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                        <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                        <div className="text-blue-400 text-sm font-medium">@warehouse_location</div>
+                      </div>
+                      <div className="text-white text-sm pl-6">Abandoned warehouse with dim lighting and concrete floors</div>
+                      
+                      <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                        <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                        <div className="text-amber-400 text-sm font-medium">@mysterious_briefcase</div>
+                      </div>
+                      <div className="text-white text-sm pl-6">Leather briefcase with strange markings and brass locks</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section - Clean & Professional */}
+      <section className="relative py-24 bg-slate-950/95">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
+            {/* Section Header */}
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                Professional Creative Power
+              </h2>
+              <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                Get unlimited access to 6 FREE models plus 2,500 points monthly for premium features. 
+                Need more? Boost packs give you instant credits when inspiration strikes.
+              </p>
+            </div>
+
+            {/* Main Subscription Card - Centered */}
+            <div className="max-w-lg mx-auto mb-16">
+              <Card className="bg-gradient-to-br from-slate-800/80 to-slate-700/80 border-slate-600/50 shadow-2xl ring-2 ring-amber-400/20">
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-3xl text-white mb-2">Creator Pro</CardTitle>
+                  <div className="text-5xl font-bold text-white">
+                    $20<span className="text-xl text-slate-400 font-normal">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                      <Crown className="w-5 h-5 text-amber-400" />
+                      <span className="text-white">Unlimited FREE models (6 models)</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                      <Zap className="w-5 h-5 text-blue-400" />
+                      <span className="text-white">2,500 points for premium features</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                      <Sparkles className="w-5 h-5 text-orange-400" />
+                      <span className="text-white">All creative formats included</span>
+                    </div>
+                  </div>
+                  
+                  <Button className="w-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 py-4 text-lg rounded-xl">
+                    Start Free Trial
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Boost Packs Section - Clean Layout */}
+            <div className="text-center mb-12">
+              <h3 className="text-3xl font-bold text-white mb-4">Need More Points?</h3>
+              <p className="text-lg text-slate-400">Get instant boosts when you're in creative flow</p>
+            </div>
+
+            {/* Boost Packs Grid */}
+            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               {[
-                { icon: '📖', name: 'Stories', desc: 'Cinematic breakdowns' },
-                { icon: '🎵', name: 'Music Videos', desc: 'Lyric-to-visual' },
-                { icon: '💼', name: 'Commercials', desc: 'Campaign concepts' },
-                { icon: '📚', name: "Children's Books", desc: 'Age-appropriate illustrations' }
-              ].map((format, index) => (
-                <Card key={index} className="bg-slate-900/50 border-slate-600">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl mb-2">{format.icon}</div>
-                    <div className="text-white font-medium">{format.name}</div>
-                    <div className="text-slate-400 text-xs">{format.desc}</div>
+                { 
+                  name: 'Quick Boost', 
+                  points: 500, 
+                  price: 4, 
+                  icon: Zap, 
+                  gradient: 'from-blue-600 to-blue-700',
+                  ring: 'ring-blue-500/30',
+                  description: 'Perfect for finishing projects'
+                },
+                { 
+                  name: 'Power Boost', 
+                  points: 1500, 
+                  price: 10, 
+                  icon: Rocket, 
+                  gradient: 'from-amber-600 to-orange-600',
+                  ring: 'ring-amber-500/50',
+                  popular: true,
+                  description: 'Most popular choice'
+                },
+                { 
+                  name: 'Mega Boost', 
+                  points: 5000, 
+                  price: 30, 
+                  icon: Sparkles, 
+                  gradient: 'from-slate-600 to-slate-700',
+                  ring: 'ring-slate-500/30',
+                  description: 'For heavy creative work'
+                }
+              ].map((pack, index) => (
+                <Card key={index} className={`bg-slate-800/50 border-slate-600/50 hover:border-slate-500/70 transition-all duration-300 transform hover:scale-105 ${pack.popular ? `${pack.ring} ring-2` : ''}`}>
+                  {pack.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-amber-500 text-white px-4 py-1 text-sm">
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  <CardHeader className="text-center pb-4">
+                    <div className={`inline-flex p-4 rounded-xl bg-gradient-to-r ${pack.gradient} mb-4 shadow-lg`}>
+                      <pack.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <CardTitle className="text-2xl text-white">{pack.name}</CardTitle>
+                    <p className="text-slate-400 text-sm">{pack.description}</p>
+                  </CardHeader>
+                  
+                  <CardContent className="text-center space-y-4">
+                    <div className="space-y-1">
+                      <div className="text-3xl font-bold text-white">+{pack.points.toLocaleString()}</div>
+                      <div className="text-slate-400 text-sm">points</div>
+                    </div>
+                    
+                    <div className="text-4xl font-bold text-white">${pack.price}</div>
+                    
+                    <Button className={`w-full bg-gradient-to-r ${pack.gradient} hover:opacity-90 py-3 text-lg rounded-xl shadow-lg`}>
+                      Get Boost
+                    </Button>
+                    
+                    <div className="text-xs text-slate-500">
+                      Instant delivery • Credits never expire
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </div>
-
-          <div className="relative">
-            <Card className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-blue-500/30">
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  <div className="text-green-400 text-sm font-medium">@main_character</div>
-                  <div className="text-white">A young detective with piercing blue eyes...</div>
-                  <div className="text-purple-400 text-sm font-medium">@warehouse_location</div>
-                  <div className="text-white">Abandoned warehouse, dim lighting...</div>
-                  <div className="text-orange-400 text-sm font-medium">@mysterious_briefcase</div>
-                  <div className="text-white">Leather briefcase with strange markings...</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
-      </ScrollSection>
-
-      {/* Pricing Section */}
-      <ScrollSection background="bg-slate-900/95">
-        <div className="text-center space-y-12">
-          <div className="space-y-4">
-            <h2 className="text-4xl font-bold text-white">
-              Professional Creative Power
-            </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Get unlimited access to 6 FREE models plus 2,500 points monthly for premium features. 
-              Need more? Boost packs give you instant credits when inspiration strikes.
-            </p>
-          </div>
-
-          {/* Main Subscription */}
-          <Card className="max-w-md mx-auto bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-blue-500/30 ring-2 ring-blue-500/50">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-white">Creator Pro</CardTitle>
-              <div className="text-4xl font-bold text-white">$20<span className="text-lg text-slate-400">/month</span></div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-amber-400" />
-                  <span className="text-white">Unlimited FREE models (6 models)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-400" />
-                  <span className="text-white">2,500 points for premium features</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                  <span className="text-white">All creative formats included</span>
-                </div>
-              </div>
-              
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
-                Start Free Trial
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Boost Packs Section */}
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-white mb-2">Need More Points?</h3>
-              <p className="text-slate-400">Get instant boosts when you're in creative flow</p>
-            </div>
-
-            {isAuthenticated ? (
-              <BoostPacks 
-                currentCredits={userCredits}
-                onPurchase={handleBoostPurchase}
-              />
-            ) : (
-              <div className="grid md:grid-cols-3 gap-4">
-                {[
-                  { name: 'Quick Boost', points: 500, price: 4, icon: Zap, color: 'blue' },
-                  { name: 'Power Boost', points: 1500, price: 10, icon: Rocket, color: 'purple', popular: true },
-                  { name: 'Mega Boost', points: 5000, price: 30, icon: Sparkles, color: 'orange' }
-                ].map((pack, index) => (
-                  <Card key={index} className={`bg-slate-800 border-slate-700 ${pack.popular ? 'ring-2 ring-purple-500/50' : ''}`}>
-                    <CardHeader className="text-center">
-                      <div className={`inline-flex p-3 rounded-lg bg-gradient-to-r from-${pack.color}-500 to-${pack.color}-600 mb-2`}>
-                        <pack.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <CardTitle className="text-white">{pack.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center space-y-3">
-                      <div className="text-2xl font-bold text-white">+{pack.points.toLocaleString()}</div>
-                      <div className="text-slate-400 text-sm">points</div>
-                      <div className="text-2xl font-bold text-white">${pack.price}</div>
-                      <Button className={`w-full bg-gradient-to-r from-${pack.color}-500 to-${pack.color}-600`}>
-                        Get Boost
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </ScrollSection>
+      </section>
 
       {/* Competitive Advantage */}
       <ScrollSection background="bg-slate-800/95">
@@ -622,44 +697,69 @@ export default function LandingPage() {
         </div>
       </ScrollSection>
 
-      {/* Call to Action */}
-      <ScrollSection background="bg-gradient-to-r from-blue-900/50 to-purple-900/50">
-        <div className="text-center space-y-8">
-          <h2 className="text-4xl font-bold text-white">
-            Ready to Transform Your Creative Process?
-          </h2>
-          <p className="text-xl text-slate-300">
-            Join thousands of creators using Director's Palette to bring their stories to life
-          </p>
-          
-          <div className="space-y-4">
-            {isAuthenticated ? (
-              <div className="space-y-3">
-                <div className="text-green-400">
-                  ✅ You're already signed in! 
-                </div>
-                <Link href="/create">
-                  <Button size="lg" className="bg-gradient-to-r from-green-600 to-blue-600 hover:opacity-90">
-                    <Play className="w-5 h-5 mr-2" />
-                    Start Creating Now
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <LoginModal onLoginSuccess={() => router.push('/create')}>
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Start Free - No Credit Card Required
-                </Button>
-              </LoginModal>
-            )}
-          </div>
+      {/* Animated Social Proof */}
+      <AnimatedSocialProof />
 
-          <div className="text-slate-400 text-sm">
-            Start with unlimited FREE models • Upgrade anytime • Cancel anytime
+      {/* Final Call to Action */}
+      <section className="relative py-32 bg-gradient-to-b from-slate-950/95 to-slate-900/95">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center space-y-12">
+            <div className="space-y-6">
+              <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+                Ready to Transform Your{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                  Creative Process?
+                </span>
+              </h2>
+              <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+                Join thousands of creators using Director's Palette to bring their stories to life 
+                with professional-quality results at a fraction of the cost.
+              </p>
+            </div>
+            
+            <div className="space-y-8">
+              {isAuthenticated ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-center gap-3 text-xl">
+                    <Crown className="w-7 h-7 text-amber-400" />
+                    <span className="text-white">Welcome back, {user?.name || user?.email}!</span>
+                  </div>
+                  <Link href="/create">
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 text-white px-12 py-6 text-xl rounded-xl shadow-2xl transform hover:scale-105 transition-all"
+                    >
+                      <Play className="w-6 h-6 mr-3" />
+                      Start Creating Now
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <LoginModal onLoginSuccess={() => router.push('/create')}>
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 text-white px-16 py-8 text-2xl rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      <Sparkles className="w-7 h-7 mr-4" />
+                      Start Creating Free
+                    </Button>
+                  </LoginModal>
+                  
+                  <div className="space-y-2">
+                    <p className="text-slate-400">
+                      No credit card required • Start with unlimited FREE models
+                    </p>
+                    <p className="text-slate-500 text-sm">
+                      Upgrade anytime • Cancel anytime • 30-day money-back guarantee
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </ScrollSection>
+      </section>
 
       {/* Floating Action Button for Authenticated Users */}
       {isAuthenticated && (
