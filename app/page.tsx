@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Text, Float, MeshDistortMaterial, OrbitControls, Stars, Sphere, Box, useScroll } from '@react-three/drei'
-import * as THREE from 'three'
+// Temporarily removing Three.js imports to fix React compatibility issue
+// import { Canvas, useFrame, useThree } from '@react-three/fiber'
+// import { Text, Float, MeshDistortMaterial, OrbitControls, Stars, Sphere, Box, useScroll } from '@react-three/drei'
+// import * as THREE from 'three'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,211 +13,13 @@ import { BoostPacks } from '@/components/billing/BoostPacks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { LoginModal } from '@/components/auth/LoginModal'
 import { AnimatedSocialProof } from '@/components/landing/AnimatedSocialProof'
+// import { Enhanced3DModels } from '@/components/landing/Enhanced3DModels'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-// Dynamic creative visualization scene
-function CreativeVisualization() {
-  const storyElementsRef = useRef<any>()
-  const characterOrbitRef = useRef<any>()
-  const formatShapesRef = useRef<any>()
-  const [scrollOffset, setScrollOffset] = useState(0)
-  const [isHeroHovered, setIsHeroHovered] = useState(false)
-
-  useFrame((state) => {
-    const time = state.clock.elapsedTime
-
-    // Story elements flowing and transforming
-    if (storyElementsRef.current) {
-      storyElementsRef.current.rotation.y = time * 0.1
-      storyElementsRef.current.position.y = Math.sin(time * 0.5) * 0.5
-    }
-
-    // Character consistency orbiting system
-    if (characterOrbitRef.current) {
-      characterOrbitRef.current.rotation.z = time * 0.15
-      characterOrbitRef.current.children.forEach((child: any, i: number) => {
-        child.position.x = Math.cos(time * 0.3 + i * Math.PI * 2 / 3) * 3
-        child.position.y = Math.sin(time * 0.3 + i * Math.PI * 2 / 3) * 1.5
-        child.rotation.y = time * 0.5
-      })
-    }
-
-    // Format shapes morphing
-    if (formatShapesRef.current) {
-      formatShapesRef.current.children.forEach((child: any, i: number) => {
-        child.rotation.x = time * 0.2 + i * 0.5
-        child.rotation.y = time * 0.15 + i * 0.3
-        child.scale.setScalar(1 + Math.sin(time * 0.4 + i) * 0.2)
-      })
-    }
-  })
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollOffset(window.scrollY / window.innerHeight)
-    }
-    
-    const handleHeroHover = (e: any) => {
-      setIsHeroHovered(e.detail.active)
-    }
-    
-    window.addEventListener('scroll', handleScroll)
-    window.addEventListener('hero-button-hover', handleHeroHover)
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('hero-button-hover', handleHeroHover)
-    }
-  }, [])
-
-  return (
-    <>
-      <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade />
-      
-      {/* Dynamic lighting that responds to scroll and interaction */}
-      <ambientLight intensity={0.4 + scrollOffset * 0.2 + (isHeroHovered ? 0.3 : 0)} />
-      <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={0.8 + (isHeroHovered ? 0.5 : 0)} 
-        color={new THREE.Color(isHeroHovered ? "#f59e0b" : "#64748b")}
-      />
-      <pointLight 
-        position={[-5, 5, 5]} 
-        intensity={0.6 + (isHeroHovered ? 0.4 : 0)} 
-        color={new THREE.Color("#3b82f6")}
-      />
-      <spotLight
-        position={[0, 15, 0]}
-        angle={0.3}
-        intensity={1 + (isHeroHovered ? 1 : 0)}
-        color={new THREE.Color(isHeroHovered ? "#f59e0b" : "#10b981")}
-        castShadow
-      />
-
-      {/* Story elements flowing through space */}
-      <group ref={storyElementsRef} position={[0, 0, -5]}>
-        {/* Text fragments representing stories */}
-        <Float speed={2} rotationIntensity={0.5}>
-          <Text
-            position={[-4, 2, 0]}
-            fontSize={0.5}
-            color="#f1f5f9"
-            fontWeight="bold"
-          >
-            @character
-          </Text>
-        </Float>
-        <Float speed={1.5} rotationIntensity={0.3}>
-          <Text
-            position={[4, -1, 0]}
-            fontSize={0.4}
-            color="#f59e0b"
-            fontWeight="bold"
-          >
-            @location
-          </Text>
-        </Float>
-        <Float speed={1.8} rotationIntensity={0.4}>
-          <Text
-            position={[0, 3, -2]}
-            fontSize={0.3}
-            color="#3b82f6"
-            fontWeight="bold"
-          >
-            @prop
-          </Text>
-        </Float>
-      </group>
-
-      {/* Character consistency visualization */}
-      <group ref={characterOrbitRef} position={[6, -2, -3]}>
-        {[0, 1, 2].map((i) => (
-          <Float key={i} speed={1 + i * 0.2} rotationIntensity={0.8}>
-            <Sphere args={[0.3, 16, 16]} position={[0, 0, 0]}>
-              <meshStandardMaterial
-                color={i === 0 ? "#10b981" : i === 1 ? "#3b82f6" : "#f59e0b"}
-                emissive={i === 0 ? "#10b981" : i === 1 ? "#3b82f6" : "#f59e0b"}
-                emissiveIntensity={0.1}
-                transparent
-                opacity={0.8}
-              />
-            </Sphere>
-          </Float>
-        ))}
-      </group>
-
-      {/* Creative format shapes */}
-      <group ref={formatShapesRef} position={[-6, 1, -4]}>
-        {/* Story format - Book shape */}
-        <Float speed={1.2} rotationIntensity={0.3}>
-          <Box args={[1, 1.4, 0.1]} position={[0, 1, 0]}>
-            <meshStandardMaterial color="#64748b" transparent opacity={0.7} />
-          </Box>
-        </Float>
-        
-        {/* Music format - Note shape */}
-        <Float speed={1.5} rotationIntensity={0.4}>
-          <Sphere args={[0.4, 16, 16]} position={[0, -1, 0]}>
-            <meshStandardMaterial color="#8b5cf6" transparent opacity={0.7} />
-          </Sphere>
-        </Float>
-        
-        {/* Commercial format - Cube */}
-        <Float speed={1.3} rotationIntensity={0.5}>
-          <Box args={[0.6, 0.6, 0.6]} position={[1.5, 0, 0]}>
-            <meshStandardMaterial color="#10b981" transparent opacity={0.7} />
-          </Box>
-        </Float>
-        
-        {/* Children's book format - Heart shape */}
-        <Float speed={1.4} rotationIntensity={0.3}>
-          <Sphere args={[0.3, 8, 8]} position={[-1.5, 0, 0]}>
-            <meshStandardMaterial color="#f59e0b" transparent opacity={0.7} />
-          </Sphere>
-        </Float>
-      </group>
-
-      {/* Particle system representing AI models */}
-      <group>
-        {[...Array(100)].map((_, i) => (
-          <Float key={i} speed={0.5 + Math.random()} rotationIntensity={0.2}>
-            <mesh position={[
-              (Math.random() - 0.5) * 40,
-              (Math.random() - 0.5) * 40,
-              (Math.random() - 0.5) * 20
-            ]}>
-              <sphereGeometry args={[0.02 + Math.random() * 0.03, 8, 8]} />
-              <meshStandardMaterial
-                color={
-                  i % 6 === 0 ? "#10b981" : // FREE models - green
-                  i % 6 === 1 ? "#3b82f6" : // Premium - blue  
-                  i % 6 === 2 ? "#f59e0b" : // Creative - amber
-                  i % 6 === 3 ? "#64748b" : // Standard - slate
-                  i % 6 === 4 ? "#8b5cf6" : // Advanced - purple
-                  "#f1f5f9"                 // Pro - white
-                }
-                transparent
-                opacity={0.6 + Math.random() * 0.4}
-              />
-            </mesh>
-          </Float>
-        ))}
-      </group>
-
-      {/* Background depth layers */}
-      <mesh position={[0, 0, -15]} rotation={[0, 0, 0]}>
-        <planeGeometry args={[50, 50, 64, 64]} />
-        <MeshDistortMaterial
-          color="#1e293b"
-          distort={0.05}
-          speed={1}
-          transparent
-          opacity={0.3}
-        />
-      </mesh>
-    </>
-  )
+// Placeholder for 3D visualization - temporarily disabled to fix React compatibility
+function PlaceholderVisualization() {
+  return null
 }
 
 // Professional navigation header for landing page
@@ -302,92 +105,89 @@ export default function LandingPage() {
       {/* Professional Navigation */}
       <LandingHeader />
       
-      {/* Enhanced Three.js Background */}
-      <div className="fixed inset-0 -z-10">
-        <Canvas 
-          camera={{ position: [0, 0, 12], fov: 45 }}
-          style={{ background: 'transparent' }}
-          dpr={[1, 2]}
-          performance={{ min: 0.5 }}
-        >
-          <CreativeVisualization />
-          <OrbitControls 
-            enableZoom={false} 
-            enablePan={false} 
-            autoRotate 
-            autoRotateSpeed={0.2}
-            enableDamping
-            dampingFactor={0.05}
-          />
-        </Canvas>
+      {/* Enhanced Three.js Background - Temporarily disabled for testing */}
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Fallback gradient background while 3D is being fixed */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-900/40 to-slate-950/60"></div>
+        <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,_var(--tw-gradient-stops))] from-amber-900/10 via-transparent to-blue-900/10 animate-spin" style={{animationDuration: '60s'}}></div>
       </div>
 
-      {/* Hero Section */}
+      {/* Hero Section - Enhanced Mobile/Desktop Layout */}
       <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900/50 via-slate-900/80 to-slate-900/95">
-        <div className="container mx-auto px-6 py-24 text-center">
-          <div className="max-w-4xl mx-auto space-y-12">
+        {/* Main Hero Background Image */}
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src="/images/heroes/main-hero-workspace.jpg" 
+            alt="Creative AI Workspace" 
+            className="w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/60 to-slate-900/90"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 text-center relative z-10">
+          <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12">
             {/* Hero Content */}
             <div className="space-y-8">
-              <div className="flex items-center justify-center gap-6 mb-8">
+              <div className="flex items-center justify-center gap-6 mb-6 sm:mb-8">
                 <img 
                   src="/mkl-logo.png" 
                   alt="Machine King Labs" 
-                  className="w-20 h-20 md:w-28 md:h-28 rounded-2xl shadow-2xl ring-2 ring-amber-400/20"
+                  className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-xl sm:rounded-2xl shadow-2xl ring-2 ring-amber-400/20"
                 />
               </div>
               
               <div className="space-y-6">
-                <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white leading-tight">
                   Director's{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600">
                     Palette
                   </span>
                 </h1>
-                <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto leading-relaxed">
                   Transform stories into professional visual content across{' '}
                   <span className="text-amber-400 font-semibold">multiple formats</span> with{' '}
                   <span className="text-blue-400 font-semibold">AI-powered character consistency</span>
                 </p>
               </div>
 
-              {/* Value Props */}
-              <div className="flex flex-wrap justify-center gap-4">
-                <Badge className="bg-green-900/30 text-green-400 border-green-400/30 px-6 py-3 text-base">
+              {/* Value Props - Responsive */}
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
+                <Badge className="bg-green-900/30 text-green-400 border-green-400/30 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base">
                   6 FREE AI Models
                 </Badge>
-                <Badge className="bg-blue-900/30 text-blue-400 border-blue-400/30 px-6 py-3 text-base">
+                <Badge className="bg-blue-900/30 text-blue-400 border-blue-400/30 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base">
                   Character Consistency
                 </Badge>
-                <Badge className="bg-amber-900/30 text-amber-400 border-amber-400/30 px-6 py-3 text-base">
+                <Badge className="bg-amber-900/30 text-amber-400 border-amber-400/30 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base">
                   4 Creative Formats
                 </Badge>
               </div>
             </div>
 
-            {/* CTA Section */}
-            <div className="space-y-6">
+            {/* CTA Section - Enhanced Mobile */}
+            <div className="space-y-4 sm:space-y-6">
               {isAuthenticated ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center gap-3 text-lg">
-                    <Crown className="w-6 h-6 text-amber-400" />
+                  <div className="flex items-center justify-center gap-3 text-base sm:text-lg">
+                    <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
                     <span className="text-white">Welcome back, {user?.name || user?.email}!</span>
                   </div>
                   <Link href="/create">
                     <Button 
                       size="lg" 
-                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white px-8 py-4 text-lg rounded-xl shadow-xl"
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-xl shadow-xl w-full sm:w-auto"
                     >
-                      <Play className="w-6 h-6 mr-3" />
+                      <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
                       Continue Creating
                     </Button>
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <LoginModal onLoginSuccess={() => router.push('/create')}>
                     <Button 
                       size="lg" 
-                      className="group bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 text-white px-12 py-6 text-xl rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-amber-500/25"
+                      className="group bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 text-white px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-amber-500/25 w-full sm:w-auto"
                       onMouseEnter={() => {
                         // Trigger Three.js animation enhancement on hover
                         window.dispatchEvent(new CustomEvent('hero-button-hover', { detail: { active: true } }))
@@ -396,31 +196,31 @@ export default function LandingPage() {
                         window.dispatchEvent(new CustomEvent('hero-button-hover', { detail: { active: false } }))
                       }}
                     >
-                      <Sparkles className="w-6 h-6 mr-3 group-hover:animate-pulse" />
+                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 group-hover:animate-pulse" />
                       Start Creating Free
                     </Button>
                   </LoginModal>
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-slate-400 text-xs sm:text-sm">
                     No credit card required • Start with unlimited FREE models
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Quick Social Proof */}
-            <div className="pt-12 border-t border-slate-800/50">
-              <p className="text-slate-500 text-sm mb-6">Join thousands of creators worldwide</p>
-              <div className="flex items-center justify-center gap-12 opacity-70">
+            {/* Quick Social Proof - Mobile Optimized */}
+            <div className="pt-8 sm:pt-12 border-t border-slate-800/50">
+              <p className="text-slate-500 text-xs sm:text-sm mb-4 sm:mb-6">Join thousands of creators worldwide</p>
+              <div className="flex items-center justify-center gap-6 sm:gap-8 lg:gap-12 opacity-70">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">1000+</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">1000+</div>
                   <div className="text-slate-400 text-xs">Creators</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">500+</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">500+</div>
                   <div className="text-slate-400 text-xs">Agencies</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">200+</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">200+</div>
                   <div className="text-slate-400 text-xs">Studios</div>
                 </div>
               </div>
@@ -429,68 +229,112 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Showcase - Better Aligned */}
-      <section className="relative py-24 bg-slate-900/95">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            {/* Section Header - Centered */}
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+      {/* Features Showcase - Hero Image Background */}
+      <section className="relative py-16 sm:py-20 lg:py-24 bg-slate-900/95">
+        {/* Hero Image Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src="/images/heroes/one-story-every-medium-hero.jpg" 
+            alt="One Story Every Medium" 
+            className="w-full h-full object-cover opacity-30"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-900/95"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-7xl mx-auto">
+            {/* Hero Section Header with Text Overlay */}
+            <div className="text-center mb-12 sm:mb-16 lg:mb-20 py-12 lg:py-16">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-bold text-white mb-4 sm:mb-6 drop-shadow-2xl">
                 One Story, Every Medium
               </h2>
-              <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl lg:text-2xl text-slate-200 max-w-5xl mx-auto leading-relaxed drop-shadow-lg">
                 Transform your stories into professional shot lists for films, music videos, 
                 commercials, and children's books - all with consistent characters.
               </p>
             </div>
 
-            {/* Features Grid - Properly Aligned */}
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              {/* Left: Format Cards */}
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+            {/* Features Grid - Balanced Desktop Layout */}
+            <div className="grid lg:grid-cols-5 xl:grid-cols-3 gap-8 lg:gap-10 xl:gap-12 items-start">
+              {/* Left: Format Cards - Enhanced for Desktop */}
+              <div className="lg:col-span-3 xl:col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                   {[
                     { icon: '📖', name: 'Stories', desc: 'Cinematic breakdowns', color: 'from-blue-500/20 to-blue-600/20 border-blue-500/30' },
                     { icon: '🎵', name: 'Music Videos', desc: 'Lyric-to-visual', color: 'from-purple-500/20 to-purple-600/20 border-purple-500/30' },
                     { icon: '💼', name: 'Commercials', desc: 'Campaign concepts', color: 'from-green-500/20 to-green-600/20 border-green-500/30' },
                     { icon: '📚', name: "Children's Books", desc: 'Age-appropriate illustrations', color: 'from-orange-500/20 to-orange-600/20 border-orange-500/30' }
                   ].map((format, index) => (
-                    <Card key={index} className={`bg-gradient-to-br ${format.color} border transform hover:scale-105 transition-all duration-300`}>
-                      <CardContent className="p-6 text-center">
-                        <div className="text-3xl mb-3">{format.icon}</div>
-                        <div className="text-white font-semibold text-lg mb-2">{format.name}</div>
-                        <div className="text-slate-400 text-sm">{format.desc}</div>
+                    <Card key={index} className={`bg-gradient-to-br ${format.color} border transform hover:scale-105 transition-all duration-300 h-full`}>
+                      <CardContent className="p-6 sm:p-8 lg:p-10 text-center flex flex-col justify-center h-full min-h-[200px] lg:min-h-[240px]">
+                        <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 lg:mb-6">{format.icon}</div>
+                        <div className="text-white font-semibold text-lg sm:text-xl lg:text-2xl mb-3 lg:mb-4">{format.name}</div>
+                        <div className="text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed">{format.desc}</div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               </div>
 
-              {/* Right: Character Consistency Demo */}
-              <div className="relative">
-                <Card className="bg-gradient-to-br from-slate-800/80 to-slate-700/80 border-slate-600/50 shadow-2xl">
-                  <CardHeader>
-                    <CardTitle className="text-white text-xl text-center">Character Consistency System</CardTitle>
+              {/* Right: Character Consistency Demo - Desktop Balanced */}
+              <div className="lg:col-span-2 xl:col-span-1 mt-8 lg:mt-0">
+                <Card className="relative bg-gradient-to-br from-slate-800/80 to-slate-700/80 border-slate-600/50 shadow-2xl h-full overflow-hidden">
+                  {/* Character Consistency Hero Background */}
+                  <div className="absolute inset-0">
+                    <img 
+                      src="/images/heroes/character-consistency-hero.jpg" 
+                      alt="Character Consistency" 
+                      className="w-full h-full object-cover opacity-15"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-slate-800/90 via-slate-800/70 to-slate-800/95"></div>
+                  </div>
+                  
+                  <CardHeader className="relative z-10 pb-4 lg:pb-6">
+                    <CardTitle className="text-white text-xl sm:text-2xl lg:text-3xl text-center drop-shadow-lg">Character Consistency System</CardTitle>
+                    <p className="text-slate-300 text-sm sm:text-base lg:text-lg text-center mt-2 lg:mt-4 drop-shadow-md">
+                      Maintain visual consistency across all your creative projects
+                    </p>
                   </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                        <div className="text-green-400 text-sm font-medium">@main_character</div>
+                  <CardContent className="relative z-10 p-6 sm:p-8 lg:p-10">
+                    <div className="space-y-6 lg:space-y-8">
+                      <div className="bg-slate-800/50 rounded-xl p-4 lg:p-6 space-y-3">
+                        <div className="flex items-center gap-4">
+                          <div className="w-4 h-4 lg:w-5 lg:h-5 rounded-full bg-green-400"></div>
+                          <div className="text-green-400 text-base lg:text-lg font-medium">@main_character</div>
+                        </div>
+                        <div className="text-white text-sm lg:text-base pl-8 lg:pl-9 leading-relaxed">
+                          A young detective with piercing blue eyes and weathered coat
+                        </div>
                       </div>
-                      <div className="text-white text-sm pl-6">A young detective with piercing blue eyes and weathered coat</div>
                       
-                      <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                        <div className="w-3 h-3 rounded-full bg-blue-400"></div>
-                        <div className="text-blue-400 text-sm font-medium">@warehouse_location</div>
+                      <div className="bg-slate-800/50 rounded-xl p-4 lg:p-6 space-y-3">
+                        <div className="flex items-center gap-4">
+                          <div className="w-4 h-4 lg:w-5 lg:h-5 rounded-full bg-blue-400"></div>
+                          <div className="text-blue-400 text-base lg:text-lg font-medium">@warehouse_location</div>
+                        </div>
+                        <div className="text-white text-sm lg:text-base pl-8 lg:pl-9 leading-relaxed">
+                          Abandoned warehouse with dim lighting and concrete floors
+                        </div>
                       </div>
-                      <div className="text-white text-sm pl-6">Abandoned warehouse with dim lighting and concrete floors</div>
                       
-                      <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                        <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                        <div className="text-amber-400 text-sm font-medium">@mysterious_briefcase</div>
+                      <div className="bg-slate-800/50 rounded-xl p-4 lg:p-6 space-y-3">
+                        <div className="flex items-center gap-4">
+                          <div className="w-4 h-4 lg:w-5 lg:h-5 rounded-full bg-amber-400"></div>
+                          <div className="text-amber-400 text-base lg:text-lg font-medium">@mysterious_briefcase</div>
+                        </div>
+                        <div className="text-white text-sm lg:text-base pl-8 lg:pl-9 leading-relaxed">
+                          Leather briefcase with strange markings and brass locks
+                        </div>
                       </div>
-                      <div className="text-white text-sm pl-6">Leather briefcase with strange markings and brass locks</div>
+                      
+                      <div className="mt-8 lg:mt-10 p-4 lg:p-6 bg-gradient-to-r from-amber-900/20 to-orange-900/20 border border-amber-500/30 rounded-xl">
+                        <div className="text-amber-400 font-semibold text-sm lg:text-base mb-2">
+                          ✨ Consistency Across All Formats
+                        </div>
+                        <div className="text-slate-300 text-xs lg:text-sm leading-relaxed">
+                          Use the same character, location, and prop definitions across stories, music videos, commercials, and children's books.
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -500,47 +344,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section - Clean & Professional */}
-      <section className="relative py-24 bg-slate-950/95">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            {/* Section Header */}
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+      {/* Pricing Section - Hero Image Background */}
+      <section className="relative py-16 sm:py-20 lg:py-24 bg-slate-950/95">
+        {/* Hero Image Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src="/images/heroes/professional-creative-power-hero.jpg" 
+            alt="Professional Creative Power" 
+            className="w-full h-full object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/70 to-slate-950/95"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-6xl mx-auto">
+            {/* Hero Section Header with Text Overlay */}
+            <div className="text-center mb-12 sm:mb-16 py-8 lg:py-12">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 sm:mb-6 drop-shadow-2xl">
                 Professional Creative Power
               </h2>
-              <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl lg:text-2xl text-slate-200 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
                 Get unlimited access to 6 FREE models plus 2,500 points monthly for premium features. 
                 Need more? Boost packs give you instant credits when inspiration strikes.
               </p>
             </div>
 
-            {/* Main Subscription Card - Centered */}
-            <div className="max-w-lg mx-auto mb-16">
+            {/* Main Subscription Card - Mobile Responsive */}
+            <div className="max-w-md sm:max-w-lg mx-auto mb-12 sm:mb-16">
               <Card className="bg-gradient-to-br from-slate-800/80 to-slate-700/80 border-slate-600/50 shadow-2xl ring-2 ring-amber-400/20">
                 <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-3xl text-white mb-2">Creator Pro</CardTitle>
-                  <div className="text-5xl font-bold text-white">
-                    $20<span className="text-xl text-slate-400 font-normal">/month</span>
+                  <CardTitle className="text-2xl sm:text-3xl text-white mb-2">Creator Pro</CardTitle>
+                  <div className="text-4xl sm:text-5xl font-bold text-white">
+                    $20<span className="text-lg sm:text-xl text-slate-400 font-normal">/month</span>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
+                <CardContent className="space-y-4 sm:space-y-6">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                      <Crown className="w-5 h-5 text-amber-400" />
-                      <span className="text-white">Unlimited FREE models (6 models)</span>
+                      <Crown className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                      <span className="text-white text-sm sm:text-base">Unlimited FREE models (6 models)</span>
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                      <Zap className="w-5 h-5 text-blue-400" />
-                      <span className="text-white">2,500 points for premium features</span>
+                      <Zap className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                      <span className="text-white text-sm sm:text-base">2,500 points for premium features</span>
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                      <Sparkles className="w-5 h-5 text-orange-400" />
-                      <span className="text-white">All creative formats included</span>
+                      <Sparkles className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                      <span className="text-white text-sm sm:text-base">All creative formats included</span>
                     </div>
                   </div>
                   
-                  <Button className="w-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 py-4 text-lg rounded-xl">
+                  <Button className="w-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-amber-600 hover:to-orange-600 py-3 sm:py-4 text-base sm:text-lg rounded-xl">
                     Start Free Trial
                   </Button>
                 </CardContent>

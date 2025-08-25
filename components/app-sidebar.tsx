@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { Home, FolderOpen, Users, Palette, Film, Music, Dna, Mic2, Video, Clapperboard, Briefcase, Settings } from "lucide-react"
+import { Home, FolderOpen, Users, Palette, Film, Music, Dna, Mic2, Video, Clapperboard, Briefcase, Settings, BookOpen } from "lucide-react"
 import { useAppStore } from "@/stores/app-store"
 import {
   Sidebar,
@@ -23,7 +23,7 @@ export function AppSidebar() {
   const router = useRouter()
   const { mode = "story", setMode } = useAppStore()
 
-  function handleModeChange(newMode: "story" | "music-video" | "commercial") {
+  function handleModeChange(newMode: "story" | "music-video" | "commercial" | "children-book") {
     if (setMode) {
       setMode(newMode)
     }
@@ -40,6 +40,7 @@ export function AppSidebar() {
     { title: "Story Mode", mode: "story" as const, icon: Film, action: "mode" as const },
     { title: "Music Video Mode", mode: "music-video" as const, icon: Music, action: "mode" as const },
     { title: "Commercial Mode", mode: "commercial" as const, icon: Briefcase, action: "mode" as const },
+    { title: "Children's Book Mode", mode: "children-book" as const, icon: BookOpen, action: "mode" as const },
     { title: "Post Production", url: "/post-production", icon: Clapperboard, action: "link" as const },
     { title: "Directors Library", url: "/director-library", icon: Users, action: "link" as const },
   ]
