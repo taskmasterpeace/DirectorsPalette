@@ -34,10 +34,6 @@ export default function Home() {
         <div className="p-4">
           <div className="container mx-auto max-w-none w-[95%]">
             <div className="space-y-6">
-              {/* Mode Selection */}
-              <div className="flex justify-center">
-                <ModeSelector />
-              </div>
               
               {/* Main Content */}
               <AsyncBoundary isLoading={isLoading}>

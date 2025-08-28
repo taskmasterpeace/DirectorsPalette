@@ -8,6 +8,7 @@ import { Music, Wand2, Target, User } from 'lucide-react'
 import { DirectorSelector } from '@/components/shared/DirectorSelector'
 import { ArtistSelector } from '@/components/shared/ArtistSelector'
 import { GenreSelector } from './GenreSelector'
+import { AudioTranscriptionUpload } from './AudioTranscriptionUpload'
 import type { ArtistProfile } from '@/lib/artist-types'
 
 interface MusicVideoInputProps {
@@ -121,13 +122,30 @@ export function MusicVideoInput({
           </div>
         </div>
 
+        {/* Audio Upload for Lyrics Extraction */}
+        <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm font-medium text-white">
+              🎵 Extract Lyrics from Audio
+            </label>
+            <div className="text-xs text-amber-400">
+              AI-powered lyrics extraction
+            </div>
+          </div>
+          
+          <AudioTranscriptionUpload
+            onLyricsExtracted={(lyrics) => setLyrics(lyrics)}
+            className="mb-3"
+          />
+        </div>
+
         {/* Lyrics */}
         <div>
           <label className="text-sm font-medium text-white mb-1 block">
             Lyrics (with timestamps if available)
           </label>
           <Textarea
-            placeholder="[00:00] First line of lyrics&#10;[00:05] Second line..."
+            placeholder="[00:00] First line of lyrics&#10;[00:05] Second line...&#10;&#10;Or upload an audio file above to extract lyrics automatically"
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
             className="min-h-[150px] bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400"

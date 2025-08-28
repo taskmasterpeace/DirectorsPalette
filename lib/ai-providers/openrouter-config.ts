@@ -284,36 +284,36 @@ export interface FunctionModelConfig {
 export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   'story-breakdown': {
     function: 'story-breakdown',
-    defaultModel: 'deepseek/deepseek-chat-v3.1', // DeepSeek for reasoning
-    suggestedModels: ['moonshotai/kimi-vl-a3b-thinking', 'baidu/ernie-4.5-21b-a3b'],
+    defaultModel: 'openai/gpt-4o', // GPT-4o as system-wide default
+    suggestedModels: ['deepseek/deepseek-chat-v3.1', 'moonshotai/kimi-vl-a3b-thinking', 'baidu/ernie-4.5-21b-a3b'],
     freeAlternatives: ['moonshotai/kimi-k2:free', 'moonshotai/kimi-dev-72b:free'],
     description: 'Complex narrative analysis and chapter generation'
   },
   'music-analysis': {
     function: 'music-analysis',
-    defaultModel: 'ai21/jamba-mini-1.7', // Best value for creative tasks
-    suggestedModels: ['baidu/ernie-4.5-21b-a3b', 'mistralai/mistral-medium-3.1'],
+    defaultModel: 'openai/gpt-4o', // GPT-4o as system-wide default
+    suggestedModels: ['ai21/jamba-mini-1.7', 'baidu/ernie-4.5-21b-a3b', 'mistralai/mistral-medium-3.1'],
     freeAlternatives: ['google/gemma-2-9b-it:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Music video structure and lyric analysis'
   },
   'director-creation': {
     function: 'director-creation',
-    defaultModel: 'anthropic/claude-3.5-sonnet', // Keep premium for creative quality
-    suggestedModels: ['deepseek/deepseek-chat-v3.1', 'mistralai/mistral-medium-3.1'],
+    defaultModel: 'openai/gpt-4o', // GPT-4o as system-wide default
+    suggestedModels: ['anthropic/claude-3.5-sonnet', 'deepseek/deepseek-chat-v3.1', 'mistralai/mistral-medium-3.1'],
     freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Creative director style generation'
   },
   'entity-extraction': {
     function: 'entity-extraction',
-    defaultModel: 'qwen/qwen-turbo', // Ultra cheap for simple tasks
-    suggestedModels: ['moonshotai/kimi-vl-a3b-thinking', 'baidu/ernie-4.5-21b-a3b'],
+    defaultModel: 'openai/gpt-4o', // GPT-4o as system-wide default
+    suggestedModels: ['qwen/qwen-turbo', 'moonshotai/kimi-vl-a3b-thinking', 'baidu/ernie-4.5-21b-a3b'],
     freeAlternatives: ['google/gemma-2-9b-it:free', 'microsoft/phi-3-mini-128k-instruct:free'],
     description: 'Character, location, and prop extraction'
   },
   'commercial-generation': {
     function: 'commercial-generation',
-    defaultModel: 'mistralai/mistral-medium-3.1', // Good balance for marketing content
-    suggestedModels: ['deepseek/deepseek-chat-v3.1', 'ai21/jamba-mini-1.7'],
+    defaultModel: 'openai/gpt-4o', // GPT-4o as system-wide default
+    suggestedModels: ['mistralai/mistral-medium-3.1', 'deepseek/deepseek-chat-v3.1', 'ai21/jamba-mini-1.7'],
     freeAlternatives: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-7b-instruct:free'],
     description: 'Commercial concept and campaign generation'
   },
@@ -326,8 +326,8 @@ export const FUNCTION_MODEL_CONFIG: Record<string, FunctionModelConfig> = {
   },
   'reasoning-tasks': {
     function: 'reasoning-tasks',
-    defaultModel: 'deepseek/deepseek-chat-v3.1', // Best reasoning model
-    suggestedModels: ['qwen/qwen3-30b-a3b-instruct-2507', 'baidu/ernie-4.5-21b-a3b'],
+    defaultModel: 'openai/gpt-4o', // GPT-4o as system-wide default
+    suggestedModels: ['deepseek/deepseek-chat-v3.1', 'qwen/qwen3-30b-a3b-instruct-2507', 'baidu/ernie-4.5-21b-a3b'],
     freeAlternatives: ['moonshotai/kimi-k2:free', 'moonshotai/kimi-dev-72b:free'],
     description: 'Complex reasoning and problem-solving tasks'
   },
@@ -362,4 +362,40 @@ export function getModelForFunction(
                          'openai/gpt-4o'
   
   return OPENROUTER_MODELS[selectedModelId] || OPENROUTER_MODELS['openai/gpt-4o']
+}
+
+// Admin Configuration Management
+export function saveAdminModelConfig(config: AdminModelSelection): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('admin-model-config', JSON.stringify(config))
+    console.log('✅ Admin model configuration saved:', config)
+  }
+}
+
+export function loadAdminModelConfig(): AdminModelSelection {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('admin-model-config')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (error) {
+        console.error('❌ Failed to load admin config:', error)
+      }
+    }
+  }
+  return {}
+}
+
+// Get all function types for admin interface
+export function getAllFunctionTypes(): string[] {
+  return Object.keys(FUNCTION_MODEL_CONFIG)
+}
+
+// Get available models for a function type
+export function getModelsForFunction(functionName: string): ModelConfig[] {
+  const config = FUNCTION_MODEL_CONFIG[functionName]
+  if (!config) return []
+  
+  const allModelIds = [config.defaultModel, ...config.suggestedModels, ...config.freeAlternatives]
+  return allModelIds.map(id => OPENROUTER_MODELS[id]).filter(Boolean)
 }

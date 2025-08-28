@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Search, Plus, Briefcase } from "lucide-react"
+import { Search, Plus, Briefcase, Palette } from "lucide-react"
 import { DirectorCard } from "@/components/director-card"
 import { DirectorFilmForm } from "@/components/director-film-form"
 import { DirectorMusicForm } from "@/components/director-music-form"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
+import { StyleGuide } from "@/components/style-guide/StyleGuide"
 
 type Source = "curated" | "library"
 type FilmListItem = FilmDirector & { source: Source }
@@ -27,7 +28,7 @@ export default function DirectorLibraryPage() {
   // Data
   const [film, setFilm] = useState<FilmDirector[]>([])
   const [music, setMusic] = useState<MusicVideoDirector[]>([])
-  const [tab, setTab] = useState<"film" | "music" | "commercial">("film")
+  const [tab, setTab] = useState<"film" | "music" | "commercial" | "style-guide">("film")
 
   // Filters
   const [query, setQuery] = useState("")
@@ -239,6 +240,19 @@ export default function DirectorLibraryPage() {
                 {commercialList.length}
               </Badge>
             </Button>
+            <Button
+              variant={tab === "style-guide" ? "default" : "outline"}
+              onClick={() => setTab("style-guide")}
+              className={
+                tab === "style-guide"
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+              }
+              size="sm"
+            >
+              <Palette className="w-4 h-4 mr-2" />
+              Style Guide
+            </Button>
           </div>
 
           {/* Search + Category */}
@@ -279,7 +293,9 @@ export default function DirectorLibraryPage() {
         <Separator className="my-6 bg-slate-700" />
 
         {/* Results */}
-        {filtered.length === 0 ? (
+        {tab === "style-guide" ? (
+          <StyleGuide />
+        ) : filtered.length === 0 ? (
           <div className="rounded-lg border border-slate-700 bg-slate-900 p-8 text-center text-slate-300">
             No directors match your filters.
           </div>

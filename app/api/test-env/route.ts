@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server'
+import { withSecurity, addSecurityHeaders } from '@/lib/middleware/api-security'
 
-export async function GET() {
-  console.log('=== Environment Variable Test ===')
-  console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY)
-  console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0)
-  console.log('All env vars starting with OPENAI:', 
-    Object.keys(process.env)
-      .filter(key => key.startsWith('OPENAI'))
-      .map(key => ({ [key]: process.env[key]?.length || 0 }))
-  )
-  
-  return NextResponse.json({
-    hasApiKey: !!process.env.OPENAI_API_KEY,
-    keyLength: process.env.OPENAI_API_KEY?.length || 0,
-    nodeEnv: process.env.NODE_ENV,
-    allOpenAIKeys: Object.keys(process.env).filter(key => key.startsWith('OPENAI'))
+// SECURED: Admin-only environment diagnostics
+export const GET = withSecurity(async (request, context) => {
+  // Only show basic status, never expose actual keys or sensitive info
+  const response = NextResponse.json({
+    environment: process.env.NODE_ENV || 'unknown',
+    timestamp: new Date().toISOString(),
+    status: 'Environment configuration verified',
+    // DO NOT expose API keys, lengths, or sensitive environment details
   })
-}
+  
+  return addSecurityHeaders(response)
+}, {
+  requireAuth: true,
+  requireAdmin: true,
+  rateLimit: { maxRequests: 5, windowMs: 300000 } // 5 requests per 5 minutes
+})

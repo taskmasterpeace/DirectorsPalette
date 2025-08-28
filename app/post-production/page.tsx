@@ -20,6 +20,7 @@ import { usePostProductionStore } from '@/stores/post-production-store'
 import { retrieveTransferredShots } from '@/lib/post-production/transfer'
 import { useToast } from '@/components/ui/use-toast'
 import LayoutPlanner from './components/layout-planner/LayoutPlanner'
+import CompleteLayoutEditor from './components/layout-planner/CompleteLayoutEditor'
 import type { 
   ImageData,
   Gen4ReferenceImage,
@@ -238,7 +239,7 @@ export default function EnhancedPostProductionPage() {
                   <SelectItem value="layout">
                     <div className="flex items-center gap-2">
                       <Layout className="w-4 h-4" />
-                      Storyboarding
+                      Layout & Annotation
                     </div>
                   </SelectItem>
                   <SelectItem value="entity-manager">
@@ -272,7 +273,7 @@ export default function EnhancedPostProductionPage() {
             </TabsTrigger>
             <TabsTrigger value="layout" className="flex items-center gap-2 min-h-[44px]">
               <Layout className="w-4 h-4" />
-              <span className="hidden lg:inline">Storyboarding</span>
+              <span className="hidden lg:inline">Layout & Annotation</span>
             </TabsTrigger>
             <TabsTrigger value="entity-manager" className="flex items-center gap-2 min-h-[44px]">
               <Settings className="w-4 h-4" />
@@ -327,9 +328,9 @@ export default function EnhancedPostProductionPage() {
             />
           </TabsContent>
 
-          {/* Layout Planner Tab */}
+          {/* Complete Layout & Annotation Editor Tab */}
           <TabsContent value="layout">
-            <LayoutPlanner />
+            <CompleteLayoutEditor />
           </TabsContent>
 
           {/* Entity Manager Tab - Find & Replace System */}

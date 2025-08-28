@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       reference_tags,
       reference_images,
       seed,
-      model = 'gen4-image'
+      model = 'nano-banana'
     }: {
       prompt: string;
       aspect_ratio: string;
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       reference_tags: string[];
       reference_images: string[];
       seed?: number;
-      model?: 'gen4-image' | 'gen4-image-turbo';
+      model?: 'gen4-image' | 'gen4-image-turbo' | 'nano-banana';
     } = await request.json();
 
     if (!prompt) {
@@ -38,21 +38,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = {
-      input: {
-        prompt: prompt,
-        seed: seed || undefined,
-        aspect_ratio: aspect_ratio || "16:9",
-        resolution: resolution || "720p",
-        reference_images: reference_images,
-        reference_tags: reference_tags,
-      },
-    };
-    
-    // Use the correct model endpoint
-    const modelEndpoint = model === 'gen4-image-turbo' 
-      ? 'runwayml/gen4-image-turbo'
-      : 'runwayml/gen4-image';
+    // Model-specific parameter mapping
+    let body: any;
+    let modelEndpoint: string;
+
+    if (model === 'nano-banana') {
+      // Nano-banana format
+      body = {
+        input: {
+          prompt: prompt,
+          image_input: reference_images, // maps from reference_images
+          output_format: "png"
+          // Note: nano-banana doesn't support reference_tags, aspect_ratio, or seed
+        }
+      };
+      modelEndpoint = 'google/nano-banana';
+    } else {
+      // Gen4 format (backward compatibility)
+      body = {
+        input: {
+          prompt: prompt,
+          seed: seed || undefined,
+          aspect_ratio: aspect_ratio || "16:9", 
+          resolution: resolution || "720p",
+          reference_images: reference_images,
+          reference_tags: reference_tags,
+        }
+      };
+      modelEndpoint = model === 'gen4-image-turbo' 
+        ? 'runwayml/gen4-image-turbo'
+        : 'runwayml/gen4-image';
+    }
       
     const generateResponse = await fetch(
       `https://api.replicate.com/v1/models/${modelEndpoint}/predictions`,

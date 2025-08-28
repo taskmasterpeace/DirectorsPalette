@@ -25,6 +25,7 @@ import {
   Users,
   MapPin,
   Package,
+  Layout,
   Maximize2,
   Eye,
   Download,
@@ -323,7 +324,7 @@ export function Gen4Tab({
               ? img.tags[0] 
               : `ref${index + 1}`
           ),
-          model: 'gen4-image-turbo'
+          model: 'nano-banana'
         })
       })
       
@@ -559,47 +560,51 @@ export function Gen4Tab({
                       )}
                     </div>
                     
-                    {/* INDIVIDUAL PASTE BUTTON - What you actually requested! */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handlePasteToSlot(slot)}
-                    >
-                      {canUsePaste ? (
-                        <>
-                          <Clipboard className="w-3 h-3 mr-2" />
-                          📋 Paste to {slot === 0 ? '1st' : slot === 1 ? '2nd' : '3rd'}
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3 h-3 mr-2" />
-                          📁 Upload to {slot === 0 ? '1st' : slot === 1 ? '2nd' : '3rd'}
-                        </>
-                      )}
-                    </Button>
+                    {/* IMPROVED REFERENCE SLOT ACTIONS */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePasteToSlot(slot)}
+                        disabled={!canUsePaste}
+                        className="text-xs"
+                      >
+                        <Clipboard className="w-3 h-3 mr-1" />
+                        Paste
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Create targeted file input for this specific slot
+                          const input = document.createElement('input')
+                          input.type = 'file'
+                          input.accept = 'image/*'
+                          input.onchange = (e) => {
+                            const files = (e.target as HTMLInputElement).files
+                            if (files && files[0]) {
+                              handleGen4ImageUpload(files[0], slot)
+                            }
+                          }
+                          input.click()
+                        }}
+                        className="text-xs"
+                      >
+                        <Upload className="w-3 h-3 mr-1" />
+                        Browse
+                      </Button>
+                    </div>
                   </div>
                 )
               })}
             </div>
             
             {/* File input for manual upload */}
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleFileUpload(e.target.files)}
-              id="gen4-file-input"
-            />
             <div className="mt-4 text-center">
-              <Button
-                variant="outline"
-                onClick={() => document.getElementById('gen4-file-input')?.click()}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Browse Files
-              </Button>
+              <p className="text-xs text-slate-400">
+                Each reference slot has its own "Browse" and "Paste" buttons for targeted uploads
+              </p>
             </div>
           </div>
 
@@ -950,6 +955,14 @@ export function Gen4Tab({
               <Package className="w-3 h-3 mr-1" />
               Props
             </Button>
+            <Button
+              size="sm"
+              variant={libraryCategory === 'layouts' ? 'default' : 'outline'}
+              onClick={() => setLibraryCategory('layouts')}
+            >
+              <Layout className="w-3 h-3 mr-1" />
+              Layouts
+            </Button>
           </div>
           
           {/* Library Grid */}
@@ -1034,14 +1047,16 @@ export function Gen4Tab({
                   <div className="bg-slate-800 rounded overflow-hidden relative group">
                     {gen.outputUrl ? (
                       <>
-                        <img
-                          src={gen.outputUrl}
-                          alt={gen.prompt}
-                          className="w-full h-auto object-contain max-h-48"
-                          style={{ aspectRatio: 'auto' }}
-                        />
+                        <div className="w-full h-48 bg-slate-800 rounded overflow-hidden">
+                          <img
+                            src={gen.outputUrl}
+                            alt={gen.prompt}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                         {/* Action buttons */}
-                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity space-y-1">
+                          <div className="flex gap-1">
                           {onSendToImageEdit && (
                             <Button
                               size="sm"
@@ -1116,6 +1131,77 @@ export function Gen4Tab({
                           >
                             <Download className="w-3 h-3" />
                           </Button>
+                          </div>
+                          
+                          {/* Quick Library Actions Row */}
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-6 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={async () => {
+                                try {
+                                  await saveImageToLibrary({
+                                    imageData: gen.outputUrl!,
+                                    preview: gen.outputUrl!,
+                                    tags: ['generated'],
+                                    prompt: gen.prompt,
+                                    category: 'unorganized',
+                                    source: 'generated'
+                                  })
+                                  toast({
+                                    title: "Saved to Unorganized",
+                                    description: "Image saved to reference library"
+                                  })
+                                } catch (error) {
+                                  toast({
+                                    title: "Save Failed",
+                                    description: "Could not save to library",
+                                    variant: "destructive"
+                                  })
+                                }
+                              }}
+                              title="Quick save to unorganized library"
+                            >
+                              📁 Unorganized
+                            </Button>
+                          </div>
+                          
+                          {/* Reference Slot Actions Row */}
+                          <div className="flex gap-1">
+                            {[1, 2, 3].map(slot => (
+                              <Button
+                                key={slot}
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-1 text-xs bg-green-600/80 hover:bg-green-700 text-white border-green-500"
+                                onClick={async () => {
+                                  try {
+                                    // Convert data URL to blob, then to File
+                                    const response = await fetch(gen.outputUrl!)
+                                    const blob = await response.blob()
+                                    const file = new File([blob], `ref_${gen.id}.png`, { type: 'image/png' })
+                                    
+                                    await handleGen4ImageUpload(file, slot - 1)
+                                    toast({
+                                      title: `Added to Ref ${slot}`,
+                                      description: `Image set as reference ${slot}`
+                                    })
+                                  } catch (error) {
+                                    console.error('Failed to add to reference:', error)
+                                    toast({
+                                      title: "Failed to Add Reference",
+                                      description: "Could not add image to reference slot",
+                                      variant: "destructive"
+                                    })
+                                  }
+                                }}
+                                title={`Send to Reference ${slot}`}
+                              >
+                                R{slot}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
                       </>
                     ) : (

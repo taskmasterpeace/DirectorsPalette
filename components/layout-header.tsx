@@ -7,10 +7,40 @@ import { UserMenu } from "@/components/auth/UserMenu"
 import { Button } from "@/components/ui/button"
 import { CreditMeter } from "@/components/shared/CreditMeter"
 import { LogIn } from "lucide-react"
+import { useState, useEffect } from "react"
+import { userCreditService } from "@/lib/credits/user-credits"
 
 export function LayoutHeader() {
   const { setShowProjectManager } = useAppStore()
   const { user, isAuthenticated, isAdmin } = useAuth()
+  const [userCredits, setUserCredits] = useState<{ current: number; monthly: number; tier: string } | null>(null)
+
+  // Load real user credits
+  useEffect(() => {
+    const loadUserCredits = async () => {
+      if (!isAuthenticated || !user?.id) {
+        setUserCredits(null)
+        return
+      }
+
+      try {
+        const credits = await userCreditService.getUserCredits(user.id)
+        if (credits) {
+          setUserCredits({
+            current: credits.current_points,
+            monthly: credits.monthly_allocation,
+            tier: credits.tier
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load user credits:', error)
+        // Fallback to default values
+        setUserCredits({ current: 2500, monthly: 2500, tier: 'pro' })
+      }
+    }
+
+    loadUserCredits()
+  }, [isAuthenticated, user?.id])
 
   const handleBoostPurchase = async (boostPackId: string) => {
     console.log('Purchasing boost pack:', boostPackId)
@@ -25,7 +55,7 @@ export function LayoutHeader() {
           <img 
             src="/mkl-logo.png" 
             alt="Machine King Labs" 
-            className="w-10 h-10 rounded-md shadow-sm cursor-pointer hover:shadow-lg transition-all"
+            className="w-12 h-12 rounded-md shadow-sm cursor-pointer hover:shadow-lg transition-all"
             onClick={(e) => {
               // Triple click detection for admin access
               if (e.detail === 3) {
@@ -70,9 +100,9 @@ export function LayoutHeader() {
           <div className="flex items-center gap-3">
             {/* Credit Meter */}
             <CreditMeter
-              currentCredits={2500} // TODO: Get from user data
-              monthlyAllocation={2500}
-              tier="pro"
+              currentCredits={userCredits?.current || 2500}
+              monthlyAllocation={userCredits?.monthly || 2500}
+              tier={userCredits?.tier as any || "pro"}
               onBoostPurchase={handleBoostPurchase}
             />
             

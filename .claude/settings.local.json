@@ -59,7 +59,8 @@
       "Bash(pnpm info:*)",
       "WebFetch(domain:market.pmnd.rs)",
       "Bash(move \"taskmasterpeace_Cinematic_split-screen_composition_showing_th_c9601ef1-ee84-4d7b-9f98-e185d38e18b4_3.png\" \"images\\heroes\\one-story-every-medium-hero.jpg\")",
-      "Bash(ren \"taskmasterpeace_Cinematic_split-screen_composition_showing_th_c9601ef1-ee84-4d7b-9f98-e185d38e18b4_3.png\" \"one-story-every-medium-hero.jpg\")"
+      "Bash(ren \"taskmasterpeace_Cinematic_split-screen_composition_showing_th_c9601ef1-ee84-4d7b-9f98-e185d38e18b4_3.png\" \"one-story-every-medium-hero.jpg\")",
+      "mcp__playwright__browser_navigate_back"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

@@ -12,6 +12,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Basic file validation
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: 'Invalid file type' },
+        { status: 400 }
+      );
+    }
+
+    // File size limit (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'File too large (max 10MB)' },
+        { status: 400 }
+      );
+    }
+
     // Convert file to base64 data URL
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -19,19 +36,22 @@ export async function POST(request: NextRequest) {
     const mimeType = file.type || 'image/jpeg';
     const dataUrl = `data:${mimeType};base64,${base64}`;
     
-    // In production, you would upload to a cloud storage service
-    // For now, we'll return the data URL which works for small files
+    // Log successful upload for audit trail
+    console.log(`✅ File uploaded: ${file.name} (${(file.size / 1024).toFixed(2)}KB)`)
+    
+    // Return the data URL for immediate use
     return NextResponse.json({
       url: dataUrl,
       filename: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      uploadedAt: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('❌ Upload error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { error: 'Upload failed' },
       { status: 500 }
     );
   }

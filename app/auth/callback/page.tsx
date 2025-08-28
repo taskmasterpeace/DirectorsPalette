@@ -44,21 +44,43 @@ export default function AuthCallback() {
         if (data.session?.user) {
           console.log('✅ User found:', data.session.user.email)
           
-          // Create user profile if it doesn't exist
-          const { error: profileError } = await supabase
-            .from('users')
-            .upsert({
-              id: data.session.user.id,
-              email: data.session.user.email,
-              name: data.session.user.user_metadata?.full_name || data.session.user.email?.split('@')[0],
-              avatar_url: data.session.user.user_metadata?.avatar_url,
-              is_admin: data.session.user.email === 'taskmasterpeace@gmail.com'
-            })
+          // Initialize user credits (core requirement)
+          try {
+            const { userCreditService } = await import('@/lib/credits/user-credits')
+            const credits = await userCreditService.getUserCredits(data.session.user.id)
+            
+            if (!credits) {
+              // Initialize credits for new user
+              const isAdmin = data.session.user.email === 'taskmasterpeace@gmail.com'
+              const tier = isAdmin ? 'pro' : 'pro' // All users get pro for now
+              await userCreditService.initializeUserCredits(data.session.user.id, tier)
+              console.log('✅ User credits initialized')
+            } else {
+              console.log('✅ Existing user credits found')
+            }
+          } catch (creditError) {
+            console.error('⚠️ Credit initialization error (non-critical):', creditError)
+          }
 
-          if (profileError) {
-            console.error('⚠️ Profile creation error (non-critical):', profileError)
-          } else {
-            console.log('✅ User profile created/updated')
+          // Optional: Create user profile if custom users table exists
+          try {
+            const { error: profileError } = await supabase
+              .from('users')
+              .upsert({
+                id: data.session.user.id,
+                email: data.session.user.email,
+                name: data.session.user.user_metadata?.full_name || data.session.user.email?.split('@')[0],
+                avatar_url: data.session.user.user_metadata?.avatar_url,
+                is_admin: data.session.user.email === 'taskmasterpeace@gmail.com'
+              })
+
+            if (profileError) {
+              console.log('ℹ️ Custom users table not available (using auth.users instead)')
+            } else {
+              console.log('✅ User profile created in custom users table')
+            }
+          } catch (profileError) {
+            console.log('ℹ️ Using Supabase auth.users table (recommended approach)')
           }
 
           setStatus('success')

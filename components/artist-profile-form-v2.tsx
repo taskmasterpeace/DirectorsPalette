@@ -26,6 +26,7 @@ import { artistDB } from "@/lib/artist-db"
 import { useArtistStore } from "@/lib/artist-store"
 import { cn } from "@/lib/utils"
 import { autofillArtistProfile, createArtistFromDescription, createArtistFromLyrics } from "@/app/actions/artists/index"
+import { EnhancedGenreSelector } from "@/components/shared/EnhancedGenreSelector"
 
 type Props = {
   initial?: Partial<ArtistProfileV2>
@@ -1005,30 +1006,26 @@ export default function ArtistProfileFormV2({ initial, onSaved }: Props) {
             
             <div>
               <Label className="text-slate-300 text-sm">Genres *</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input
-                  value={(state.musical_dna.genres.primary || []).join(", ")}
-                  onChange={(e) => set("musical_dna.genres.primary", 
-                    e.target.value.split(",").map(s => s.trim()).filter(Boolean)
-                  )}
-                  className="bg-slate-950 border-slate-700 text-white"
-                  placeholder="Primary: Hip-Hop, Pop"
-                />
-                <Input
-                  value={(state.musical_dna.genres.sub || []).join(", ")}
-                  onChange={(e) => set("musical_dna.genres.sub", 
-                    e.target.value.split(",").map(s => s.trim()).filter(Boolean)
-                  )}
-                  className="bg-slate-950 border-slate-700 text-white"
-                  placeholder="Sub: Trap, Alt-R&B"
-                />
-                <Input
-                  value={(state.musical_dna.genres.micro || []).join(", ")}
-                  onChange={(e) => set("musical_dna.genres.micro", 
-                    e.target.value.split(",").map(s => s.trim()).filter(Boolean)
-                  )}
-                  className="bg-slate-950 border-slate-700 text-white"
-                  placeholder="Micro: Miami Bass"
+              <div className="mt-2">
+                <EnhancedGenreSelector
+                  mode="multi"
+                  value={[
+                    ...(state.musical_dna.genres.primary || []),
+                    ...(state.musical_dna.genres.sub || []),
+                    ...(state.musical_dna.genres.micro || [])
+                  ]}
+                  onChange={(value) => {
+                    const allGenres = Array.isArray(value) ? value : []
+                    // For now, put all selections in primary - can be refined later
+                    set("musical_dna.genres.primary", allGenres)
+                    set("musical_dna.genres.sub", [])
+                    set("musical_dna.genres.micro", [])
+                  }}
+                  placeholder="Search 430+ genres across all tiers..."
+                  showStats={true}
+                  showFavorites={true}
+                  height="compact"
+                  maxSelections={15}
                 />
               </div>
             </div>

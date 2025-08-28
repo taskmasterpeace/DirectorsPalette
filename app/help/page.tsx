@@ -166,6 +166,10 @@ export default function HelpPage() {
               <Target className="w-3 h-3 mr-1" />
               Commercial
             </TabsTrigger>
+            <TabsTrigger value="children-book" className="text-xs">
+              <BookOpen className="w-3 h-3 mr-1" />
+              Children's Books
+            </TabsTrigger>
             <TabsTrigger value="export" className="text-xs">
               <FileText className="w-3 h-3 mr-1" />
               Export System
@@ -180,8 +184,28 @@ export default function HelpPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
+          {/* Overview Tab - Enhanced with Hero Images */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Hero Image Section */}
+            <div className="relative overflow-hidden rounded-xl bg-slate-800 border border-slate-600 mb-8">
+              <div className="absolute inset-0">
+                <img 
+                  src="/images/heroes/one-story-every-medium-hero.jpg" 
+                  alt="One Story Every Medium" 
+                  className="w-full h-full object-cover opacity-40"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/90"></div>
+              </div>
+              <div className="relative z-10 p-8 text-center">
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+                  One Story, Every Medium
+                </h2>
+                <p className="text-xl text-slate-200 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+                  Transform your creative vision across films, music videos, commercials, and children's books - all with consistent characters.
+                </p>
+              </div>
+            </div>
+
             <HelpSection 
               title="What is Director's Palette?" 
               icon={<Palette className="w-5 h-5 text-purple-500" />}
@@ -338,6 +362,26 @@ export default function HelpPage() {
 
           {/* Story Mode Comprehensive Guide */}
           <TabsContent value="story" className="space-y-6">
+            {/* Character Consistency Hero */}
+            <div className="relative overflow-hidden rounded-xl bg-slate-800 border border-slate-600 mb-8">
+              <div className="absolute inset-0">
+                <img 
+                  src="/images/heroes/character-consistency-hero.jpg" 
+                  alt="Character Consistency" 
+                  className="w-full h-full object-cover opacity-35"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/60 to-slate-900/85"></div>
+              </div>
+              <div className="relative z-10 p-8 text-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-lg">
+                  Character Consistency System
+                </h2>
+                <p className="text-lg text-slate-200 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+                  Maintain visual consistency across all your creative projects with @character references
+                </p>
+              </div>
+            </div>
+
             <HelpSection 
               title="📚 Story Mode Complete Guide" 
               icon={<BookOpen className="w-5 h-5 text-green-500" />}
@@ -475,6 +519,25 @@ export default function HelpPage() {
 
           {/* Commercial Mode Complete Guide */}
           <TabsContent value="commercial" className="space-y-6">
+            {/* Commercial Editorial Hero */}
+            <div className="relative overflow-hidden rounded-xl bg-slate-800 border border-slate-600 mb-8">
+              <div className="absolute inset-0">
+                <img 
+                  src="/images/heroes/commercial-editorial-hero.jpg" 
+                  alt="Commercial Editorial" 
+                  className="w-full h-full object-cover opacity-35"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/60 to-slate-900/85"></div>
+              </div>
+              <div className="relative z-10 p-8 text-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-lg">
+                  Professional Commercial Production
+                </h2>
+                <p className="text-lg text-slate-200 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+                  Create platform-optimized brand commercials with director-specific styling
+                </p>
+              </div>
+            </div>
             <HelpSection 
               title="🎯 Commercial Mode Complete Guide" 
               icon={<Target className="w-5 h-5 text-orange-500" />}

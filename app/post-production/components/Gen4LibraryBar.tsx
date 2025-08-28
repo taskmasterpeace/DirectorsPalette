@@ -12,7 +12,7 @@ interface ReferenceItem {
   id: string;
   url: string;
   tags: string[];
-  category?: 'people' | 'places' | 'props' | 'uncategorized';
+  category?: 'people' | 'places' | 'props' | 'layouts' | 'uncategorized';
 }
 
 interface Props {
@@ -32,7 +32,7 @@ export default function Gen4LibraryBar({
 }: Props) {
   const [editingTags, setEditingTags] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'people' | 'places' | 'props' | 'uncategorized'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'people' | 'places' | 'props' | 'layouts' | 'uncategorized'>('all');
 
   const filteredItems = selectedCategory === 'all' 
     ? items 

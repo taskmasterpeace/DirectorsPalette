@@ -30,8 +30,9 @@ export function AppSidebar() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent("dsvb:mode-change", { detail: { mode: newMode } }))
     }
-    if (pathname !== "/") {
-      router.push("/")
+    // Only navigate to /create if not already on a mode page
+    if (pathname === "/") {
+      router.push("/create")
     }
   }
 
@@ -65,7 +66,7 @@ export function AppSidebar() {
             <img 
               src="/mkl-logo.png" 
               alt="Machine King Labs" 
-              className="w-12 h-12 rounded-lg shadow-lg"
+              className="w-16 h-16 rounded-lg shadow-lg"
             />
             <div className="flex flex-col">
               <span className="text-white font-bold text-xl">Director's Palette</span>
