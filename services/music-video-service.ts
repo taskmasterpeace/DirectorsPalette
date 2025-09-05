@@ -141,7 +141,10 @@ export class MusicVideoService {
     options?: { debugPrompts?: boolean }
   ) {
     try {
+      console.log('=== MusicVideoService.generateFullBreakdown called ===')
+      console.log('About to call assertAIEnv...')
       assertAIEnv()
+      console.log('assertAIEnv passed successfully')
 
       const directorStyle = buildDirectorStyleString(selectedMusicVideoDirectorInfo)
       const artistProfileStr = buildArtistProfileString(artistProfile)
@@ -225,6 +228,7 @@ export class MusicVideoService {
               directorNotes,
               videoConcept,
               artistProfileStr,
+              artist,
             }),
             system: `Generate section breakdown. SECTION: ${section.title} - "${section.lyrics}"`,
           })

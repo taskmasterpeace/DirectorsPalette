@@ -1,13 +1,16 @@
 import { useCallback } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useMusicVideoStore } from '@/stores/music-video-store'
+import { useMusicVideoWorkflowStore } from '@/stores/music-video-workflow-store'
 import { useAppStore } from '@/stores/app-store'
-import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from '@/app/actions-mv'
+import { generateFullMusicVideoBreakdown, generateAdditionalMusicVideoShots } from '@/app/actions/music-video'
+import { generateMusicVideoBreakdownWithReferences } from '@/app/actions/music-video/references'
 
 export function useMusicVideoGeneration() {
   const { toast } = useToast()
   const { setIsLoading } = useAppStore()
   const musicVideoStore = useMusicVideoStore()
+  const workflowStore = useMusicVideoWorkflowStore()
 
   const handleGenerateMusicVideoReferences = useCallback(async () => {
     const { lyrics } = musicVideoStore
@@ -24,14 +27,16 @@ export function useMusicVideoGeneration() {
     setIsLoading(true)
     try {
       const result = await generateFullMusicVideoBreakdown({
-        songTitle: musicVideoStore.songTitle,
-        artist: musicVideoStore.artist,
-        genre: musicVideoStore.genre,
-        lyrics: musicVideoStore.lyrics,
-        concept: musicVideoStore.mvConcept,
+        songTitle: musicVideoStore.songTitle || '',
+        artistName: musicVideoStore.artist || '',
+        lyrics: musicVideoStore.lyrics || '',
+        director: musicVideoStore.selectedMusicVideoDirector,
         directorNotes: musicVideoStore.mvDirectorNotes,
-        selectedDirector: musicVideoStore.selectedMusicVideoDirector,
-        artistProfile: musicVideoStore.selectedArtistProfile
+        artistProfile: musicVideoStore.selectedArtistProfile,
+        includeVisualMetaphors: true,
+        includePerformanceShots: true,
+        includeLocationScout: true,
+        musicVideoConfig: musicVideoStore.musicVideoConfig
       })
 
       if (result.success && result.data) {
@@ -59,9 +64,9 @@ export function useMusicVideoGeneration() {
   }, [musicVideoStore, setIsLoading, toast])
 
   const handleGenerateMusicVideoBreakdown = useCallback(async () => {
-    const { musicVideoConfig, musicVideoBreakdown } = musicVideoStore
+    const { musicVideoConfig } = musicVideoStore
     
-    if (!musicVideoConfig || !musicVideoBreakdown) {
+    if (!musicVideoConfig) {
       toast({
         title: "Configuration Required",
         description: "Please configure references before generating the final breakdown.",
@@ -72,25 +77,35 @@ export function useMusicVideoGeneration() {
 
     setIsLoading(true)
     try {
-      const result = await generateFullMusicVideoBreakdown({
-        songTitle: musicVideoStore.songTitle,
-        artist: musicVideoStore.artist,
-        genre: musicVideoStore.genre,
-        lyrics: musicVideoStore.lyrics,
-        concept: musicVideoStore.mvConcept,
-        directorNotes: musicVideoStore.mvDirectorNotes,
-        selectedDirector: musicVideoStore.selectedMusicVideoDirector,
-        artistProfile: musicVideoStore.selectedArtistProfile,
-        config: musicVideoConfig
-      })
+      // Use the proper action with configured references
+      const result = await generateMusicVideoBreakdownWithReferences(
+        musicVideoStore.songTitle || '',
+        musicVideoStore.artist || '',
+        musicVideoStore.genre || '',
+        musicVideoStore.lyrics || '',
+        musicVideoStore.selectedMusicVideoDirector,
+        musicVideoStore.mvDirectorNotes,
+        musicVideoStore.mvConcept,
+        musicVideoConfig,  // This contains the configured references
+        musicVideoStore.selectedArtistProfile,
+        musicVideoConfig
+      )
 
       if (result.success && result.data) {
-        musicVideoStore.setMusicVideoBreakdown(result.data.breakdown)
+        // Set the complete breakdown with proper structure
+        const breakdown = {
+          ...result.data,
+          isConfigured: true
+        }
+        musicVideoStore.setMusicVideoBreakdown(breakdown)
         musicVideoStore.setShowMusicVideoConfig(false)
         
         // Expand all sections by default
-        const sections = result.data.breakdown.sections || []
-        const expandedSections = sections.map(s => s.id)
+        const sections = result.data.sections || result.data.musicVideoStructure?.sections || []
+        const expandedSections = sections.reduce((acc: any, section: any) => {
+          acc[section.id] = true
+          return acc
+        }, {})
         musicVideoStore.setExpandedSections(expandedSections)
         
         toast({
@@ -118,18 +133,30 @@ export function useMusicVideoGeneration() {
   ) => {
     const { musicVideoBreakdown, selectedMusicVideoDirector } = musicVideoStore
     
-    if (!musicVideoBreakdown) return
+    if (!musicVideoBreakdown || !musicVideoBreakdown.sections) return
 
     setIsLoading(true)
     try {
-      const section = musicVideoBreakdown.sections.find(s => s.id === sectionId)
+      const section = musicVideoBreakdown.sections?.find(s => s.id === sectionId)
       if (!section) throw new Error('Section not found')
 
+      // Get the section breakdown that has the actual shots
+      const sectionBreakdown = musicVideoBreakdown.sectionBreakdowns?.find(
+        sb => sb.sectionId === sectionId
+      )
+
+      // Merge shots into section so AI can see what exists
+      const sectionWithShots = {
+        ...section,
+        shots: sectionBreakdown?.shots || []
+      }
+
       const result = await generateAdditionalMusicVideoShots(
-        section,
-        musicVideoBreakdown.songTitle || 'Song',
+        sectionWithShots,  // Pass enhanced section
+        musicVideoStore.songTitle || 'Song',
         selectedMusicVideoDirector,
-        customRequest
+        customRequest,
+        musicVideoStore.artist || 'artist'
       )
 
       if (result.success && result.data) {
@@ -159,7 +186,8 @@ export function useMusicVideoGeneration() {
     musicVideoStore.setShowMusicVideoConfig(false)
     musicVideoStore.setAdditionalMusicVideoShots('', [])
     musicVideoStore.setExpandedSections([])
-  }, [musicVideoStore])
+    workflowStore.resetWorkflow()
+  }, [musicVideoStore, workflowStore])
 
   return {
     handleGenerateMusicVideoReferences,

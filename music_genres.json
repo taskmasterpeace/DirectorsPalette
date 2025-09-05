@@ -1,0 +1,620 @@
+{
+  "genres": [
+    {
+      "id": "blues",
+      "name": "Blues",
+      "subgenres": [
+        { "id": "acoustic-blues", "name": "Acoustic Blues", "microgenres": [] },
+        { "id": "chicago-blues", "name": "Chicago Blues", "microgenres": [] },
+        { "id": "classic-blues", "name": "Classic Blues", "microgenres": [] },
+        { "id": "contemporary-blues", "name": "Contemporary Blues", "microgenres": [] },
+        { "id": "country-blues", "name": "Country Blues", "microgenres": [] },
+        { "id": "delta-blues", "name": "Delta Blues", "microgenres": [] },
+        { "id": "electric-blues", "name": "Electric Blues", "microgenres": [] },
+        { "id": "jazz-blues", "name": "Jazz Blues", "microgenres": [] },
+        { "id": "piano-blues", "name": "Piano Blues", "microgenres": [] },
+        { "id": "piedmont-blues", "name": "Piedmont Blues", "microgenres": [] },
+        { "id": "texas-blues", "name": "Texas Blues", "microgenres": [] },
+        { "id": "memphis-blues", "name": "Memphis Blues", "microgenres": [] },
+        { "id": "st-louis-blues", "name": "St. Louis Blues", "microgenres": [] },
+        { "id": "jump-blues", "name": "Jump Blues", "microgenres": [] },
+        { "id": "rhythm-and-blues", "name": "Rhythm & Blues", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "hip-hop-rap",
+      "name": "Hip-Hop/Rap",
+      "subgenres": [
+        {
+          "id": "gangsta-rap",
+          "name": "Gangsta Rap",
+          "microgenres": [
+            { "id": "mafioso-rap", "name": "Mafioso Rap" },
+            { "id": "g-funk", "name": "G-Funk" },
+            { "id": "horrorcore", "name": "Horrorcore" },
+            { "id": "west-coast-gangsta", "name": "West Coast Gangsta" },
+            { "id": "east-coast-gangsta", "name": "East Coast Gangsta" },
+            { "id": "reality-rap", "name": "Reality Rap" },
+            { "id": "street-rap", "name": "Street Rap" },
+            { "id": "hardcore-gangsta", "name": "Hardcore Gangsta" }
+          ]
+        },
+        {
+          "id": "rap-general",
+          "name": "Rap",
+          "microgenres": [
+            { "id": "freestyle-rap", "name": "Freestyle Rap" },
+            { "id": "battle-rap", "name": "Battle Rap" },
+            { "id": "storytelling-rap", "name": "Storytelling Rap" },
+            { "id": "party-rap", "name": "Party Rap" },
+            { "id": "comedy-hip-hop", "name": "Comedy Hip-Hop" },
+            { "id": "nerdcore", "name": "Nerdcore" },
+            { "id": "chap-hop", "name": "Chap Hop" },
+            { "id": "frat-rap", "name": "Frat Rap" },
+            { "id": "noir-rap", "name": "Noir Rap" },
+            { "id": "cinematic-street-rap", "name": "Cinematic Street Rap" },
+            { "id": "chopped-and-screwed", "name": "Chopped and Screwed" }
+          ]
+        },
+        {
+          "id": "mumble-rap",
+          "name": "Mumble Rap",
+          "microgenres": [
+            { "id": "melodic-mumble", "name": "Melodic Mumble" },
+            { "id": "soundcloud-rap", "name": "SoundCloud Rap" },
+            { "id": "auto-tune-rap", "name": "Auto-Tune Rap" },
+            { "id": "triplet-flow-rap", "name": "Triplet Flow Rap" },
+            { "id": "emo-mumble", "name": "Emo Mumble" },
+            { "id": "cloud-mumble", "name": "Cloud Mumble" }
+          ]
+        },
+        {
+          "id": "trap",
+          "name": "Trap",
+          "microgenres": [
+            { "id": "latin-trap", "name": "Latin Trap" },
+            { "id": "country-trap", "name": "Country Trap" },
+            { "id": "edm-trap", "name": "EDM Trap" },
+            { "id": "boom-trap", "name": "Boom Trap" },
+            {
+              "id": "drill",
+              "name": "Drill",
+              "microgenres": [
+                { "id": "uk-drill", "name": "UK Drill" },
+                { "id": "brooklyn-drill", "name": "Brooklyn Drill" },
+                { "id": "chicago-drill", "name": "Chicago Drill" },
+                { "id": "jacksonville-drill", "name": "Jacksonville Drill" },
+                { "id": "detroit-drill", "name": "Detroit Drill" },
+                { "id": "toronto-drill", "name": "Toronto Drill" },
+                { "id": "bronx-drill", "name": "Bronx Drill" },
+                { "id": "louisiana-drill", "name": "Louisiana Drill" }
+              ]
+            },
+            { "id": "phonk", "name": "Phonk" },
+            { "id": "plugg", "name": "Plugg" },
+            { "id": "pluggnb", "name": "Pluggnb" },
+            { "id": "rage", "name": "Rage" },
+            { "id": "tread-rap", "name": "Tread Rap" },
+            { "id": "trap-metal", "name": "Trap Metal" },
+            { "id": "gospel-trap", "name": "Gospel Trap" },
+            { "id": "cloud-rap", "name": "Cloud Rap" },
+            { "id": "hyperpop-rap", "name": "Hyperpop Rap" },
+            { "id": "emo-trap", "name": "Emo Trap" },
+            { "id": "soundcloud-rap", "name": "SoundCloud Rap" }
+          ]
+        },
+        {
+          "id": "conscious-rap",
+          "name": "Conscious Rap",
+          "microgenres": [
+            { "id": "political-hip-hop", "name": "Political Hip-Hop" },
+            { "id": "afrocentric-rap", "name": "Afrocentric Rap" },
+            { "id": "social-commentary-rap", "name": "Social Commentary Rap" },
+            { "id": "spiritual-rap", "name": "Spiritual Rap" },
+            { "id": "educational-rap", "name": "Educational Rap" },
+            { "id": "revolutionary-rap", "name": "Revolutionary Rap" },
+            { "id": "backpack-rap", "name": "Backpack Rap" },
+            { "id": "art-rap", "name": "Art Rap" },
+            { "id": "jazz-rap", "name": "Jazz Rap" }
+          ]
+        },
+        {
+          "id": "new-orleans-bounce",
+          "name": "New Orleans Bounce",
+          "microgenres": []
+        },
+        {
+          "id": "miami-bass",
+          "name": "Miami Bass",
+          "microgenres": []
+        },
+        {
+          "id": "go-go",
+          "name": "Go-Go",
+          "microgenres": []
+        },
+        {
+          "id": "boom-bap",
+          "name": "Boom Bap",
+          "microgenres": [
+            { "id": "jazz-boom-bap", "name": "Jazz Boom Bap" },
+            { "id": "lofi-boom-bap", "name": "Lo-Fi Boom Bap" },
+            { "id": "east-coast-boom-bap", "name": "East Coast Boom Bap" },
+            { "id": "underground-boom-bap", "name": "Underground Boom Bap" },
+            { "id": "neo-boom-bap", "name": "Neo Boom Bap" },
+            { "id": "sample-heavy-boom-bap", "name": "Sample-Heavy Boom Bap" },
+            { "id": "mafioso-boom-bap", "name": "Mafioso Boom Bap" }
+          ]
+        },
+        {
+          "id": "memphis-rap",
+          "name": "Memphis Rap",
+          "microgenres": [
+            { "id": "phonk", "name": "Phonk" },
+            { "id": "crunk", "name": "Crunk" },
+            { "id": "horrorcore-memphis", "name": "Horrorcore Memphis" },
+            { "id": "underground-memphis", "name": "Underground Memphis" },
+            { "id": "memphis-trap", "name": "Memphis Trap" },
+            { "id": "dark-memphis", "name": "Dark Memphis" }
+          ]
+        },
+        {
+          "id": "rage-rap",
+          "name": "Rage Rap",
+          "microgenres": []
+        },
+        {
+          "id": "jersey-club-rap",
+          "name": "Jersey Club Rap",
+          "microgenres": []
+        },
+        {
+          "id": "lofi-hip-hop",
+          "name": "Lo-Fi Hip-Hop",
+          "microgenres": []
+        }
+      ]
+    },
+    {
+      "id": "childrens",
+      "name": "Children's",
+      "subgenres": [
+        { "id": "lullabies", "name": "Lullabies", "microgenres": [] },
+        { "id": "sing-along", "name": "Sing-Along", "microgenres": [] },
+        { "id": "stories", "name": "Stories", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "classical",
+      "name": "Classical",
+      "subgenres": [
+        { "id": "avant-garde", "name": "Avant-Garde", "microgenres": [] },
+        { "id": "baroque", "name": "Baroque", "microgenres": [] },
+        { "id": "chamber-music", "name": "Chamber Music", "microgenres": [] },
+        { "id": "chant", "name": "Chant", "microgenres": [] },
+        { "id": "choral", "name": "Choral", "microgenres": [] },
+        { "id": "classical-crossover", "name": "Classical Crossover", "microgenres": [] },
+        { "id": "opera", "name": "Opera", "microgenres": [] },
+        { "id": "orchestral", "name": "Orchestral", "microgenres": [] },
+        { "id": "romantic", "name": "Romantic", "microgenres": [] },
+        { "id": "renaissance", "name": "Renaissance", "microgenres": [] },
+        { "id": "medieval", "name": "Medieval", "microgenres": [] },
+        { "id": "minimalism", "name": "Minimalism", "microgenres": [] },
+        { "id": "black-classical", "name": "Black Classical", "microgenres": [] },
+        { "id": "spirituals", "name": "Spirituals", "microgenres": [] },
+        { "id": "concert-spirituals", "name": "Concert Spirituals", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "country",
+      "name": "Country",
+      "subgenres": [
+        { "id": "alternative-country", "name": "Alternative Country", "microgenres": [] },
+        { "id": "americana", "name": "Americana", "microgenres": [] },
+        { "id": "bluegrass", "name": "Bluegrass", "microgenres": [] },
+        { "id": "country-gospel", "name": "Country Gospel", "microgenres": [] },
+        { "id": "honky-tonk", "name": "Honky Tonk", "microgenres": [] },
+        { "id": "outlaw-country", "name": "Outlaw Country", "microgenres": [] },
+        { "id": "traditional-country", "name": "Traditional Country", "microgenres": [] },
+        { "id": "black-country", "name": "Black Country", "microgenres": [] },
+        { "id": "urban-cowboy", "name": "Urban Cowboy", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "gospel-christian",
+      "name": "Gospel/Christian",
+      "subgenres": [
+        { "id": "ccm", "name": "CCM", "microgenres": [] },
+        { "id": "christian-metal", "name": "Christian Metal", "microgenres": [] },
+        { "id": "christian-pop", "name": "Christian Pop", "microgenres": [] },
+        { "id": "christian-rap", "name": "Christian Rap", "microgenres": [] },
+        { "id": "christian-rock", "name": "Christian Rock", "microgenres": [] },
+        { "id": "contemporary-gospel", "name": "Contemporary Gospel", "microgenres": [] },
+        { "id": "gospel", "name": "Gospel", "microgenres": [] },
+        { "id": "praise-worship", "name": "Praise & Worship", "microgenres": [] },
+        { "id": "southern-gospel", "name": "Southern Gospel", "microgenres": [] },
+        { "id": "traditional-gospel", "name": "Traditional Gospel", "microgenres": [] },
+        { "id": "qawwali", "name": "Qawwali", "microgenres": [] },
+        { "id": "black-gospel", "name": "Black Gospel", "microgenres": [] },
+        { "id": "gospel-blues", "name": "Gospel Blues", "microgenres": [] },
+        { "id": "gospel-quartet", "name": "Gospel Quartet", "microgenres": [] },
+        { "id": "urban-contemporary-gospel", "name": "Urban Contemporary Gospel", "microgenres": [] },
+        { "id": "traditional-black-gospel", "name": "Traditional Black Gospel", "microgenres": [] },
+        { "id": "gospel-choir", "name": "Gospel Choir", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "jazz",
+      "name": "Jazz",
+      "subgenres": [
+        { "id": "early-jazz", "name": "Early Jazz (Trad/New Orleans Jazz)", "microgenres": [
+            { "id": "ragtime", "name": "Ragtime" },
+            { "id": "dixieland", "name": "Dixieland (New Orleans Jazz)" },
+            { "id": "chicago-jazz", "name": "Chicago Jazz" },
+            { "id": "stride-piano", "name": "Stride Piano" }
+        ] },
+        { "id": "bebop", "name": "Bebop", "microgenres": [
+            { "id": "hard-bop", "name": "Hard Bop" },
+            { "id": "post-bop", "name": "Post Bop" },
+            { "id": "neo-bop", "name": "Neo Bop" },
+            { "id": "mafioso-bop", "name": "Mafioso Bop" },
+            { "id": "afro-cuban-bop", "name": "Afro-Cuban Bop" }
+        ] },
+        { "id": "swing", "name": "Swing/Big Band", "microgenres": [
+            { "id": "big-band-swing", "name": "Big Band Swing" },
+            { "id": "kansas-city-swing", "name": "Kansas City Swing" },
+            { "id": "gypsy-swing", "name": "Gypsy Swing" },
+            { "id": "swing-revival", "name": "Swing Revival" }
+        ] },
+        { "id": "cool-jazz", "name": "Cool Jazz", "microgenres": [
+            { "id": "west-coast-cool", "name": "West Coast Cool" },
+            { "id": "third-stream", "name": "Third Stream" }
+        ] },
+        { "id": "hard-bop", "name": "Hard Bop", "microgenres": [] },
+        { "id": "modal-jazz", "name": "Modal Jazz", "microgenres": [
+            { "id": "spiritual-jazz", "name": "Spiritual Jazz" },
+            { "id": "modal-fusion", "name": "Modal Fusion" }
+        ] },
+        { "id": "jazz-fusion", "name": "Jazz Fusion", "microgenres": [
+            { "id": "jazz-rock-fusion", "name": "Jazz-Rock Fusion" },
+            { "id": "jazz-funk-fusion", "name": "Jazz-Funk" },
+            { "id": "prog-jazz", "name": "Prog-Jazz" }
+        ] },
+        { "id": "latin-jazz", "name": "Latin Jazz", "microgenres": [
+            { "id": "afro-cuban-jazz", "name": "Afro-Cuban Jazz" },
+            { "id": "samba-jazz", "name": "Samba Jazz" }
+        ] },
+        { "id": "smooth-jazz", "name": "Smooth Jazz", "microgenres": [
+            { "id": "urban-contemporary-jazz", "name": "Urban Contemporary Jazz" },
+            { "id": "new-age-jazz", "name": "New Age Jazz" }
+        ] },
+        { "id": "free-jazz", "name": "Free Jazz", "microgenres": [
+            { "id": "avant-garde-jazz", "name": "Avant-Garde Jazz" },
+            { "id": "new-thing", "name": "New Thing" }
+        ] },
+        { "id": "acid-jazz", "name": "Acid Jazz", "microgenres": [
+            { "id": "nu-jazz", "name": "Nu Jazz" },
+            { "id": "club-jazz", "name": "Club Jazz" }
+        ] },
+        { "id": "soul-jazz", "name": "Soul Jazz", "microgenres": [
+            { "id": "groove-jazz", "name": "Groove Jazz" },
+            { "id": "boogaloo-jazz", "name": "Boogaloo Jazz" },
+            { "id": "organ-trio-soul-jazz", "name": "Organ Trio Soul-Jazz" }
+        ] },
+        { "id": "bossa-nova", "name": "Bossa Nova", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "latino",
+      "name": "Latino",
+      "subgenres": [
+        { "id": "alternativo-rock-latino", "name": "Alternativo & Rock Latino", "microgenres": [] },
+        { "id": "baladas-boleros", "name": "Baladas y Boleros", "microgenres": [] },
+        { "id": "contemporary-latin", "name": "Contemporary Latin", "microgenres": [] },
+        { "id": "latin-jazz-sub", "name": "Latin Jazz", "microgenres": [] },
+        { "id": "pop-latino", "name": "Pop Latino", "microgenres": [] },
+        { "id": "raices", "name": "Raíces", "microgenres": [] },
+        { "id": "reggaeton", "name": "Reggaeton", "microgenres": [] },
+        { "id": "salsa", "name": "Salsa", "microgenres": [] },
+        { "id": "tropical", "name": "Tropical", "microgenres": [] },
+        { "id": "bachata", "name": "Bachata", "microgenres": [] },
+        { "id": "rumba", "name": "Rumba", "microgenres": [] },
+        { "id": "tango", "name": "Tango", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "metal",
+      "name": "Metal",
+      "subgenres": [
+        { "id": "death-metal", "name": "Death Metal", "microgenres": [] },
+        { "id": "black-metal", "name": "Black Metal", "microgenres": [] },
+        { "id": "doom-metal", "name": "Doom Metal", "microgenres": [] },
+        { "id": "glam-metal", "name": "Glam Metal", "microgenres": [] },
+        { "id": "gothic-metal", "name": "Gothic Metal", "microgenres": [] },
+        { "id": "grindcore", "name": "Grind Core", "microgenres": [] },
+        { "id": "hair-metal", "name": "Hair Metal", "microgenres": [] },
+        { "id": "math-metal", "name": "Math Metal", "microgenres": [] },
+        { "id": "metalcore", "name": "Metal Core", "microgenres": [] },
+        { "id": "progressive-metal", "name": "Progressive Metal", "microgenres": [] },
+        { "id": "stoner-metal", "name": "Stoner Metal", "microgenres": [] },
+        { "id": "thrash-metal", "name": "Thrash Metal", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "pop",
+      "name": "Pop",
+      "subgenres": [
+        { "id": "baroque-pop", "name": "Baroque Pop", "microgenres": [] },
+        { "id": "country-pop", "name": "Country Pop", "microgenres": [] },
+        { "id": "contemporary-rnb", "name": "Contemporary R&B", "microgenres": [] },
+        { "id": "cowboy-pop", "name": "Cowboy Pop", "microgenres": [] },
+        { "id": "dancehall-pop", "name": "Dancehall Pop", "microgenres": [] },
+        { "id": "electropop", "name": "Electropop", "microgenres": [] },
+        { "id": "emo-pop", "name": "Emo Pop", "microgenres": [] },
+        { "id": "folk-pop", "name": "Folk-Pop", "microgenres": [] },
+        { "id": "hip-pop", "name": "Hip-Pop", "microgenres": [] },
+        { "id": "indie-pop", "name": "Indie Pop", "microgenres": [] },
+        { "id": "pop-punk", "name": "Pop Punk", "microgenres": [] },
+        { "id": "pop-rap", "name": "Pop Rap", "microgenres": [] },
+        { "id": "ambient-pop", "name": "Ambient Pop", "microgenres": [] },
+        { "id": "pop-rock", "name": "Pop Rock", "microgenres": [] },
+        { "id": "power-pop", "name": "Power Pop", "microgenres": [] },
+        { "id": "psychedelic-pop", "name": "Psychedelic Pop", "microgenres": [] },
+        { "id": "space-age-pop", "name": "Space Age Pop", "microgenres": [] },
+        { "id": "worldbeat", "name": "Worldbeat", "microgenres": [] },
+        { "id": "k-pop", "name": "K-Pop", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "rnb-soul",
+      "name": "R&B/Soul",
+      "subgenres": [
+        { "id": "trap-soul", "name": "Trap Soul", "microgenres": [] },
+        { "id": "contemporary-rnb-soul", "name": "Contemporary R&B", "microgenres": [] },
+        { "id": "disco", "name": "Disco", "microgenres": [] },
+        { "id": "doo-wop", "name": "Doo Wop", "microgenres": [] },
+        { "id": "funk", "name": "Funk", "microgenres": [
+            { "id": "afro-funk", "name": "Afro-Funk" },
+            { "id": "electro-funk", "name": "Electro-Funk" },
+            { "id": "funk-metal", "name": "Funk Metal" },
+            { "id": "nu-funk", "name": "Nu-Funk" }
+        ] },
+        { "id": "motown", "name": "Motown", "microgenres": [] },
+        { "id": "neo-soul", "name": "Neo-Soul", "microgenres": [] },
+        { "id": "quiet-storm", "name": "Quiet Storm", "microgenres": [] },
+        { "id": "soul", "name": "Soul", "microgenres": [
+            { "id": "electro-soul", "name": "Electro-Soul" }
+        ] },
+        { "id": "northern-soul", "name": "Northern Soul", "microgenres": [] },
+        { "id": "southern-soul", "name": "Southern Soul", "microgenres": [] },
+        { "id": "deep-soul", "name": "Deep Soul", "microgenres": [] },
+        { "id": "psychedelic-soul", "name": "Psychedelic Soul", "microgenres": [] },
+        { "id": "blue-eyed-soul", "name": "Blue-Eyed Soul", "microgenres": [] },
+        { "id": "philadelphia-soul", "name": "Philadelphia Soul", "microgenres": [] },
+        { "id": "memphis-soul", "name": "Memphis Soul", "microgenres": [] },
+        { "id": "chicago-soul", "name": "Chicago Soul", "microgenres": [] },
+        { "id": "funk-rock", "name": "Funk Rock", "microgenres": [] },
+        { "id": "p-funk", "name": "P-Funk", "microgenres": [] },
+        { "id": "go-go", "name": "Go-Go", "microgenres": [] },
+        { "id": "new-jack-swing", "name": "New Jack Swing", "microgenres": [
+            { "id": "swing-beat", "name": "Swing Beat" },
+            { "id": "jack-swing-ballads", "name": "Jack Swing Ballads" }
+        ] },
+        { "id": "minneapolis-sound", "name": "Minneapolis Sound", "microgenres": [] },
+        { "id": "alternative-rnb", "name": "Alternative R&B", "microgenres": [
+            { "id": "pbrnb", "name": "PBR&B" },
+            { "id": "trap-soul-style", "name": "Trap Soul" },
+            { "id": "dark-rnb", "name": "Dark R&B" },
+            { "id": "electronic-rnb", "name": "Electronic R&B" },
+            { "id": "early-2000s-rnb", "name": "Early 2000s R&B" },
+            { "id": "mid-2000s-rnb", "name": "Mid 2000s R&B" },
+            { "id": "2010s-alternative-rnb", "name": "2010s Alternative R&B" },
+            { "id": "hip-hop-rnb-crossover", "name": "Hip-Hop/R&B Crossover" }
+        ] },
+        { "id": "trap-soul", "name": "Trap Soul", "microgenres": [
+            { "id": "melodic-trap-soul", "name": "Melodic Trap Soul" },
+            { "id": "dark-trap-soul", "name": "Dark Trap Soul" },
+            { "id": "gospel-trap-soul", "name": "Gospel Trap Soul" }
+        ] },
+        { "id": "afrofuturism-soul", "name": "Afrofuturism Soul", "microgenres": [] },
+        { "id": "stadium-rnb", "name": "Stadium R&B", "microgenres": [] },
+        { "id": "southern-gothic-rnb", "name": "Southern Gothic R&B", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "reggae-caribbean",
+      "name": "Reggae/Caribbean",
+      "subgenres": [
+        { "id": "dancehall", "name": "Dancehall", "microgenres": [
+            { "id": "old-skool-dancehall", "name": "Old Skool Dancehall" },
+            { "id": "digital-dancehall", "name": "Digital Dancehall" },
+            { "id": "ragga-dancehall", "name": "Ragga Dancehall" },
+            { "id": "bashment", "name": "Bashment" },
+            { "id": "slackness", "name": "Slackness" }
+        ] },
+        { "id": "dub", "name": "Dub", "microgenres": [
+            { "id": "roots-dub", "name": "Roots Dub" },
+            { "id": "steppers-dub", "name": "Steppers Dub" },
+            { "id": "digital-dub", "name": "Digital Dub" }
+        ] },
+        { "id": "roots-reggae", "name": "Roots Reggae", "microgenres": [
+            { "id": "nyabinghi", "name": "Nyabinghi" },
+            { "id": "cultural-roots", "name": "Cultural Roots" },
+            { "id": "spiritual-roots", "name": "Spiritual Roots" }
+        ] },
+        { "id": "ska", "name": "Ska", "microgenres": [
+            { "id": "first-wave-ska", "name": "1st Wave Ska" },
+            { "id": "two-tone-ska", "name": "2 Tone Ska" },
+            { "id": "ska-revival", "name": "Ska Revival" }
+        ] },
+        { "id": "mento", "name": "Mento", "microgenres": [
+            { "id": "traditional-mento", "name": "Traditional Mento" },
+            { "id": "urban-mento", "name": "Urban Mento" }
+        ] },
+        { "id": "gospel-reggae", "name": "Gospel Reggae", "microgenres": [] },
+        { "id": "contemporary-reggae", "name": "Contemporary Reggae", "microgenres": [] },
+        { "id": "rocksteady", "name": "Rocksteady", "microgenres": [
+            { "id": "early-rocksteady", "name": "Early Rocksteady" },
+            { "id": "soul-rocksteady", "name": "Soul Rocksteady" }
+        ] },
+        { "id": "lovers-rock", "name": "Lovers Rock", "microgenres": [
+            { "id": "roots-lovers", "name": "Roots Lovers" },
+            { "id": "conscious-lovers", "name": "Conscious Lovers" }
+        ] },
+        { "id": "ragga", "name": "Ragga", "microgenres": [
+            { "id": "digital-ragga", "name": "Digital Ragga" },
+            { "id": "jungle-ragga", "name": "Jungle Ragga" }
+        ] },
+        { "id": "calypso", "name": "Calypso", "microgenres": [
+            { "id": "traditional-calypso", "name": "Traditional Calypso" },
+            { "id": "soca-calypso", "name": "Soca-Influenced Calypso" }
+        ] },
+        { "id": "soca", "name": "Soca", "microgenres": [
+            { "id": "power-soca", "name": "Power Soca" },
+            { "id": "groovy-soca", "name": "Groovy Soca" },
+            { "id": "chutney-soca", "name": "Chutney Soca" }
+        ] },
+        { "id": "reggaeton-sub", "name": "Reggaeton", "microgenres": [] },
+        { "id": "afro-caribbean", "name": "Afro-Caribbean", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "rock",
+      "name": "Rock",
+      "subgenres": [
+        { "id": "adult-alternative", "name": "Adult Alternative", "microgenres": [] },
+        { "id": "arena-rock", "name": "Arena Rock", "microgenres": [] },
+        { "id": "blues-rock", "name": "Blues-Rock", "microgenres": [] },
+        { "id": "british-invasion", "name": "British Invasion", "microgenres": [] },
+        { "id": "classic-rock", "name": "Classic Rock", "microgenres": [] },
+        { "id": "death-black-metal", "name": "Death Metal/Black Metal", "microgenres": [] },
+        { "id": "glam-rock", "name": "Glam Rock", "microgenres": [] },
+        { "id": "hair-metal-rock", "name": "Hair Metal", "microgenres": [] },
+        { "id": "hard-rock", "name": "Hard Rock", "microgenres": [] },
+        { "id": "jam-bands", "name": "Jam Bands", "microgenres": [] },
+        { "id": "prog-rock", "name": "Prog-Rock/Art Rock", "microgenres": [] },
+        { "id": "psychedelic-rock", "name": "Psychedelic", "microgenres": [] },
+        { "id": "rock-and-roll", "name": "Rock & Roll", "microgenres": [] },
+        { "id": "rockabilly", "name": "Rockabilly", "microgenres": [] },
+        { "id": "roots-rock", "name": "Roots Rock", "microgenres": [] },
+        { "id": "singer-songwriter", "name": "Singer/Songwriter", "microgenres": [] },
+        { "id": "southern-rock", "name": "Southern Rock", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "african-diaspora",
+      "name": "African & Diaspora",
+      "subgenres": [
+        { "id": "afrobeat", "name": "Afrobeat", "microgenres": [] },
+        { "id": "afrobeats", "name": "Afrobeats", "microgenres": [] },
+        { "id": "highlife", "name": "Highlife", "microgenres": [] },
+        { "id": "juju", "name": "Juju", "microgenres": [] },
+        { "id": "soukous", "name": "Soukous", "microgenres": [] },
+        { "id": "mbalax", "name": "Mbalax", "microgenres": [] },
+        { "id": "kwaito", "name": "Kwaito", "microgenres": [] },
+        { "id": "gqom", "name": "Gqom", "microgenres": [] },
+        { "id": "amapiano", "name": "Amapiano", "microgenres": [] },
+        { "id": "afro-cuban", "name": "Afro-Cuban", "microgenres": [] },
+        { "id": "afro-brazilian", "name": "Afro-Brazilian", "microgenres": [] },
+        { "id": "zouk", "name": "Zouk", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "traditional-black-american",
+      "name": "Traditional Black American",
+      "subgenres": [
+        { "id": "field-hollers", "name": "Field Hollers", "microgenres": [] },
+        { "id": "work-songs", "name": "Work Songs", "microgenres": [] },
+        { "id": "ring-shouts", "name": "Ring Shouts", "microgenres": [] },
+        { "id": "call-response", "name": "Call and Response", "microgenres": [] },
+        { "id": "jubilee", "name": "Jubilee", "microgenres": [] },
+        { "id": "brass-band", "name": "Brass Band", "microgenres": [] },
+        { "id": "second-line", "name": "Second Line", "microgenres": [] },
+        { "id": "zydeco", "name": "Zydeco", "microgenres": [] },
+        { "id": "swamp-blues", "name": "Swamp Blues", "microgenres": [] },
+        { "id": "swamp-pop", "name": "Swamp Pop", "microgenres": [] }
+      ]
+    },
+    {
+      "id": "world",
+      "name": "World",
+      "subgenres": [
+        { "id": "halk", "name": "Halk", "microgenres": [
+          { "id": "anatolian-folk", "name": "Anatolian Folk" },
+          { "id": "black-sea-folk", "name": "Black Sea Folk" },
+          { "id": "aegean-folk", "name": "Aegean Folk" }
+        ] },
+        { "id": "hawaii", "name": "Hawaii", "microgenres": [
+          { "id": "slack-key", "name": "Slack-Key Guitar" },
+          { "id": "hapa-haole", "name": "Hapa Haole" },
+          { "id": "traditional-hula", "name": "Traditional Hula" }
+        ] },
+        { "id": "iberia", "name": "Iberia", "microgenres": [
+          { "id": "flamenco", "name": "Flamenco" },
+          { "id": "fado", "name": "Fado" },
+          { "id": "sardana", "name": "Sardana" }
+        ] },
+        { "id": "indonesian-religious", "name": "Indonesian Religious", "microgenres": [
+          { "id": "qasidah-modern", "name": "Qasidah Modern" },
+          { "id": "gambus", "name": "Gambus" }
+        ] },
+        { "id": "israeli", "name": "Israeli", "microgenres": [
+          { "id": "mizrahi", "name": "Mizrahi" },
+          { "id": "israeli-folk-dance", "name": "Israeli Folk Dance" },
+          { "id": "piyyut", "name": "Piyyut" }
+        ] },
+        { "id": "japan", "name": "Japan", "microgenres": [
+          { "id": "enka", "name": "Enka" },
+          { "id": "kayokyoku", "name": "Kayōkyoku" },
+          { "id": "minyo", "name": "Min'yō" },
+          { "id": "city-pop", "name": "City Pop" }
+        ] },
+        { "id": "klezmer", "name": "Klezmer", "microgenres": [
+          { "id": "traditional-klezmer", "name": "Traditional Klezmer" },
+          { "id": "yiddish-swing", "name": "Yiddish Swing" },
+          { "id": "hasidic-klezmer", "name": "Hasidic Klezmer" }
+        ] },
+        { "id": "polka", "name": "Polka", "microgenres": [
+          { "id": "czech-polka", "name": "Czech Polka" },
+          { "id": "polish-polka", "name": "Polish Polka" },
+          { "id": "german-polka", "name": "German Polka" }
+        ] },
+        { "id": "russian", "name": "Russian", "microgenres": [
+          { "id": "balalaika-folk", "name": "Balalaika Folk" },
+          { "id": "barynya", "name": "Barynya" },
+          { "id": "cossack-song", "name": "Cossack Song" }
+        ] },
+        { "id": "russian-chanson", "name": "Russian Chanson", "microgenres": [
+          { "id": "blatnaya-pesnya", "name": "Blatnaya Pesnya" },
+          { "id": "urban-romance", "name": "Urban Romance" }
+        ] },
+        { "id": "sanat", "name": "Sanat", "microgenres": [
+          { "id": "turkish-classical", "name": "Turkish Classical" },
+          { "id": "arabesque", "name": "Arabesque" }
+        ] },
+        { "id": "south-africa", "name": "South Africa", "microgenres": [
+          { "id": "maskandi", "name": "Maskandi" },
+          { "id": "mbaqanga", "name": "Mbaqanga" },
+          { "id": "isicathamiya", "name": "Isicathamiya" }
+        ] },
+        { "id": "south-america", "name": "South America", "microgenres": [
+          { "id": "andean-folk", "name": "Andean Folk" },
+          { "id": "nueva-cancion", "name": "Nueva Canción" },
+          { "id": "cumbia", "name": "Cumbia" }
+        ] },
+        { "id": "tango-world", "name": "Tango", "microgenres": [
+          { "id": "traditional-tango", "name": "Traditional Tango" },
+          { "id": "nuevo-tango", "name": "Nuevo Tango" }
+        ] },
+        { "id": "traditional-celtic", "name": "Traditional Celtic", "microgenres": [
+          { "id": "irish-folk", "name": "Irish Folk" },
+          { "id": "scottish-folk", "name": "Scottish Folk" },
+          { "id": "breton-folk", "name": "Breton Folk" }
+        ] },
+        { "id": "worldbeat-world", "name": "Worldbeat", "microgenres": [
+          { "id": "afro-pop-fusion", "name": "Afro-Pop Fusion" }
+        ] }
+      ]
+    }
+  ]
+}

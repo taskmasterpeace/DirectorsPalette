@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sparkles, MapPin, Music, Zap, Loader2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GenreDrillDown } from "./GenreDrillDown"
-import { EnhancedArtistService } from "@/services/enhanced-artist-service"
+import { autoFillRemaining } from "@/app/actions/artists/enhanced"
 import type { ArtistProfile } from "@/lib/artist-types"
 
 interface AutoFillRemainingProps {
@@ -41,7 +41,7 @@ export function AutoFillRemaining({ currentProfile, onProfileUpdate }: AutoFillR
         microgenres: selectedMicrogenres
       }
       
-      const { fill } = await EnhancedArtistService.autoFillRemaining(currentProfile, userInputs)
+      const { fill } = await autoFillRemaining(currentProfile, userInputs)
       
       // Merge the filled data with current profile
       const updatedProfile = { ...currentProfile, ...fill }

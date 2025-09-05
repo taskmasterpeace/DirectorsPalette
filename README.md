@@ -1,35 +1,91 @@
-# 🎬 Director's Palette (ImgPromptGen)
+# Director's Palette
+## AI-Powered Content Creation Platform
+### A Machine King Labs Research Project
 
-> AI-powered visual story and music video breakdown tool for directors, filmmakers, and creative professionals
+![Director's Palette](https://img.shields.io/badge/Research%20Project-Machine%20King%20Labs-blue?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Active%20Development-green?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Open%20Source-orange?style=for-the-badge)
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+---
 
-## 📖 Overview
+## 🔬 **Research Mission**
 
-Director's Palette is a sophisticated web application that helps creative professionals generate detailed shot breakdowns for stories and music videos using AI. It applies director-specific visual styles to create professional, production-ready shot lists.
+**Machine King Labs** is an AI research laboratory dedicated to exploring the intersection of artificial intelligence and human creativity. **Director's Palette** represents our investigation into how AI can augment and enhance the creative process in storytelling, visual production, and content creation.
 
-### ✨ Key Features
+### **What We're Researching**
+- **AI-Driven Narrative Analysis** - How AI can break down stories into visual components
+- **Director-Specific Style Modeling** - Capturing unique directorial voices in AI generation
+- **Multi-Modal Content Workflows** - Seamless integration of text, visual, and production elements
+- **Human-AI Creative Collaboration** - Optimal patterns for AI-assisted creative work
 
-- **🎭 Dual Mode Operation**: Story mode for narrative films, Music Video mode for music productions
-- **🎨 Director Styles**: 20+ curated director profiles (Kubrick, Nolan, Fincher, etc.) plus custom creation
-- **📝 AI-Powered Generation**: Intelligent shot breakdowns with director-specific visual language
-- **🎵 Music Video Tools**: Lyrics analysis, treatment generation, performance ratio optimization
-- **👤 Artist Profiles**: Comprehensive artist management with visual preferences and brand identity
-- **🔖 Reference System**: Smart tagging for locations, wardrobe, props with @mentions
-- **💾 Session Persistence**: Auto-saves work with localStorage and IndexedDB
-- **🎯 Additional Shots**: Generate extra coverage with specific categories (action, closeup, etc.)
+### **Why Open Source?**
+We believe the future of AI creativity tools should be **open, collaborative, and accessible**. This research platform is our contribution to the global creative community, and we invite developers, researchers, filmmakers, and creators to build upon our work.
 
-## 🚀 Quick Start
+---
 
-### Prerequisites
+## 🎬 **What Director's Palette Does**
 
-- Node.js 18.0 or higher
-- npm or pnpm package manager
-- OpenAI API key (for AI generation features)
+Director's Palette transforms creative concepts into professional, production-ready shot lists using AI-powered director-specific styling. It bridges the gap between creative vision and practical production planning.
 
-### Installation
+### **Core Capabilities**
+
+#### 📚 **Story Mode**
+Transform written stories into cinematic shot lists with director-specific styling.
+
+**Features:**
+- **AI Story Analysis** - Extracts characters, locations, and props automatically
+- **Director Style Application** - Choose from Nolan, Tarantino, Fincher, Gerwig, and more
+- **Reference Extraction** - Identifies story elements for consistent representation
+- **Professional Export** - Generate production-ready shot lists
+
+**Example Workflow:**
+```
+Story Input → Reference Extraction → Director Selection → Shot Generation → Export
+```
+
+#### 🎵 **Music Video Mode**  
+Create comprehensive music video breakdowns with artist integration and visual storytelling.
+
+**Features:**
+- **Lyric Structure Analysis** - AI breaks down songs into visual sections
+- **Artist Bank Integration** - Detailed artist profiles with visual descriptions
+- **@artist Variable System** - Flexible artist representation (name vs description)
+- **Music Video Director Styles** - Hype Williams, Michel Gondry, Spike Jonze, and more
+
+**Example Workflow:**
+```
+Lyrics + Artist → Video Concept → Director Style → Section Generation → Export
+```
+
+#### 🖼️ **Post Production**
+Generate reference images and manage visual assets for production.
+
+**Features:**
+- **Gen4 Image Generation** - Create reference images from text prompts
+- **Reference Library** - Organize and manage visual assets
+- **Shot Queue Management** - Process shots from Story/Music Video modes
+- **Template-Based Prompts** - Use structured prompts for consistent results
+
+#### 🎯 **Export System**
+Professional export capabilities with advanced formatting and template support.
+
+**Features:**
+- **Bulk Export** - Export all shots with custom prefix/suffix formatting
+- **Multiple Formats** - Text, numbered lists, JSON, CSV
+- **Export Templates** - Pre-built formatting for different production needs
+- **Variable Processing** - Smart @artist and @director replacement
+
+---
+
+## 🚀 **Getting Started**
+
+### **Prerequisites**
+- Node.js 18+ 
+- npm or yarn
+- OpenAI API key (for AI generation)
+- Replicate API key (for image generation, optional)
+
+### **Installation**
 
 ```bash
 # Clone the repository
@@ -41,263 +97,241 @@ npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local and add your OpenAI API key:
-# OPENAI_API_KEY=your-api-key-here
+# Add your API keys to .env.local
 
 # Run development server
 npm run dev
 ```
 
-Visit `http://localhost:3000` to start using the application.
-
-### Production Build
-
-```bash
-# Build for production
-npm run build
-
-# Start production server
-npm run start
-```
-
-## 🎯 Usage
-
-### Story Mode
-
-1. **Enter Your Story**: Paste or type your narrative text
-2. **Select Director**: Choose from curated directors or create custom style
-3. **Configure Options**: 
-   - Enable/disable camera movements
-   - Include color palette descriptions
-   - Add lighting details
-4. **Generate Breakdown**: Get detailed shot-by-shot breakdown with director's visual style
-5. **Add References**: Use @tags for consistent character/location references
-6. **Generate Additional Shots**: Request specific coverage types
-
-### Music Video Mode
-
-1. **Input Song Details**: Add lyrics, artist name, genre
-2. **Select Director**: Choose music video director style
-3. **Configure Production**:
-   - Set locations (@warehouse, @rooftop, etc.)
-   - Define wardrobe (@streetwear, @formal, etc.)
-   - Add props (@motorcycle, @neon_sign, etc.)
-4. **Generate Treatments**: Get 3 unique video concepts
-5. **Create Shot List**: Generate detailed breakdown per song section
-6. **Adjust Performance Ratio**: Balance performance vs narrative shots
-
-## 🏗️ Architecture
-
-### Tech Stack
-
-- **Framework**: Next.js 15.2.4 with App Router
-- **Language**: TypeScript 5
-- **UI Components**: React 19 + Tailwind CSS 4 + shadcn/ui
-- **State Management**: Zustand with persist middleware
-- **Database**: IndexedDB for local storage
-- **AI Integration**: OpenAI GPT-4 via AI SDK
-- **Styling**: Tailwind CSS with custom animations
-
-### Project Structure
-
-```
-ImgPromptGen/
-├── app/                    # Next.js App Router pages
-│   ├── page.tsx           # Main application page
-│   ├── actions/           # Server actions for AI operations
-│   ├── artist-bank/       # Artist profile management
-│   ├── director-library/  # Director profiles
-│   └── projects/          # Project management
-├── components/            # React components
-│   ├── ui/               # shadcn/ui base components
-│   ├── containers/       # Container components
-│   ├── story/           # Story mode components
-│   └── music-video/     # Music video components
-├── hooks/                # Custom React hooks
-│   ├── useSessionManagement.ts
-│   ├── useStoryGeneration.ts
-│   └── useMusicVideoGeneration.ts
-├── lib/                  # Core business logic
-│   ├── *-db.ts          # Database operations
-│   ├── *-types.ts       # TypeScript definitions
-│   └── prompts-mv.ts    # AI prompt templates
-├── stores/              # Zustand state stores
-│   ├── app-store.ts
-│   ├── story-store.ts
-│   └── music-video-store.ts
-└── config/              # Configuration files
-    └── constants.ts     # App constants
-```
-
-## 🎨 Director Styles
-
-### Film Directors
-- **Christopher Nolan**: IMAX, practical effects, non-linear narratives
-- **Stanley Kubrick**: Symmetrical compositions, one-point perspective
-- **David Fincher**: Dark, precise, digital cinematography
-- **Terrence Malick**: Natural light, handheld, magic hour
-- **Wong Kar-wai**: Neon colors, slow motion, urban melancholy
-
-### Music Video Directors
-- **Spike Jonze**: Surreal, playful, conceptual
-- **Chris Cunningham**: Dark, visceral, technical innovation
-- **Michel Gondry**: Handmade effects, whimsical, colorful
-- **Hype Williams**: Fish-eye lens, vibrant colors, hip-hop aesthetic
-- **David LaChapelle**: Hyper-saturated, pop art, theatrical
-
-## 📚 API Reference
-
-### Server Actions
-
-#### `generateBreakdown(story, directorId, options)`
-Generate story breakdown with director style
-- `story`: Story text
-- `directorId`: Director profile ID
-- `options`: Camera, color, lighting preferences
-
-#### `generateFullMusicVideoBreakdown(params)`
-Generate complete music video treatment
-- `params.lyrics`: Song lyrics
-- `params.directorId`: Director style
-- `params.config`: Production configuration
-
-#### `generateAdditionalShots(params)`
-Generate extra coverage shots
-- `params.categories`: Shot types needed
-- `params.customRequest`: Specific requirements
-
-## 🔧 Configuration
-
-### Environment Variables
-
+### **Environment Variables**
 ```env
-# Required
-OPENAI_API_KEY=your-openai-api-key
+# Required for AI story/music video generation
+OPENAI_API_KEY=sk-your-openai-key-here
 
-# Optional
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-ENABLE_RATE_LIMITING=true
-MAX_REQUESTS_PER_MINUTE=60
+# Optional for image generation
+REPLICATE_API_TOKEN=r8-your-replicate-token-here
+
+# Application configuration
+NEXT_PUBLIC_APP_NAME=Director's Palette
 ```
 
-### Customization
+### **Quick Start Guide**
 
-Edit `config/constants.ts` to modify:
-- Default prompt templates
-- Shot categories
-- Director style attributes
-- UI configuration
+#### **Generate Your First Story Shot List (5 minutes)**
+1. **Enter a story** in the Story Mode textarea
+2. **Select a director** (try Christopher Nolan or David Fincher)
+3. **Click "Extract Story References"** to identify characters and locations
+4. **Review and configure** extracted elements
+5. **Generate shots** and review the results
+6. **Export all shots** with professional formatting
 
-## 🧪 Testing
-
-```bash
-# Run test suite
-node run-feature-tests.js
-
-# Test specific features
-node comprehensive-feature-test.js
-```
-
-### Test Coverage
-- ✅ Camera movement controls
-- ✅ Director style variations
-- ✅ Reference system (@tags)
-- ✅ Additional shots generation
-- ✅ Session persistence
-- ✅ Error boundaries
-
-## 🚢 Deployment
-
-### Vercel (Recommended)
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/taskmasterpeace/ImgPromptGen)
-
-1. Click the deploy button
-2. Add your `OPENAI_API_KEY` in environment variables
-3. Deploy
-
-### Manual Deployment
-
-```bash
-# Build the application
-npm run build
-
-# Start production server
-npm run start
-```
-
-### Docker
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### "Module not found: fs/promises"
-This warning is harmless and occurs because Next.js tries to bundle server-only modules. The app handles this gracefully with fallbacks.
-
-#### "Maximum update depth exceeded"
-Fixed in latest version. Update to the latest commit if experiencing this issue.
-
-#### Build fails on Vercel
-Ensure all environment variables are set in Vercel dashboard, particularly `OPENAI_API_KEY`.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow existing code style
-- Add tests for new features
-- Update documentation
-- Ensure build passes
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) - React framework
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [OpenAI](https://openai.com/) - AI capabilities
-- [Zustand](https://github.com/pmndrs/zustand) - State management
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/taskmasterpeace/ImgPromptGen/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/taskmasterpeace/ImgPromptGen/discussions)
-- **Email**: support@directorpalette.com
-
-## 🚀 Roadmap
-
-- [ ] Export to PDF/Final Draft format
-- [ ] Storyboard image generation
-- [ ] Team collaboration features
-- [ ] Mobile app development
-- [ ] Integration with production tools
-- [ ] Custom prompt library management
-- [ ] Multi-language support
-- [ ] Video reference library
+#### **Create Your First Music Video (7 minutes)**
+1. **Switch to Music Video mode**
+2. **Enter song lyrics** (or use a sample template)
+3. **Add artist information** from Artist Bank
+4. **Include visual description** for the artist
+5. **Generate video breakdown** and review sections
+6. **Toggle between @artist and description views**
+7. **Export all shots** with music video formatting
 
 ---
 
-<p align="center">Built with ❤️ by creative professionals for creative professionals</p>
+## 🧪 **Research Features**
+
+### **AI-Powered Generation**
+- **GPT-4 Integration** for intelligent content analysis and generation
+- **Director-Specific Prompting** with carefully crafted style guidelines
+- **Context-Aware Generation** that maintains consistency across shots
+- **Multi-Stage Processing** for complex creative workflows
+
+### **Template & Variable System**
+- **Smart Templates** for rapid content creation and testing
+- **Variable Replacement** with @artist, @director, @location tags
+- **Export Templates** for professional formatting consistency
+- **Prompt Templates** for image generation with tag replacement
+
+### **Professional Workflows**
+- **Bulk Operations** for production-scale projects
+- **Multiple Export Formats** for different team members
+- **Cross-Browser Compatibility** with clipboard and file operations
+- **Mobile-Responsive Design** for field work and remote collaboration
+
+---
+
+## 🛠️ **Technical Architecture**
+
+### **Built With**
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript 5
+- **UI**: React 19 + Tailwind CSS 4 + shadcn/ui
+- **State Management**: Zustand with persistence
+- **Database**: IndexedDB (browser-based)
+- **AI**: OpenAI GPT-4 via AI SDK
+- **Image Generation**: Replicate API
+
+### **Key Components**
+- **`/app`** - Next.js App Router with server actions
+- **`/components`** - Modular React components with TypeScript
+- **`/lib`** - Core business logic and utilities
+- **`/stores`** - Zustand state management stores
+- **`/hooks`** - Custom React hooks for common operations
+
+### **Research-Focused Architecture**
+- **Modular Design** - Easy to extend and experiment with
+- **Comprehensive Testing** - Unit, integration, and functionality tests
+- **Flexible Configuration** - Adaptable to different research directions
+- **Open Standards** - Uses standard formats and protocols
+
+---
+
+## 📊 **Current Research Status**
+
+### **Completed Research Areas** ✅
+- **Director Style Modeling** - Successfully implemented 15+ director styles
+- **Narrative Structure Analysis** - AI accurately breaks down stories into chapters
+- **Music Video Generation** - Complete lyric-to-visual mapping system
+- **Variable-Based Templating** - Flexible artist and element representation
+- **Professional Export Workflows** - Production-ready output formats
+
+### **Active Research Areas** 🔬
+- **Artist Visual Consistency** - Maintaining character appearance across shots
+- **Cross-Modal Generation** - Integrating text, image, and audio generation
+- **Collaborative AI Workflows** - Multi-user creative sessions with AI
+- **Template Learning** - AI learns from successful user templates
+- **Performance Optimization** - Scaling to larger projects and teams
+
+### **Future Research Directions** 🔮
+- **Real-Time Collaboration** - Live multi-user editing with AI assistance
+- **Advanced Image Generation** - Consistent character appearance across multiple images
+- **Production Integration** - Direct export to professional video editing tools
+- **Community Learning** - AI learns from open source community contributions
+- **Multi-Language Support** - International creative collaboration
+
+---
+
+## 🤝 **Contributing to the Research**
+
+We welcome contributions from researchers, developers, and creative professionals!
+
+### **Ways to Contribute**
+- **Code Contributions** - Features, bug fixes, performance improvements
+- **Research Insights** - Share findings about AI-assisted creativity
+- **Template Libraries** - Contribute story, music video, and export templates
+- **Documentation** - Improve guides, add examples, translate content
+- **Testing** - Help us test with real creative projects
+- **Community Building** - Help others learn and use the platform
+
+### **Getting Involved**
+1. **Read our [Contributing Guide](CONTRIBUTING.md)**
+2. **Check the [Development Setup](DEVELOPMENT.md)**
+3. **Browse [Open Issues](https://github.com/taskmasterpeace/ImgPromptGen/issues)**
+4. **Join our [Research Discussions](https://github.com/taskmasterpeace/ImgPromptGen/discussions)**
+
+---
+
+## 📈 **Research Impact & Metrics**
+
+### **Platform Capabilities**
+- **15+ Director Styles** implemented with unique characteristics
+- **3 Major Workflow Modes** (Story, Music Video, Post Production)
+- **100+ Professional Templates** for rapid content creation
+- **4 Export Formats** supporting different production needs
+- **Mobile-Responsive Design** for modern creative workflows
+
+### **Technical Achievements**
+- **Sub-second Export Processing** for production-scale projects
+- **Cross-Browser Compatibility** with comprehensive fallbacks
+- **Comprehensive Test Coverage** ensuring reliability
+- **Professional Documentation** for contributor onboarding
+- **Modular Architecture** enabling rapid feature development
+
+---
+
+## 📋 **Usage Examples**
+
+### **Film Production**
+```bash
+# Generate professional shot list for indie film
+Story: "Detective thriller with psychological elements"
+Director: David Fincher
+Export: Numbered list with technical specifications
+Result: Production-ready shot list with crew requirements
+```
+
+### **Music Video Creation**
+```bash
+# Create music video breakdown for hip-hop track
+Artist: Jay-Z (from Artist Bank)
+Lyrics: [Verse/Chorus structure]
+Director: Hype Williams
+Export: JSON format with metadata for video team
+```
+
+### **Content Creator Workflow**
+```bash
+# Quick social media content planning
+Template: "Hip-Hop Urban Vibe" 
+Customization: Local artist and locations
+Export: Social media optimized shot descriptions
+Distribution: Instagram, TikTok, YouTube Shorts
+```
+
+---
+
+## 🏢 **About Machine King Labs**
+
+**Machine King Labs** is an AI research laboratory focused on practical applications of artificial intelligence in creative industries. Our research spans:
+
+- **Creative AI Tools** - Platforms that enhance human creativity
+- **Content Generation Systems** - Multi-modal AI for media production  
+- **Human-AI Collaboration** - Optimizing creative partnerships with AI
+- **Open Source Research** - Democratizing access to AI creativity tools
+
+### **Our Research Philosophy**
+We believe AI should **augment human creativity**, not replace it. Our tools are designed to handle the technical and repetitive aspects of creative work, freeing humans to focus on vision, emotion, and artistic expression.
+
+### **Contact & Collaboration**
+- **Research Inquiries**: research@machinekings.labs
+- **Technical Support**: support@directorpalette.com
+- **Community**: [GitHub Discussions](https://github.com/taskmasterpeace/ImgPromptGen/discussions)
+- **Documentation**: [Complete Guides](docs/)
+
+---
+
+## 📄 **License**
+
+This project is open source and available under the [MIT License](LICENSE).
+
+### **Attribution**
+When using Director's Palette in your projects or research, please include:
+```
+Powered by Director's Palette - Machine King Labs Research Project
+https://github.com/taskmasterpeace/ImgPromptGen
+```
+
+---
+
+## 🙏 **Acknowledgments**
+
+- **OpenAI** for GPT-4 technology enabling intelligent content generation
+- **Replicate** for image generation infrastructure
+- **Vercel** for hosting and deployment platform
+- **shadcn/ui** for beautiful, accessible UI components
+- **The Open Source Community** for inspiring collaborative development
+
+---
+
+## 🔗 **Links & Resources**
+
+- **📖 [Complete User Guide](DIRECTOR-PALETTE-GUIDE.md)** - Comprehensive application documentation
+- **🧑‍💻 [Developer Reference](DEVELOPER-REFERENCE.md)** - Technical architecture and APIs
+- **🎓 [Step-by-Step Tutorial](USER-WIZARD-GUIDE.md)** - Beginner-friendly walkthrough
+- **🧪 [Research Documentation](docs/research/)** - Academic papers and findings
+- **🤝 [Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
+- **🐛 [Issue Tracker](https://github.com/taskmasterpeace/ImgPromptGen/issues)** - Bug reports and feature requests
+
+---
+
+**Built with ❤️ by the Machine King Labs Research Team**
+
+*Director's Palette - Where AI meets human creativity*

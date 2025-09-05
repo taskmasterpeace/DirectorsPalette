@@ -77,6 +77,7 @@ export const VisualLookSchema = z.object({
   hair_style: z.string().optional(),
   fashion_style: z.string().optional(),
   jewelry: z.string().optional(),
+  visual_description: z.string().optional(),
 })
 
 export const MaterialPrefsSchema = z.object({
@@ -177,6 +178,7 @@ export function blankArtist(): ArtistProfile {
       hair_style: "",
       fashion_style: "",
       jewelry: "",
+      visual_description: "",
     },
     material_prefs: {
       cars: [],

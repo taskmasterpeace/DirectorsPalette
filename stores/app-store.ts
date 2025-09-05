@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 
-type Mode = "story" | "music-video"
+type Mode = "story" | "music-video" | "commercial" | "children-book"
 
 interface AppState {
   // Mode state

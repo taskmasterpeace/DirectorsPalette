@@ -40,6 +40,7 @@ export interface MusicVideoConfig {
   locations: LocationConfig[]
   wardrobe: WardrobeConfig[]
   props: PropConfig[]
+  visualThemes?: string[]
   isConfigured: boolean
 }
 

@@ -1,0 +1,10 @@
+﻿{
+  "port": 3333,
+  "logLevel": "info",
+  "targets": [
+    {
+      "name": "local",
+      "wsEndpoint": "ws://localhost:9222/devtools/browser/your-browser-id"
+    }
+  ]
+}

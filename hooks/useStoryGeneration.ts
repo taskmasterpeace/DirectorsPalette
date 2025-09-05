@@ -2,9 +2,14 @@ import { useCallback, useState } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useStoryStore } from '@/stores/story-store'
 import { useStoryEntitiesStore } from '@/stores/story-entities-store'
+import { useStoryWorkflowStore } from '@/stores/story-workflow-store'
 import { useAppStore } from '@/stores/app-store'
-import { generateBreakdown, generateAdditionalChapterShots } from '@/app/actions-story'
-import { extractStoryEntities, generateStoryBreakdownWithEntities } from '@/app/actions/story-actions'
+import { 
+  generateStoryBreakdown, 
+  generateAdditionalChapterShots,
+  extractStoryEntities,
+  generateStoryBreakdownWithEntities
+} from '@/app/actions/story'
 import type { DirectorQuestion } from '@/components/story/DirectorQuestionCards'
 
 export function useStoryGeneration() {
@@ -12,6 +17,7 @@ export function useStoryGeneration() {
   const { setIsLoading } = useAppStore()
   const storyStore = useStoryStore()
   const entitiesStore = useStoryEntitiesStore()
+  const workflowStore = useStoryWorkflowStore()
   
   // Progress tracking state
   const [generationStage, setGenerationStage] = useState<'idle' | 'structure' | 'breakdowns' | 'complete'>('idle')
@@ -50,19 +56,14 @@ export function useStoryGeneration() {
     }, 100)
 
     try {
-      const result = await generateBreakdown(
+      const result = await generateStoryBreakdown(
         story,
         selectedDirector,
         storyDirectorNotes,
         titleCardOptions || undefined,
         promptOptions || undefined,
         chapterMethod,
-        userChapterCount,
-        (stage, current, total, message) => {
-          setGenerationStage(stage as any)
-          setStageProgress({ current, total })
-          setStageMessage(message || '')
-        }
+        userChapterCount
       )
 
       if (result.success && result.data) {
@@ -110,11 +111,11 @@ export function useStoryGeneration() {
   ) => {
     const { breakdown, selectedDirector } = storyStore
     
-    if (!breakdown) return
+    if (!breakdown || !breakdown.chapters) return
 
     setIsLoading(true)
     try {
-      const chapter = breakdown.chapters.find(c => c.id === chapterId)
+      const chapter = breakdown.chapters?.find(c => c.id === chapterId)
       if (!chapter) throw new Error('Chapter not found')
 
       const result = await generateAdditionalChapterShots(
@@ -238,10 +239,11 @@ export function useStoryGeneration() {
     entitiesStore.setExtractedEntities(null)
     entitiesStore.setCurrentEntities(null)
     entitiesStore.setShowEntitiesConfig(false)
+    workflowStore.resetWorkflow()
     setGenerationStage('idle')
     setStageProgress({ current: 0, total: 0 })
     setStageMessage('')
-  }, [storyStore, entitiesStore])
+  }, [storyStore, entitiesStore, workflowStore])
 
   return {
     // State

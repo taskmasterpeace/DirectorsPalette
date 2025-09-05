@@ -16,6 +16,8 @@ interface MusicVideoState {
   // Artist selection
   selectedArtistId: string | null
   selectedArtistProfile: ArtistProfile | undefined
+  artistVisualDescription: string
+  showDescriptions: boolean
   
   // Director selection
   selectedMusicVideoDirector: string
@@ -44,9 +46,20 @@ interface MusicVideoActions {
   setMvConcept: (concept: string) => void
   setMvDirectorNotes: (notes: string) => void
   
+  // Import action
+  importFromSongDNA: (data: {
+    songTitle: string
+    artist: string
+    lyrics: string
+    genre?: string
+    mvConcept?: string
+  }) => void
+  
   // Artist selection actions
   setSelectedArtistId: (id: string | null) => void
   setSelectedArtistProfile: (profile: ArtistProfile | undefined) => void
+  setArtistVisualDescription: (description: string) => void
+  setShowDescriptions: (show: boolean) => void
   
   // Director actions
   setSelectedMusicVideoDirector: (directorId: string) => void
@@ -78,6 +91,8 @@ const initialMusicVideoState: MusicVideoState = {
   mvDirectorNotes: "",
   selectedArtistId: null,
   selectedArtistProfile: undefined,
+  artistVisualDescription: "",
+  showDescriptions: false,
   selectedMusicVideoDirector: "hype-williams",
   musicVideoConfig: null,
   showMusicVideoConfig: false,
@@ -106,6 +121,8 @@ export const useMusicVideoStore = create<MusicVideoState & MusicVideoActions>()(
         // Artist selection actions
         setSelectedArtistId: (selectedArtistId) => set({ selectedArtistId }),
         setSelectedArtistProfile: (selectedArtistProfile) => set({ selectedArtistProfile }),
+        setArtistVisualDescription: (artistVisualDescription) => set({ artistVisualDescription }),
+        setShowDescriptions: (showDescriptions) => set({ showDescriptions }),
         
         // Director actions
         setSelectedMusicVideoDirector: (selectedMusicVideoDirector) => set({ selectedMusicVideoDirector }),
@@ -133,6 +150,19 @@ export const useMusicVideoStore = create<MusicVideoState & MusicVideoActions>()(
           }
         })),
         setSelectedMusicVideoSection: (selectedMusicVideoSection) => set({ selectedMusicVideoSection }),
+        
+        // Import action
+        importFromSongDNA: (data) => set({
+          songTitle: data.songTitle,
+          artist: data.artist,
+          lyrics: data.lyrics,
+          genre: data.genre || "",
+          mvConcept: data.mvConcept || "",
+          // Clear any existing breakdown when importing new song
+          musicVideoBreakdown: null,
+          additionalMusicVideoShots: {},
+          expandedSections: {}
+        }),
         
         // Reset action
         resetMusicVideoState: () => set(initialMusicVideoState)

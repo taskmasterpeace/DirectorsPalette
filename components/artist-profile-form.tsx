@@ -19,7 +19,7 @@ import {
   RACE_ETHNICITY_OPTIONS,
 } from "@/lib/artist-types"
 import { artistDB } from "@/lib/artist-db"
-import { ArtistService } from "@/services"
+import { autofillArtistProfile, createArtistFromDescription, createArtistFromLyrics } from "@/app/actions/artists"
 import { useArtistStore } from "@/lib/artist-store"
 
 type Props = {
@@ -177,7 +177,7 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
   async function onAutoFill() {
     setIsLoading(true)
     try {
-      const res = await ArtistService.autofillProfile(state)
+      const res = await autofillArtistProfile(state)
       const merged = mergeArtist<ArtistProfile>(state, res.fill)
       setState((prev) => ({ ...prev, ...merged }))
     } catch (error) {
@@ -191,7 +191,7 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
     if (!description.trim()) return
     setIsLoading(true)
     try {
-      const res = await ArtistService.createFromDescription(description)
+      const res = await createArtistFromDescription(description)
       setState(res.profile)
       setDescription("")
       setShowDescriptionInput(false)
@@ -206,7 +206,7 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
     if (!lyrics.trim()) return
     setIsLoading(true)
     try {
-      const res = await ArtistService.createFromLyrics(lyrics)
+      const res = await createArtistFromLyrics(lyrics)
       setState(res.profile)
       setLyrics("")
       setShowLyricsInput(false)
@@ -792,6 +792,21 @@ export default function ArtistProfileForm({ initial, onSaved }: Props) {
                 placeholder="chains, grillz, rings"
               />
             </div>
+          </div>
+          
+          {/* Visual Description for @artist replacement */}
+          <div className="mt-3">
+            <label className="text-slate-300 text-sm">🎬 Visual Description (for @artist replacement)</label>
+            <Textarea
+              value={state.visual_look?.visual_description || ""}
+              onChange={(e) => set("visual_look.visual_description", e.target.value)}
+              className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-500"
+              placeholder="Detailed visual description: appearance, style, distinctive features (e.g., 'Ron-Ron, a confident Black man with gold chains, designer streetwear, and face tattoos')"
+              rows={3}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              This description will replace @artist in music video shots when enabled
+            </p>
           </div>
         </div>
 
