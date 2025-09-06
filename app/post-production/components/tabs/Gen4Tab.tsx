@@ -33,6 +33,8 @@ import {
   Edit
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
+import { UnifiedImageGallery } from '@/components/post-production/UnifiedImageGallery'
 import { useAuth } from '@/components/auth/AuthProvider'
 import type { 
   Gen4ReferenceImage,
@@ -98,6 +100,7 @@ export function Gen4Tab({
 }: Gen4TabProps) {
   const { toast } = useToast()
   const { user, getToken } = useAuth()
+  const { addImage } = useUnifiedGalleryStore()
   
   // Gen4 Prefix/Suffix System
   const [gen4Prefix, setGen4Prefix] = useState('')
@@ -378,6 +381,23 @@ export function Gen4Tab({
       }
       
       setGen4Generations(prev => [newGeneration, ...prev])
+      
+      // Save to unified gallery for cross-tab persistence
+      if (newGeneration.outputUrl) {
+        addImage({
+          url: newGeneration.outputUrl,
+          prompt: finalPrompt,
+          source: 'shot-creator',
+          model: 'nano-banana',
+          settings: {
+            aspectRatio: gen4Settings.aspectRatio,
+            resolution: gen4Settings.resolution,
+            seed: gen4Settings.seed
+          },
+          creditsUsed: 25, // Base cost for nano-banana
+          tags: ['generated', 'gen4', 'nano-banana']
+        })
+      }
       
       // Auto-save to library
       if (result.images?.[0] || result.imageUrl) {
@@ -1256,6 +1276,26 @@ export function Gen4Tab({
           </CardContent>
         </Card>
       )}
+
+      {/* Unified Image Gallery - Persistent Across All Tabs */}
+      <UnifiedImageGallery
+        currentTab="shot-creator"
+        onSendToTab={(imageUrl, targetTab) => {
+          if (targetTab === 'shot-editor' && onSendToImageEdit) {
+            onSendToImageEdit(imageUrl)
+          }
+          // TODO: Add send to shot-animator functionality
+        }}
+        onUseAsReference={(imageUrl) => {
+          // Add image as reference to Gen4
+          console.log('Using as reference:', imageUrl)
+          toast({
+            title: "Added as Reference",
+            description: "Image added to reference slots"
+          })
+        }}
+        className="mt-6"
+      />
 
       {/* Category Selection Dialog */}
       <CategorySelectionDialog

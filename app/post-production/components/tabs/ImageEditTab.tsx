@@ -37,6 +37,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { editImageWithQwen } from '@/app/actions/image-edit'
+import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
+import { UnifiedImageGallery } from '@/components/post-production/UnifiedImageGallery'
 import {
   Collapsible,
   CollapsibleContent,
@@ -61,6 +63,7 @@ interface ImageEditTabProps {
 export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEditTabProps) {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { addImage } = useUnifiedGalleryStore()
   
   // Core editing state
   const [inputImage, setInputImage] = useState<string>('')
@@ -300,9 +303,27 @@ export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEd
         
         setEditResults(prev => [session, ...prev])
         
+        // Save each output image to unified gallery
+        session.outputImages.forEach((imageUrl) => {
+          addImage({
+            url: imageUrl,
+            prompt: editPrompt,
+            source: 'shot-editor',
+            originalImage: inputImage,
+            editInstructions: editPrompt,
+            model: 'qwen-edit',
+            settings: {
+              aspectRatio: 'auto',
+              resolution: 'original'
+            },
+            creditsUsed: 3, // Approximate cost for image editing
+            tags: ['edited', 'qwen-edit']
+          })
+        })
+        
         toast({
           title: "Image Edited Successfully",
-          description: "Your image has been edited"
+          description: "Your image has been edited and saved to gallery"
         })
       } else {
         throw new Error(result.error || 'Unknown error')
@@ -731,6 +752,25 @@ export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEd
           </Card>
         </div>
       </div>
+
+      {/* Unified Image Gallery - Persistent Across All Tabs */}
+      <UnifiedImageGallery
+        currentTab="shot-editor"
+        onSendToTab={(imageUrl, targetTab) => {
+          if (targetTab === 'shot-creator' && onSendToAIGenerator) {
+            onSendToAIGenerator(imageUrl)
+          }
+          // TODO: Add send to shot-animator functionality
+        }}
+        onUseAsReference={(imageUrl) => {
+          setInputImage(imageUrl)
+          toast({
+            title: "Image Loaded",
+            description: "Image loaded as input for editing"
+          })
+        }}
+        className="mt-6"
+      />
 
       {/* Fullscreen Image Modal */}
       {fullscreenImage && (
