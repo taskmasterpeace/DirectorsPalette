@@ -42,36 +42,8 @@ function getClientIP(): string {
   return forwarded?.split(',')[0] || real || 'unknown'
 }
 
-// Rate limiting for admin actions
-const adminActionAttempts = new Map<string, { count: number; lastAttempt: number }>()
-
-export function checkAdminRateLimit(userEmail: string, maxAttempts: number = 5, windowMs: number = 300000): boolean {
-  const now = Date.now()
-  const key = `admin-${userEmail}`
-  const attempts = adminActionAttempts.get(key)
-  
-  if (!attempts) {
-    adminActionAttempts.set(key, { count: 1, lastAttempt: now })
-    return true
-  }
-  
-  // Reset window if enough time has passed
-  if (now - attempts.lastAttempt > windowMs) {
-    adminActionAttempts.set(key, { count: 1, lastAttempt: now })
-    return true
-  }
-  
-  // Check if under limit
-  if (attempts.count < maxAttempts) {
-    attempts.count++
-    attempts.lastAttempt = now
-    return true
-  }
-  
-  // Rate limited
-  console.warn(`🚨 Admin rate limit exceeded for ${userEmail}`)
-  return false
-}
+// Rate limiting moved to client-side utility
+// This function was moved to /lib/utils/rate-limiting.ts since it doesn't need to be a server action
 
 // Secure admin middleware wrapper
 export async function withAdminAuth<T>(

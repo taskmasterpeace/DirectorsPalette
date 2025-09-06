@@ -33,6 +33,7 @@ import {
   Edit
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { useAuth } from '@/components/auth/AuthProvider'
 import type { 
   Gen4ReferenceImage,
   Gen4Generation,
@@ -96,6 +97,7 @@ export function Gen4Tab({
   onSendToImageEdit
 }: Gen4TabProps) {
   const { toast } = useToast()
+  const { user, getToken } = useAuth()
   
   // Gen4 Prefix/Suffix System
   const [gen4Prefix, setGen4Prefix] = useState('')
@@ -309,10 +311,19 @@ export function Gen4Tab({
         })
       )
       
+      // Get auth token for API call
+      const token = await getToken()
+      if (!token) {
+        throw new Error('Authentication required. Please sign in.')
+      }
+
       // Generate with Gen4
       const response = await fetch('/post-production/api/gen4', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           prompt: finalPrompt,
           aspect_ratio: gen4ReferenceImages[0]?.detectedAspectRatio || gen4Settings.aspectRatio,
@@ -329,8 +340,29 @@ export function Gen4Tab({
       })
       
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Generation failed: ${response.status} - ${errorText}`)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        
+        // Handle specific error cases
+        if (response.status === 402) {
+          // Insufficient credits
+          toast({
+            title: "Insufficient Credits",
+            description: `Need ${errorData.required || 'more'} credits. You have ${errorData.available || 0}. Shortfall: ${errorData.shortfall || 'unknown'} credits.`,
+            variant: "destructive",
+            duration: 8000
+          })
+          return
+        } else if (response.status === 401) {
+          // Authentication error
+          toast({
+            title: "Authentication Error",
+            description: "Please sign in to generate images.",
+            variant: "destructive"
+          })
+          return
+        }
+        
+        throw new Error(errorData.error || `Generation failed: ${response.status}`)
       }
       
       const result = await response.json()
@@ -363,9 +395,14 @@ export function Gen4Tab({
         }
       }
       
+      // Show success message with credits info
+      const creditsMessage = result.creditsUsed 
+        ? `Used ${result.creditsUsed} credits. ${result.remainingCredits || 'Credits'} remaining.`
+        : "Image generated successfully"
+        
       toast({
         title: "Generation Complete",
-        description: "Image generated successfully"
+        description: creditsMessage
       })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"

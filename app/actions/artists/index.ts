@@ -62,8 +62,8 @@ export async function autofillArtistProfile(input: ArtistProfile | ArtistProfile
   }
 
   // Extract basic info from either format
-  const artistName = 'artist_name' in input ? input.artist_name : input.identity_persona?.artist_name
-  const genres = 'genres' in input ? input.genres : input.musical_dna?.genres?.primary
+  const artistName = 'artist_name' in input ? input.artist_name : (input as any).identity_persona?.artist_name
+  const genres = 'genres' in input ? input.genres : (input as any).musical_dna?.genres?.primary
 
   const prompt = `
 Based on the artist name "${artistName}" and genres ${JSON.stringify(genres)}, generate a comprehensive artist profile for AI music creation.

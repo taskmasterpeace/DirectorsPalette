@@ -757,7 +757,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[80vh]">
             <div className="space-y-3">
               {filteredShots.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
@@ -973,31 +973,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Statistics */}
-      {allShots.length > 0 && (
-        <Card>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-blue-500">{allShots.length}</div>
-                <div className="text-xs text-muted-foreground">Total Shots</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-500">{shotQueue.length}</div>
-                <div className="text-xs text-muted-foreground">Pending</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-500">{completedShots.length}</div>
-                <div className="text-xs text-muted-foreground">Completed</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-500">{failedShots.length}</div>
-                <div className="text-xs text-muted-foreground">Failed</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

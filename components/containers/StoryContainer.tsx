@@ -1,6 +1,7 @@
 'use client'
 
 import { StoryInputConnected } from '@/components/story/StoryInputConnected'
+import { TemplateBanner } from '@/components/shared/TemplateBanner'
 import { StoryMode } from '@/components/story/StoryMode'
 import { StoryReferenceConfig } from '@/components/story/StoryReferenceConfig'
 import { DirectorQuestionCards, type DirectorQuestion } from '@/components/story/DirectorQuestionCards'
@@ -140,6 +141,15 @@ export function StoryContainer() {
   
   return (
     <div className="space-y-6">
+      {/* Template Banner */}
+      <TemplateBanner
+        mode="story"
+        templates={[]} // TODO: Add actual templates
+        selectedTemplate={null}
+        onTemplateSelect={() => {}} // TODO: Implement template selection
+        onCreateNew={() => {}} // TODO: Implement template creation
+      />
+      
       {/* Story Input Section - Now connected directly to stores */}
       <StoryInputConnected
         onExtractReferences={handleExtractReferences}

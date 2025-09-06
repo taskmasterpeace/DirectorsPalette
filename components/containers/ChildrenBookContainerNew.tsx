@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { TemplateBanner } from '@/components/shared/TemplateBanner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -120,6 +121,15 @@ export function ChildrenBookContainerNew() {
 
   return (
     <div className="space-y-6">
+      {/* Template Banner */}
+      <TemplateBanner
+        mode="children-book"
+        templates={[]} // TODO: Add actual templates
+        selectedTemplate={null}
+        onTemplateSelect={() => {}} // TODO: Implement template selection
+        onCreateNew={() => {}} // TODO: Implement template creation
+      />
+      
       {/* Header */}
       <Card>
         <CardHeader>

@@ -347,8 +347,8 @@ export default function EnhancedPostProductionPage() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Chapter & Model Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Chapter Selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-white text-sm font-medium mb-2 block">Select Chapter</Label>
                       <Select defaultValue="all">
@@ -360,20 +360,6 @@ export default function EnhancedPostProductionPage() {
                           <SelectItem value="chapter-1">📖 Chapter 1</SelectItem>
                           <SelectItem value="chapter-2">📖 Chapter 2</SelectItem>
                           <SelectItem value="chapter-3">📖 Chapter 3</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-white text-sm font-medium mb-2 block">AI Model</Label>
-                      <Select defaultValue="seedance-lite">
-                        <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="seedance-lite">🎥 Seedance Lite (720p)</SelectItem>
-                          <SelectItem value="seedance-pro">🎥 Seedance Pro (1080p)</SelectItem>
-                          <SelectItem value="future-model">🔮 More Models Soon</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

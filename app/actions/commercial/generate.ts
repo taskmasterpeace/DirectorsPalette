@@ -87,8 +87,8 @@ export async function generateCommercial(config: CommercialConfig): Promise<Comm
       commercial: enhancedCommercial,
       generatedAt: new Date().toISOString(),
       tokens_used: {
-        prompt: result.usage?.promptTokens || 0,
-        completion: result.usage?.completionTokens || 0,
+        prompt: (result.usage as any)?.promptTokens || 0,
+        completion: (result.usage as any)?.completionTokens || 0,
         total: result.usage?.totalTokens || 0
       }
     }
