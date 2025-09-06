@@ -32,7 +32,8 @@ import {
   Clock,
   ZoomIn,
   ArrowRight,
-  X
+  X,
+  Film
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { editImageWithQwen } from '@/app/actions/image-edit'
@@ -646,22 +647,30 @@ export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEd
                               <img
                                 src={imageUrl}
                                 alt={`Edit result ${index + 1}`}
-                                className="w-full max-h-48 object-contain rounded border border-slate-600 bg-slate-800 cursor-pointer transition-all hover:border-purple-500"
-                                onClick={() => setFullscreenImage(imageUrl)}
+                                className="w-full max-h-48 object-contain rounded border border-slate-600 bg-slate-800 transition-all hover:border-purple-500"
                               />
                               
-                              {/* Magnifying glass hover indicator */}
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <ZoomIn className="w-8 h-8 text-white" />
+                              {/* Magnifying glass hover indicator - click anywhere on image for fullscreen */}
+                              <div 
+                                className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setFullscreenImage(imageUrl)
+                                }}
+                              >
+                                <ZoomIn className="w-12 h-12 text-white drop-shadow-lg" />
                               </div>
                               
-                              {/* Action buttons */}
-                              <div className="absolute top-1 right-1 flex gap-1">
+                              {/* Action buttons - positioned to avoid conflicts */}
+                              <div className="absolute bottom-1 right-1 flex gap-1">
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => handleCopyImage(imageUrl)}
-                                  className="h-6 w-6 p-0 opacity-90 hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCopyImage(imageUrl)
+                                  }}
+                                  className="h-6 w-6 p-0 opacity-90 hover:opacity-100 bg-slate-700 hover:bg-slate-600"
                                   title="Copy image URL"
                                 >
                                   <Copy className="w-3 h-3" />
@@ -670,11 +679,32 @@ export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEd
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  onClick={() => handleSendToAIGenerator(imageUrl)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSendToAIGenerator(imageUrl)
+                                  }}
                                   className="h-6 w-6 p-0 bg-purple-600 hover:bg-purple-700 text-white"
-                                  title="Send to AI Generator"
+                                  title="Send to Shot Creator"
                                 >
-                                  <ArrowRight className="w-3 h-3" />
+                                  <Sparkles className="w-3 h-3" />
+                                </Button>
+                                
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    // TODO: Implement send to Shot Animator
+                                    console.log('Send to Shot Animator:', imageUrl)
+                                    toast({
+                                      title: "Sent to Shot Animator",
+                                      description: "Image ready for video generation"
+                                    })
+                                  }}
+                                  className="h-6 w-6 p-0 bg-orange-600 hover:bg-orange-700 text-white"
+                                  title="Send to Shot Animator"
+                                >
+                                  <Film className="w-3 h-3" />
                                 </Button>
                                 
                                 {onSendToWorkspace && (
