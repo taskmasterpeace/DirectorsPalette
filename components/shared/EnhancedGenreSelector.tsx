@@ -119,7 +119,8 @@ export function EnhancedGenreSelector({
 
   const allGenres = getAllMainGenres()
   const stats = getGenreStats()
-  const favoritesManager = showFavorites ? useFavoritesManager() : { favorites: [], toggleFavorite: () => {} }
+  const favoritesManagerHook = useFavoritesManager()
+  const favoritesManager = showFavorites ? favoritesManagerHook : { favorites: [], toggleFavorite: () => {} }
 
   // Update internal state when external value changes
   useEffect(() => {

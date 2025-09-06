@@ -23,7 +23,7 @@ export {
 } from './music-video'
 
 // Director Actions
-export { generateDirectorStyleDetails } from './actions-director'
+// Note: generateDirectorStyleDetails removed - file ./actions-director not found
 
 // Shared Types
 export type { 

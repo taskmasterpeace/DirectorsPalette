@@ -128,7 +128,6 @@ Fill ONLY missing fields with authentic, detailed information that matches the a
 Keep all existing values exactly as they are.
 Focus on visual and performance aspects relevant to music video creation.`,
       temperature: 0.7,
-      maxTokens: 2500,
     })
 
     // Merge the filled data with the existing profile, preserving existing values
