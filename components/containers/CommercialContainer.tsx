@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { TemplateBanner } from '@/components/shared/TemplateBanner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -474,6 +475,15 @@ export function CommercialContainer() {
   return (
     <CommercialErrorBoundary>
       <div className="space-y-4 sm:space-y-6">
+        {/* Template Banner */}
+        <TemplateBanner
+          mode="commercial"
+          templates={[]} // TODO: Add actual templates
+          selectedTemplate={null}
+          onTemplateSelect={() => {}} // TODO: Implement template selection
+          onCreateNew={() => {}} // TODO: Implement template creation
+        />
+        
         {renderStage()}
         
         {/* Director Question Cards Modal */}

@@ -144,6 +144,24 @@ export async function universalLogout(): Promise<void> {
   }
 }
 
+export async function universalGetToken(): Promise<string | null> {
+  if (USE_SUPABASE) {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error || !session) {
+        return null
+      }
+      return session.access_token
+    } catch (error) {
+      console.error('Failed to get auth token:', error)
+      return null
+    }
+  }
+  
+  // For localStorage mode, we don't have tokens
+  return null
+}
+
 export async function universalGetSession(): Promise<AuthSession> {
   if (USE_SUPABASE) {
     try {

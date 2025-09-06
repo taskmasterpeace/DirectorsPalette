@@ -59,7 +59,7 @@ export function AudioTranscriptionUpload({ onLyricsExtracted, className = "" }: 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [transcriptionResult, setTranscriptionResult] = useState<any>(null)
   const [progress, setProgress] = useState(0)
-  const [language, setLanguage] = useState('auto')
+  const [language, setLanguage] = useState('en')
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -179,73 +179,22 @@ export function AudioTranscriptionUpload({ onLyricsExtracted, className = "" }: 
   return (
     <div className={className}>
       
-      {/* Model Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-        <div>
-          <label className="text-xs text-slate-300 mb-2 block">Transcription Model</label>
-          <Select value={selectedModel} onValueChange={(value: any) => setSelectedModel(value)}>
-            <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(WHISPER_MODELS).map(([key, model]) => (
-                <SelectItem key={key} value={key}>
-                  <div className="flex items-center gap-2">
-                    <span>{model.name}</span>
-                    {model.recommended && <Badge variant="secondary" className="text-xs">Recommended</Badge>}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label className="text-xs text-slate-300 mb-2 block">Language</label>
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Auto-Detect</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="de">German</SelectItem>
-              <SelectItem value="it">Italian</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Compact Settings - Hidden by default, configurable in settings */}
+      <div className="mb-2">
+        <div className="text-xs text-slate-400">
+          Audio Transcription: Simple Whisper (English) • $0.05/min
         </div>
       </div>
-
-      {/* Model Info */}
-      {(() => {
-        const model = WHISPER_MODELS[selectedModel]
-        return (
-          <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium text-white">{model.name}</div>
-                <div className="text-xs text-slate-400">{model.description}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-medium text-green-400">{model.cost}</div>
-                <div className="text-xs text-slate-400">Est. cost per minute</div>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* File Upload */}
       {!uploadedFile ? (
         <div 
-          className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-slate-500 hover:bg-slate-800/20 transition-all"
+          className="border-2 border-dashed border-slate-600 rounded-lg p-3 text-center cursor-pointer hover:border-slate-500 hover:bg-slate-800/20 transition-all"
           onClick={() => fileInputRef.current?.click()}
         >
-          <Music className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-          <div className="text-white font-medium mb-1">Upload Audio File</div>
-          <div className="text-sm text-slate-400 mb-3">
+          <Music className="w-6 h-6 text-slate-500 mx-auto mb-2" />
+          <div className="text-sm text-white font-medium mb-1">Upload Audio File</div>
+          <div className="text-xs text-slate-400 mb-2">
             MP3, WAV, M4A, or OGG • Max 25MB
           </div>
           <Button size="sm" variant="outline">

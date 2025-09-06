@@ -1,4 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { userCreditService } from '@/lib/credits/user-credits';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client for auth verification
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,6 +17,27 @@ export async function POST(request: NextRequest) {
       );
     }
     const apiKey = process.env.REPLICATE_API_TOKEN;
+
+    // Extract user token from Authorization header
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Invalid authentication token" },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
     const {
       prompt,
       aspect_ratio,
@@ -35,6 +64,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "At least one reference image is required" },
         { status: 400 }
+      );
+    }
+
+    // Credit calculation based on model and settings
+    const getOperationCost = (model: string, resolution: string) => {
+      const baseCosts = {
+        'nano-banana': 25,
+        'gen4-image': 50, 
+        'gen4-image-turbo': 75
+      };
+      
+      const resolutionMultiplier = {
+        '720p': 1,
+        '1080p': 1.5,
+        '4K': 2.5
+      };
+      
+      const base = baseCosts[model as keyof typeof baseCosts] || 25;
+      const multiplier = resolutionMultiplier[resolution as keyof typeof resolutionMultiplier] || 1;
+      
+      return Math.ceil(base * multiplier);
+    };
+
+    const operationCost = getOperationCost(model, resolution);
+
+    // Check user credits before processing
+    const userCredits = await userCreditService.getUserCredits(userId);
+    if (!userCredits) {
+      return NextResponse.json(
+        { error: "Unable to verify user credits" },
+        { status: 500 }
+      );
+    }
+
+    if (userCredits.current_points < operationCost) {
+      return NextResponse.json(
+        { 
+          error: "Insufficient credits",
+          required: operationCost,
+          available: userCredits.current_points,
+          shortfall: operationCost - userCredits.current_points
+        },
+        { status: 402 } // Payment Required
       );
     }
 
@@ -119,11 +191,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (result.status === "succeeded") {
+      // Deduct credits after successful generation
+      const deductionResult = await userCreditService.deductPoints(
+        userId,
+        operationCost,
+        'image_generation',
+        model,
+        `${model} (${resolution})`,
+        operationCost * 0.001, // Approximate USD cost
+        'gen4_api',
+        0 // tokens not applicable for image generation
+      );
+
+      if (!deductionResult.success) {
+        console.error('❌ Failed to deduct credits after successful generation:', deductionResult.error);
+        // Continue anyway since generation succeeded
+      }
+
       return NextResponse.json({
         success: true,
         images: Array.isArray(result.output) ? result.output : [result.output],
         predictionId: result.id,
         referenceCount: reference_images.length,
+        creditsUsed: operationCost,
+        remainingCredits: deductionResult.remainingPoints || userCredits.current_points - operationCost
       });
     } else {
       return NextResponse.json(

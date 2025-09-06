@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { LoginForm } from './LoginForm'
-import { universalGetSession, universalLogout, isSupabaseReady, getAuthMode, type User, type AuthSession } from '@/lib/auth-supabase'
+import { universalGetSession, universalLogout, universalGetToken, isSupabaseReady, getAuthMode, type User, type AuthSession } from '@/lib/auth-supabase'
 
 interface AuthContextType extends AuthSession {
   login: (user: User) => void
   logout: () => void
   refreshSession: () => void
+  getToken: () => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -65,6 +66,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setSession(currentSession)
   }
 
+  const getToken = async (): Promise<string | null> => {
+    return await universalGetToken()
+  }
+
   // Show loading state
   if (isLoading) {
     return (
@@ -97,7 +102,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ...session,
       login,
       logout,
-      refreshSession
+      refreshSession,
+      getToken
     }}>
       {children}
     </AuthContext.Provider>

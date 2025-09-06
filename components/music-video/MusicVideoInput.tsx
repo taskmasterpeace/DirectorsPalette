@@ -238,6 +238,18 @@ export function MusicVideoInput({
           </p>
         </div>
 
+        {/* Templates Button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            className="border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white"
+            disabled={isLoading}
+          >
+            <Music className="h-4 w-4 mr-2" />
+            Templates
+          </Button>
+        </div>
+
         {/* Generation Buttons */}
         <div className="flex gap-3">
           <Button

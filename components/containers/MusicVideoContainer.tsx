@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { MusicVideoInput } from '@/components/music-video/MusicVideoInput'
+import { CompactMusicVideoInput } from '@/components/music-video/CompactMusicVideoInput'
+import { TemplateBanner } from '@/components/shared/TemplateBanner'
 import { MusicVideoWorkflow } from '@/components/music-video/MusicVideoWorkflow'
 import { MusicVideoMode } from '@/components/music-video/MusicVideoMode'
 import { useMusicVideoGeneration } from '@/hooks/useMusicVideoGeneration'
@@ -127,36 +128,45 @@ export function MusicVideoContainer() {
 
   return (
     <div className="space-y-6">
+      {/* Template Banner */}
+      <TemplateBanner
+        mode="music-video"
+        templates={[]} // TODO: Add actual templates
+        selectedTemplate={null}
+        onTemplateSelect={() => {}} // TODO: Implement template selection
+        onCreateNew={() => {}} // TODO: Implement template creation
+      />
+      
       {/* Only show input if we don't have a breakdown yet */}
       {!musicVideoStore.musicVideoBreakdown && (
         <>
-          {/* Music Video Input Section */}
-          <MusicVideoInput
+          {/* Compact Music Video Input Section */}
+          <CompactMusicVideoInput
             songTitle={musicVideoStore.songTitle}
             setSongTitle={musicVideoStore.setSongTitle}
-            artist={musicVideoStore.artist}
-            setArtist={musicVideoStore.setArtist}
-            genre={musicVideoStore.genre}
-            setGenre={musicVideoStore.setGenre}
+            artistName={musicVideoStore.artist}
+            setArtistName={musicVideoStore.setArtist}
             lyrics={musicVideoStore.lyrics}
             setLyrics={musicVideoStore.setLyrics}
-            mvConcept={musicVideoStore.mvConcept}
-            setMvConcept={musicVideoStore.setMvConcept}
-            mvDirectorNotes={musicVideoStore.mvDirectorNotes}
-            setMvDirectorNotes={musicVideoStore.setMvDirectorNotes}
-            selectedArtistId={musicVideoStore.selectedArtistId}
-            setSelectedArtistId={musicVideoStore.setSelectedArtistId}
+            musicVideoConcept={musicVideoStore.mvConcept}
+            setMusicVideoConcept={musicVideoStore.setMvConcept}
+            visualDescription={musicVideoStore.artistVisualDescription}
+            setVisualDescription={musicVideoStore.setArtistVisualDescription}
             selectedArtistProfile={musicVideoStore.selectedArtistProfile}
-            setSelectedArtistProfile={musicVideoStore.setSelectedArtistProfile}
-            artistVisualDescription={musicVideoStore.artistVisualDescription}
-            setArtistVisualDescription={musicVideoStore.setArtistVisualDescription}
-            selectedMusicVideoDirector={musicVideoStore.selectedMusicVideoDirector}
-            setSelectedMusicVideoDirector={musicVideoStore.setSelectedMusicVideoDirector}
-            allDirectors={allDirectors}
-            onGenerateReferences={handleExtractReferences}
-            onClear={handleClearMusicVideo}
+            onArtistProfileSelect={musicVideoStore.setSelectedArtistProfile}
+            onExtractLyrics={async (audioFile: File) => {
+              // TODO: Implement audio extraction
+              console.log('Extract lyrics from:', audioFile.name)
+            }}
+            onAutoFillConcept={async () => {
+              // TODO: Implement auto-fill concept from lyrics
+              console.log('Auto-fill concept from lyrics')
+            }}
+            onAutoFillVisual={async () => {
+              // TODO: Implement auto-fill visual description from lyrics
+              console.log('Auto-fill visual description from lyrics')
+            }}
             isLoading={isLoading || workflowStore.isExtractingRefs}
-            hasBreakdown={!!musicVideoStore.musicVideoBreakdown}
           />
           
           {/* Workflow Components (Progress, Reference Config) */}
