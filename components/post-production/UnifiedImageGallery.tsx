@@ -101,20 +101,34 @@ export function UnifiedImageGallery({
 
   if (images.length === 0) {
     return (
-      <Card className={cn("bg-slate-800/50 border-slate-700", className)}>
+      <Card className={cn("bg-gradient-to-br from-purple-900/30 to-blue-900/30 border-purple-500/30", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="text-white flex items-center gap-2 text-lg">
-            <ImageIcon className="w-5 h-5 text-slate-400" />
-            Generated Images
+          <CardTitle className="text-white flex items-center gap-2 text-xl">
+            <ImageIcon className="w-6 h-6 text-purple-400" />
+            🎬 Generated Images Gallery
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <ImageIcon className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">No images generated yet</p>
-            <p className="text-slate-500 text-xs mt-1">
-              Images from Shot Editor, Shot Creator, and Shot Animator will appear here
+          <div className="text-center py-12">
+            <ImageIcon className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+            <p className="text-white text-lg font-medium mb-2">Your Image Gallery</p>
+            <p className="text-purple-200 text-sm mb-4">
+              All images generated in Shot Editor, Shot Creator, and Shot Animator appear here
             </p>
+            <div className="flex items-center justify-center gap-6 text-sm text-purple-300">
+              <div className="flex items-center gap-2">
+                <Edit className="w-4 h-4 text-blue-400" />
+                <span>Shot Editor</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span>Shot Creator</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-orange-400" />
+                <span>Shot Animator</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -123,12 +137,12 @@ export function UnifiedImageGallery({
 
   return (
     <>
-      <Card className={cn("bg-slate-800/50 border-slate-700", className)}>
+      <Card className={cn("bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/30", className)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-white flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-purple-400" />
-              Generated Images ({getTotalImages()})
+              <ImageIcon className="w-6 h-6 text-purple-400" />
+              🎬 Generated Images Gallery ({getTotalImages()})
             </div>
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1 text-amber-400">
@@ -139,7 +153,7 @@ export function UnifiedImageGallery({
                 size="sm"
                 variant="outline"
                 onClick={() => setSelectedImages([])}
-                className="h-6 text-xs"
+                className="h-6 text-xs border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
               >
                 Clear Selection
               </Button>

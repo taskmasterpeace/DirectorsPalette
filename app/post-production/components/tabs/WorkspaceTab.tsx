@@ -23,7 +23,8 @@ import {
   Video,
   Clipboard,
   Target,
-  X
+  X,
+  ZoomIn
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import type { ImageData, PostProductionShot } from '@/lib/post-production/types'
@@ -45,6 +46,7 @@ export function WorkspaceTab({
   const { toast } = useToast()
   const [finalFrameImage, setFinalFrameImage] = useState<string>('')
   const finalFrameInputRef = useRef<HTMLInputElement>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
   // Handle final frame upload for specific image
   const handleImageFinalFrameUpload = (imageId: string, files: FileList | null) => {
@@ -316,11 +318,21 @@ export function WorkspaceTab({
                     ) : (
                       // Standard view - Toggle or overlay mode
                       <>
-                        <img
-                          src={image.framesSwapped && image.finalFrame ? image.finalFrame : image.preview}
-                          alt={image.framesSwapped ? "Final frame (swapped to main)" : "Start frame"}
-                          className="w-full h-full object-cover transition-all duration-300"
-                        />
+                        <div className="relative group w-full h-full">
+                          <img
+                            src={image.framesSwapped && image.finalFrame ? image.finalFrame : image.preview}
+                            alt={image.framesSwapped ? "Final frame (swapped to main)" : "Start frame"}
+                            className="w-full h-full object-cover transition-all duration-300"
+                          />
+                          
+                          {/* Magnifying glass hover overlay */}
+                          <div 
+                            className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in"
+                            onClick={() => setFullscreenImage(image.framesSwapped && image.finalFrame ? image.finalFrame : image.preview)}
+                          >
+                            <ZoomIn className="w-12 h-12 text-white drop-shadow-lg" />
+                          </div>
+                        </div>
                         
                         {/* Frame indicator */}
                         {image.finalFrame && comparisonMode === 'toggle' && (
@@ -619,6 +631,30 @@ export function WorkspaceTab({
         }}
         className="mt-6"
       />
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <div className="relative max-w-[95vw] max-h-[95vh]">
+            <img
+              src={fullscreenImage}
+              alt="Fullscreen view"
+              className="w-full h-full object-contain"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
     </div>
   )

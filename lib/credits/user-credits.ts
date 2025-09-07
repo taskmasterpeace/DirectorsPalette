@@ -224,6 +224,7 @@ class UserCreditService {
           userId,
           days
         })
+        // Don't crash the app - return safe fallback  
         return []
       }
 
