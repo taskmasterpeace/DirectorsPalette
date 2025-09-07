@@ -20,7 +20,7 @@ import { usePostProductionStore } from '@/stores/post-production-store'
 import { retrieveTransferredShots } from '@/lib/post-production/transfer'
 import { useToast } from '@/components/ui/use-toast'
 import LayoutPlanner from './components/layout-planner/LayoutPlanner'
-import CompleteLayoutEditor from './components/layout-planner/CompleteLayoutEditor'
+import { LayoutEditorRefactored as CompleteLayoutEditor } from '@/components/layout/LayoutEditorRefactored'
 import type { 
   ImageData,
   Gen4ReferenceImage,
