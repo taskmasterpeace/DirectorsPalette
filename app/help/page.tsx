@@ -959,16 +959,11 @@ export default function HelpPage() {
                             <div className="text-sm text-slate-300 mb-3">Fast, general-purpose image generation</div>
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
-                                <span>720p (Base):</span>
-                                <span className="text-amber-400 font-bold">25 credits</span>
+                                <span>All Resolutions:</span>
+                                <span className="text-amber-400 font-bold">15 credits</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span>1080p (HD):</span>
-                                <span className="text-amber-400 font-bold">38 credits</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>4K (Ultra):</span>
-                                <span className="text-amber-400 font-bold">63 credits</span>
+                              <div className="text-green-400 text-xs mt-1">
+                                ✅ Simplified pricing - all resolutions same cost
                               </div>
                             </div>
                           </div>
@@ -979,15 +974,15 @@ export default function HelpPage() {
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <span>720p (Base):</span>
-                                <span className="text-amber-400 font-bold">50 credits</span>
+                                <span className="text-amber-400 font-bold">15 credits</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>1080p (HD):</span>
-                                <span className="text-amber-400 font-bold">75 credits</span>
+                                <span className="text-amber-400 font-bold">25 credits</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>4K (Ultra):</span>
-                                <span className="text-amber-400 font-bold">125 credits</span>
+                                <span className="text-amber-400 font-bold">25 credits</span>
                               </div>
                             </div>
                           </div>
@@ -997,16 +992,25 @@ export default function HelpPage() {
                             <div className="text-sm text-slate-300 mb-3">Ultra-fast, professional quality</div>
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
-                                <span>720p (Base):</span>
-                                <span className="text-amber-400 font-bold">75 credits</span>
+                                <span>All Resolutions:</span>
+                                <span className="text-amber-400 font-bold">15 credits</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span>1080p (HD):</span>
-                                <span className="text-amber-400 font-bold">113 credits</span>
+                              <div className="text-green-400 text-xs mt-1">
+                                ✅ Ultra-fast generation - best value option
                               </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-800/50 p-4 rounded border">
+                            <div className="font-medium text-cyan-300 mb-2">qwen-image-edit</div>
+                            <div className="text-sm text-slate-300 mb-3">Professional image editing with precise instructions</div>
+                            <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
-                                <span>4K (Ultra):</span>
-                                <span className="text-amber-400 font-bold">188 credits</span>
+                                <span>All Resolutions:</span>
+                                <span className="text-amber-400 font-bold">15 credits</span>
+                              </div>
+                              <div className="text-green-400 text-xs mt-1">
+                                ✅ Advanced editing capabilities - modify existing images
                               </div>
                             </div>
                           </div>

@@ -14,12 +14,7 @@ import { extractBookReferences } from '@/app/actions/children-book/generation'
 import { ManualShotSelector } from '@/components/prototypes/ManualShotSelector'
 import { SendToPostProduction } from '@/components/shared/SendToPostProduction'
 
-// Age Groups for Children's Books
-const AGE_GROUPS = [
-  { id: '3-5', name: 'Preschool (3-5)', description: 'Simple words, bright pictures' },
-  { id: '6-8', name: 'Early Reader (6-8)', description: 'Short sentences, engaging stories' },
-  { id: '9-12', name: 'Chapter Books (9-12)', description: 'Longer stories, complex themes' },
-]
+// Age Groups removed - not needed for core functionality
 
 interface ChildrenBookShot {
   id: string
@@ -35,7 +30,6 @@ interface ChildrenBookShot {
 export function ChildrenBookContainerNew() {
   const { toast } = useToast()
   const [story, setStory] = useState('')
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState(AGE_GROUPS[0])
   const [theme, setTheme] = useState('')
   const [extractedReferences, setExtractedReferences] = useState<any>(null)
   const [isExtracting, setIsExtracting] = useState(false)
@@ -168,31 +162,8 @@ export function ChildrenBookContainerNew() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Age Group</Label>
-                <Select value={selectedAgeGroup.id} onValueChange={(value) => {
-                  const ageGroup = AGE_GROUPS.find(ag => ag.id === value)
-                  if (ageGroup) setSelectedAgeGroup(ageGroup)
-                }}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AGE_GROUPS.map((ageGroup) => (
-                      <SelectItem key={ageGroup.id} value={ageGroup.id}>
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{ageGroup.name}</span>
-                          <span className="text-xs text-gray-500">{ageGroup.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="theme">Theme/Lesson (Optional)</Label>
+            <div>
+              <Label htmlFor="theme">Theme/Lesson (Optional)</Label>
                 <Textarea
                   id="theme"
                   value={theme}
@@ -289,7 +260,7 @@ export function ChildrenBookContainerNew() {
                 <li>• Select text portions that should appear on each book page</li>
                 <li>• Each selection becomes one page illustration</li>
                 <li>• Use @character_name references for consistent illustrations</li>
-                <li>• Consider {selectedAgeGroup.description.toLowerCase()} for this age group</li>
+                <li>• Create engaging, age-appropriate illustrations</li>
               </ul>
             </div>
 

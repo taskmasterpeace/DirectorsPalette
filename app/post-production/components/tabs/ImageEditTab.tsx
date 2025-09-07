@@ -316,7 +316,7 @@ export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEd
               aspectRatio: 'auto',
               resolution: 'original'
             },
-            creditsUsed: 3, // Approximate cost for image editing
+            creditsUsed: 15, // Updated cost for qwen-image-edit
             tags: ['edited', 'qwen-edit']
           })
         })

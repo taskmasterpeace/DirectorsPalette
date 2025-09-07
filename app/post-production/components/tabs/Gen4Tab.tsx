@@ -394,7 +394,7 @@ export function Gen4Tab({
             resolution: gen4Settings.resolution,
             seed: gen4Settings.seed
           },
-          creditsUsed: 25, // Base cost for nano-banana
+          creditsUsed: 15, // Updated cost for nano-banana
           tags: ['generated', 'gen4', 'nano-banana']
         })
       }
