@@ -97,15 +97,22 @@ export async function universalGoogleLogin(): Promise<{ success: boolean; user?:
         const { protocol, host } = window.location
         console.log('🔍 Current host for OAuth redirect:', host)
         
-        // Use current host for development (supports any port: 3000, 3001, 3002, etc.)
-        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+        // Check if we're in a proper dev deployment (not localhost)
+        if (host.includes('vercel.app') || host.includes('netlify.app') || host.includes('dev.')) {
+          // Use the actual dev deployment URL
           const redirectUrl = `${protocol}//${host}/auth/callback`
-          console.log('🔍 OAuth redirect URL:', redirectUrl)
+          console.log('🔍 Dev deployment OAuth redirect URL:', redirectUrl)
           return redirectUrl
-        } else {
-          // Production URL - update this when deploying
-          return 'https://v0-director-style-workflow.vercel.app/auth/callback'
         }
+        
+        // For localhost development only - but you said dev should NOT use localhost
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+          console.log('⚠️ WARNING: Using localhost for OAuth redirect. This should not happen on dev deployment.')
+          return `${protocol}//${host}/auth/callback`
+        } 
+        
+        // Fallback to production URL
+        return 'https://v0-director-style-workflow.vercel.app/auth/callback'
       }
 
       const { data, error } = await supabase.auth.signInWithOAuth({
