@@ -401,8 +401,8 @@ export function ImageEditTab({ onSendToWorkspace, onSendToAIGenerator }: ImageEd
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Input Section */}
+      <div className="max-w-4xl mx-auto">
+        {/* Input Section - Compact Single Column */}
         <div className="space-y-4">
           {/* Image Upload */}
           <Card className="bg-slate-900 border-slate-700">
