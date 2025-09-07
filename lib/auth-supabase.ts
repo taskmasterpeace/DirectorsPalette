@@ -95,11 +95,15 @@ export async function universalGoogleLogin(): Promise<{ success: boolean; user?:
         if (typeof window === 'undefined') return 'https://v0-director-style-workflow.vercel.app/auth/callback'
         
         const { protocol, host } = window.location
+        console.log('🔍 Current host for OAuth redirect:', host)
         
-        // Use production URL for production, current host for development
+        // Use current host for development (supports any port: 3000, 3001, 3002, etc.)
         if (host.includes('localhost') || host.includes('127.0.0.1')) {
-          return `${protocol}//${host}/auth/callback`
+          const redirectUrl = `${protocol}//${host}/auth/callback`
+          console.log('🔍 OAuth redirect URL:', redirectUrl)
+          return redirectUrl
         } else {
+          // Production URL - update this when deploying
           return 'https://v0-director-style-workflow.vercel.app/auth/callback'
         }
       }
