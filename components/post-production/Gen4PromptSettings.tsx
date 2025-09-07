@@ -18,8 +18,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Settings, Sparkles, Upload, Edit } from 'lucide-react'
+import { Settings, Sparkles, Upload, Edit, Plus, Clock, Loader2 } from 'lucide-react'
 import type { Gen4Settings } from '@/lib/post-production/enhanced-types'
+import { useGenerationQueueStore } from '@/stores/generation-queue-store'
 
 interface Gen4PromptSettingsProps {
   gen4Prompt: string
@@ -45,6 +46,7 @@ export function Gen4PromptSettings({
   const [gen4Prefix, setGen4Prefix] = useState('')
   const [gen4Suffix, setGen4Suffix] = useState(', professional photography, high quality')
   const [showPrefixSuffix, setShowPrefixSuffix] = useState(false)
+  const { addToQueue, getQueuedCount, getProcessingCount } = useGenerationQueueStore()
 
   return (
     <div className="space-y-4">
@@ -171,24 +173,52 @@ export function Gen4PromptSettings({
           </div>
 
           {/* Generate Button */}
-          <div className="mt-6">
+          <div className="mt-6 space-y-3">
             <Button
-              onClick={onGenerate}
-              disabled={gen4Processing || !canGenerate}
+              onClick={() => {
+                if (canGenerate) {
+                  // Add to queue instead of direct generation
+                  addToQueue({
+                    type: 'gen4-create',
+                    prompt: `${gen4Prefix} ${gen4Prompt} ${gen4Suffix}`.trim(),
+                    inputData: {
+                      prompt: gen4Prompt,
+                      settings: gen4Settings,
+                      referenceImages: referenceImagesCount
+                    }
+                  })
+                  
+                  // Still call onGenerate for backwards compatibility
+                  onGenerate()
+                }
+              }}
+              disabled={!canGenerate}
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-lg py-6"
             >
-              {gen4Processing ? (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Generate with Gen4
-                </>
-              )}
+              <Sparkles className="w-5 h-5 mr-2" />
+              {getQueuedCount() > 0 || getProcessingCount() > 0 
+                ? `Add to Queue (${getQueuedCount() + getProcessingCount()} active)`
+                : 'Generate with Gen4'
+              }
             </Button>
+
+            {/* Queue Status */}
+            {(getQueuedCount() > 0 || getProcessingCount() > 0) && (
+              <div className="flex items-center justify-center gap-4 text-sm">
+                {getQueuedCount() > 0 && (
+                  <div className="flex items-center gap-1 text-yellow-400">
+                    <Clock className="w-3 h-3" />
+                    <span>{getQueuedCount()} queued</span>
+                  </div>
+                )}
+                {getProcessingCount() > 0 && (
+                  <div className="flex items-center gap-1 text-blue-400">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>{getProcessingCount()} processing</span>
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Validation messages */}
             {!canGenerate && !gen4Processing && (
