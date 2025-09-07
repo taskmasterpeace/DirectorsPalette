@@ -31,7 +31,7 @@ import type {
 import { referenceLibraryDB, saveImageToLibrary } from '@/lib/post-production/referenceLibrary'
 import CategorySelectionDialog from './components/CategorySelectionDialog'
 import FullscreenImageModal from './components/FullscreenImageModal'
-import { Gen4Tab } from './components/tabs/Gen4Tab'
+import { Gen4TabRefactored as Gen4Tab } from '@/components/post-production/Gen4TabRefactored'
 import { WorkspaceTab } from './components/tabs/WorkspaceTab'
 import { ShotListTab } from './components/tabs/ShotListTab'
 import { ImageEditTab } from './components/tabs/ImageEditTab'
