@@ -85,7 +85,20 @@ IndexedDB stores:
 - Session persistence via localStorage (`dsvb:session:v3`)
 - Cross-component communication via custom events (`dsvb:mode-change`)
 
-## Critical Issues & Technical Debt
+## Critical Development Rules
+
+### 🚨 **NEVER DEPLOY WITHOUT TESTING**
+
+**MANDATORY TESTING PROTOCOL - NO EXCEPTIONS:**
+
+1. **Always open Playwright after any changes**
+2. **Test every feature you just implemented**
+3. **Navigate through complete user workflows** 
+4. **Verify functionality works as expected**
+5. **Document any issues found during testing**
+6. **Fix issues BEFORE committing/deploying**
+
+**NO COMMITS OR DEPLOYMENTS WITHOUT BROWSER TESTING FIRST!**
 
 ### ⚠️ Most Critical Problems
 

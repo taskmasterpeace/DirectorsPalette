@@ -164,14 +164,13 @@ export function ChildrenBookContainerNew() {
 
             <div>
               <Label htmlFor="theme">Theme/Lesson (Optional)</Label>
-                <Textarea
+              <Textarea
                   id="theme"
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                   placeholder="What theme or lesson should the book teach? (friendship, kindness, adventure, etc.)"
                   className="min-h-20"
                 />
-              </div>
             </div>
           </div>
         </CardContent>

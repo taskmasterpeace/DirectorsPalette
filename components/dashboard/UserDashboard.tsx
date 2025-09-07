@@ -37,10 +37,22 @@ export function UserDashboard() {
           userCreditService.getDailyUsage(user.id, 7) // Last 7 days
         ])
         
+        console.log('📊 Dashboard data loaded:', { 
+          creditsData: creditsData ? 'success' : 'null',
+          usageDataLength: usageData.length 
+        })
+        
         setCredits(creditsData)
         setDailyUsage(usageData)
       } catch (error) {
-        console.error('❌ Failed to load dashboard data:', error)
+        console.error('❌ Failed to load dashboard data:', {
+          error,
+          userId: user.id,
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        })
+        // Set safe fallback values to prevent UI crashes
+        setCredits(null)
+        setDailyUsage([])
       } finally {
         setIsLoading(false)
       }
@@ -84,8 +96,12 @@ export function UserDashboard() {
     )
   }
 
-  const creditPercentage = credits ? (credits.current_points / credits.monthly_allocation) * 100 : 0
-  const totalUsedThisMonth = credits ? credits.monthly_allocation - credits.current_points : 0
+  const creditPercentage = credits && credits.monthly_allocation > 0 
+    ? Math.min(Math.max((credits.current_points / credits.monthly_allocation) * 100, 0), 100)
+    : 0
+  const totalUsedThisMonth = credits && credits.monthly_allocation >= credits.current_points
+    ? credits.monthly_allocation - credits.current_points 
+    : 0
 
   return (
     <div className="space-y-6">
@@ -116,7 +132,7 @@ export function UserDashboard() {
               {Math.round((totalUsedThisMonth / (credits?.monthly_allocation || 1)) * 100)}% of allocation
             </p>
             <Badge className="mt-2 bg-blue-900/30 text-blue-300 border-blue-400/30">
-              {credits?.tier.toUpperCase()} Tier
+              {(credits?.tier || 'FREE').toUpperCase()} Tier
             </Badge>
           </CardContent>
         </Card>
@@ -256,7 +272,10 @@ export function UserDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <BoostPacks onPurchase={handleBoostPurchase} />
+          <BoostPacks 
+            currentCredits={credits?.current_points || 0}
+            onPurchase={handleBoostPurchase} 
+          />
         </CardContent>
       </Card>
     </div>
