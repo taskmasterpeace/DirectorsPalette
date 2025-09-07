@@ -31,10 +31,10 @@ import type {
 import { referenceLibraryDB, saveImageToLibrary } from '@/lib/post-production/referenceLibrary'
 import CategorySelectionDialog from './components/CategorySelectionDialog'
 import FullscreenImageModal from './components/FullscreenImageModal'
-import { Gen4TabRefactored as Gen4Tab } from '@/components/post-production/Gen4TabRefactored'
+import { Gen4TabOptimized as Gen4Tab } from '@/components/post-production/Gen4TabOptimized'
 import { WorkspaceTab } from './components/tabs/WorkspaceTab'
 import { ShotListTab } from './components/tabs/ShotListTab'
-import { ImageEditTab } from './components/tabs/ImageEditTab'
+import { ImageEditTabOptimized as ImageEditTab } from '@/components/post-production/ImageEditTabOptimized'
 
 export default function EnhancedPostProductionPage() {
   const { toast } = useToast()
