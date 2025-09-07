@@ -159,6 +159,22 @@ export function UnifiedImageGallery({
               </Button>
             </div>
           </CardTitle>
+          
+          {/* Tool Legend - Always Visible at Top */}
+          <div className="flex items-center justify-center gap-4 sm:gap-6 text-sm text-purple-300 bg-slate-800/50 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Edit className="w-4 h-4 text-blue-400" />
+              <span>Shot Editor</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>Shot Creator</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4 text-orange-400" />
+              <span>Shot Animator</span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-64">
