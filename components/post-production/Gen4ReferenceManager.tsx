@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Upload,
@@ -14,7 +15,7 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import type { Gen4ReferenceImage } from '@/lib/post-production/enhanced-types'
 import { getImageDimensions } from '@/lib/post-production/helpers'
-import InlineTagEditor from '../../app/post-production/components/InlineTagEditor'
+import InlineTagEditor from '@/app/post-production/components/InlineTagEditor'
 
 interface Gen4ReferenceManagerProps {
   gen4ReferenceImages: Gen4ReferenceImage[]
