@@ -100,6 +100,123 @@ IndexedDB stores:
 
 **NO COMMITS OR DEPLOYMENTS WITHOUT BROWSER TESTING FIRST!**
 
+### 🏗️ **ULTRA-THIN ARCHITECTURE STANDARDS**
+
+**MANDATORY COMPONENT ARCHITECTURE - ENFORCE STRICTLY:**
+
+#### **File Size Limits (HARD LIMITS)**
+- **Maximum 200 lines** per component file (excluding types)
+- **Maximum 100 lines** per hook file
+- **Maximum 50 lines** per type definition file
+- **Any file exceeding limits MUST be broken down immediately**
+
+#### **Component Breakdown Rules**
+When any file approaches 150+ lines:
+
+1. **Extract Types First**: Move interfaces/types to separate `*Types.ts` files
+2. **Extract Logic**: Move hooks and utilities to separate `*Hooks.ts` files  
+3. **Extract UI Sections**: Break UI into focused sub-components
+4. **Create Orchestrator**: Main component becomes thin orchestrator that imports focused pieces
+5. **Test Immediately**: Use Playwright to verify no functionality lost
+
+#### **Proven Breakdown Patterns (Use These Templates)**
+
+**Pattern 1: Complex Form/Manager**
+```
+// Original: ComplexManager.tsx (800+ lines)
+// Becomes:
+├── ComplexManagerTypes.ts (~50 lines)
+├── ComplexManagerHooks.ts (~100 lines)  
+├── ComplexManagerControls.tsx (~120 lines)
+├── ComplexManagerDisplay.tsx (~150 lines)
+├── ComplexManagerProperties.tsx (~120 lines)
+└── ComplexManagerRefactored.tsx (~100 lines) // Main orchestrator
+```
+
+**Pattern 2: Multi-Section Component**
+```
+// Original: MultiSection.tsx (600+ lines)
+// Becomes:
+├── MultiSectionTypes.ts (~40 lines)
+├── MultiSectionHeader.tsx (~80 lines)
+├── MultiSectionFilters.tsx (~100 lines)
+├── MultiSectionContent.tsx (~150 lines)
+└── MultiSectionRefactored.tsx (~80 lines) // Main orchestrator
+```
+
+#### **Component Quality Checklist**
+
+**Before Creating Any Component:**
+- [ ] Single responsibility - does ONE thing well
+- [ ] Clear, descriptive name that explains purpose
+- [ ] Props interface defined with TypeScript
+- [ ] Maximum 200 lines (hard limit)
+- [ ] No business logic mixed with presentation logic
+- [ ] Testable in isolation
+
+**Before Committing:**
+- [ ] Run `npm run build` - must pass
+- [ ] Test with Playwright - full functionality verified
+- [ ] No console errors in browser
+- [ ] File size under limits
+- [ ] All imports resolve correctly
+- [ ] TypeScript compilation clean
+
+#### **Anti-Patterns to Avoid (NEVER DO THESE)**
+
+❌ **Monolithic Components**
+- Files over 200 lines
+- Multiple responsibilities in one component
+- Complex nested rendering logic
+
+❌ **Tight Coupling**
+- Components that can't work independently
+- Direct state mutations between components
+- Hardcoded dependencies
+
+❌ **Copy-Paste Development**
+- Duplicating logic instead of extracting shared utilities
+- Similar components not sharing common interfaces
+- Repeated patterns not abstracted into reusable pieces
+
+#### **Refactoring Decision Tree**
+
+```
+File > 150 lines?
+├─ YES → Extract types, hooks, and sub-components
+│   ├─ Create focused pieces (50-100 lines each)
+│   ├─ Build thin orchestrator (< 100 lines)
+│   ├─ Test with Playwright immediately
+│   └─ Verify build passes
+└─ NO → Continue development, monitor file size
+```
+
+#### **Ultra-Thin Success Examples (Reference These)**
+
+**✅ ShotListManager Transformation:**
+- **Before**: 977 lines (monolithic nightmare)
+- **After**: 4 focused components (80-200 lines each)
+- **Result**: Maintainable, testable, scalable
+
+**✅ EnhancedLayoutPlanner Transformation:**
+- **Before**: 797 lines (massive complexity)
+- **After**: 6 specialized components (50-150 lines each)  
+- **Result**: Clean separation, easy to modify
+
+#### **Enforcement Guidelines**
+
+**During Development:**
+1. **Monitor file sizes** continuously during development
+2. **Extract early** - don't wait until files are huge
+3. **Test after every extraction** with Playwright
+4. **Keep orchestrators thin** - they should just coordinate, not implement
+
+**During Code Review:**
+1. **Reject any PR** with files over 200 lines
+2. **Require breakdown plan** for files approaching limits
+3. **Verify Playwright testing** was performed
+4. **Check build passes** with ultra-thin structure
+
 ### ⚠️ Most Critical Problems
 
 1. **Monolithic Main Component**: `app/page.tsx` is 1200+ lines with 20+ useState hooks - needs immediate refactoring

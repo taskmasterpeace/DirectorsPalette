@@ -20,11 +20,13 @@ import InlineTagEditor from '@/app/post-production/components/InlineTagEditor'
 interface Gen4ReferenceManagerProps {
   gen4ReferenceImages: Gen4ReferenceImage[]
   setGen4ReferenceImages: (images: Gen4ReferenceImage[]) => void
+  compact?: boolean
 }
 
 export function Gen4ReferenceManager({
   gen4ReferenceImages,
-  setGen4ReferenceImages
+  setGen4ReferenceImages,
+  compact = false
 }: Gen4ReferenceManagerProps) {
   const { toast } = useToast()
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null)
@@ -38,7 +40,7 @@ export function Gen4ReferenceManager({
         if (!e.target?.result) return
         
         const imageUrl = e.target.result as string
-        const dimensions = await getImageDimensions(imageUrl)
+        const dimensions = await getImageDimensions(file)
         
         const newImage: Gen4ReferenceImage = {
           id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -81,6 +83,71 @@ export function Gen4ReferenceManager({
     })
   }
 
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-white text-sm">Reference Images ({gen4ReferenceImages.length}/3)</Label>
+        </div>
+        {/* Horizontal compact layout */}
+        <div className="flex gap-2">
+          {[0, 1, 2].map((index) => {
+            const image = gen4ReferenceImages[index]
+            const isEmpty = !image
+            
+            return (
+              <div key={index} className="flex-1">
+                <div 
+                  className={`relative aspect-square border border-dashed rounded-md overflow-hidden ${
+                    isEmpty 
+                      ? 'border-slate-600 bg-slate-800/50 hover:border-slate-500 cursor-pointer' 
+                      : 'border-purple-400 bg-purple-900/20'
+                  }`}
+                >
+                  {image ? (
+                    <>
+                      <img
+                        src={image.preview}
+                        alt={`Ref ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-0.5 right-0.5 h-4 w-4 p-0"
+                        onClick={() => removeGen4Image(image.id)}
+                      >
+                        <Trash2 className="h-2 w-2" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                      onClick={() => {
+                        const input = document.createElement('input')
+                        input.type = 'file'
+                        input.accept = 'image/*'
+                        input.onchange = (e) => {
+                          const files = (e.target as HTMLInputElement).files
+                          if (files?.[0]) {
+                            handleGen4ImageUpload(files[0])
+                          }
+                        }
+                        input.click()
+                      }}
+                    >
+                      <Plus className="h-4 w-4 text-slate-500" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Card className="bg-slate-900 border-slate-700">
       <CardHeader>
@@ -96,9 +163,9 @@ export function Gen4ReferenceManager({
             return (
               <div key={index} className="space-y-2">
                 <div 
-                  className={`relative aspect-square border-2 border-dashed rounded-lg overflow-hidden ${
+                  className={`relative border-2 border-dashed rounded-lg overflow-hidden ${
                     isEmpty 
-                      ? 'border-slate-600 bg-slate-800 hover:border-slate-500 hover:bg-slate-750 cursor-pointer transition-colors' 
+                      ? 'min-h-[120px] aspect-square border-slate-600 bg-slate-800 hover:border-slate-500 hover:bg-slate-750 cursor-pointer transition-colors' 
                       : 'border-purple-500 bg-purple-900/20'
                   }`}
                 >
@@ -107,7 +174,7 @@ export function Gen4ReferenceManager({
                       <img
                         src={image.preview}
                         alt={`Reference ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-auto object-contain"
                       />
                       <Button
                         size="sm"

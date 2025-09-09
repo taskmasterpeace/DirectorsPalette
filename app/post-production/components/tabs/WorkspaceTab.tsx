@@ -3,6 +3,8 @@
 import { useState, useRef } from 'react'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { UnifiedImageGallery } from '@/components/post-production/UnifiedImageGallery'
+import { Gen4ReferenceLibrary } from '@/components/post-production/Gen4ReferenceLibrary'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,11 +39,23 @@ import {
 interface WorkspaceTabProps {
   images: ImageData[]
   setImages: (images: ImageData[]) => void
+  libraryItems?: any[]
+  libraryCategory?: string
+  setLibraryCategory?: (category: string) => void
+  libraryLoading?: boolean
+  onFullscreenImage?: (image: any) => void
+  onCategoryChange?: (itemId: string, newCategory: string) => void
 }
 
 export function WorkspaceTab({
   images,
-  setImages
+  setImages,
+  libraryItems = [],
+  libraryCategory = 'all',
+  setLibraryCategory = () => {},
+  libraryLoading = false,
+  onFullscreenImage = () => {},
+  onCategoryChange = () => {}
 }: WorkspaceTabProps) {
   const { toast } = useToast()
   const [finalFrameImage, setFinalFrameImage] = useState<string>('')
@@ -618,19 +632,40 @@ export function WorkspaceTab({
         </Card>
       )}
 
-      {/* Unified Image Gallery - Persistent Across All Tabs */}
-      <UnifiedImageGallery
-        currentTab="shot-animator"
-        onSendToTab={(imageUrl, targetTab) => {
-          // TODO: Add send functionality to other tabs
-          console.log('Send to', targetTab, imageUrl)
-        }}
-        onUseAsReference={(imageUrl) => {
-          // TODO: Use image for animation
-          console.log('Use for animation:', imageUrl)
-        }}
-        className="mt-6"
-      />
+      {/* Tabbed Gallery - Generated Images + Reference Library */}
+      <Card className="bg-slate-900/30 border-slate-700 mt-6">
+        <Tabs defaultValue="generated" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="generated">Generated Images</TabsTrigger>
+            <TabsTrigger value="library">Reference Library</TabsTrigger>
+          </TabsList>
+          <TabsContent value="generated">
+            <UnifiedImageGallery
+              currentTab="shot-animator"
+              onSendToTab={(imageUrl, targetTab) => {
+                // TODO: Add send functionality to other tabs
+                console.log('Send to', targetTab, imageUrl)
+              }}
+              onUseAsReference={(imageUrl) => {
+                // TODO: Use image for animation
+                console.log('Use for animation:', imageUrl)
+              }}
+              compact={true}
+            />
+          </TabsContent>
+          <TabsContent value="library">
+            <Gen4ReferenceLibrary
+              libraryItems={libraryItems}
+              libraryCategory={libraryCategory}
+              setLibraryCategory={setLibraryCategory}
+              libraryLoading={libraryLoading}
+              onFullscreenImage={onFullscreenImage}
+              onCategoryChange={onCategoryChange}
+              compact={true}
+            />
+          </TabsContent>
+        </Tabs>
+      </Card>
 
       {/* Fullscreen Image Modal */}
       {fullscreenImage && (

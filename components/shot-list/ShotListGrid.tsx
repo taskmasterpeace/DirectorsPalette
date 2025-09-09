@@ -14,7 +14,8 @@ import {
   Clock,
   AlertCircle,
   Film,
-  Camera
+  Camera,
+  Download
 } from 'lucide-react'
 import type { PostProductionShot } from '@/lib/post-production/types'
 

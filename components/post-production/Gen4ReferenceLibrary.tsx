@@ -10,8 +10,16 @@ import {
   Package,
   Layout,
   Maximize2,
-  ImageIcon
+  ImageIcon,
+  Edit3,
+  MoreVertical
 } from 'lucide-react'
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import type { LibraryImageReference } from '@/lib/post-production/enhanced-types'
 
 interface Gen4ReferenceLibraryProps {
@@ -20,6 +28,8 @@ interface Gen4ReferenceLibraryProps {
   setLibraryCategory: (category: string) => void
   libraryLoading: boolean
   onFullscreenImage: (image: LibraryImageReference) => void
+  onCategoryChange?: (itemId: string, newCategory: 'people' | 'places' | 'props' | 'unorganized') => void
+  compact?: boolean
 }
 
 const categoryConfig = {
@@ -35,7 +45,9 @@ export function Gen4ReferenceLibrary({
   libraryCategory,
   setLibraryCategory,
   libraryLoading,
-  onFullscreenImage
+  onFullscreenImage,
+  onCategoryChange,
+  compact = false
 }: Gen4ReferenceLibraryProps) {
   const filteredItems = libraryCategory === 'all' 
     ? libraryItems 
@@ -99,23 +111,67 @@ export function Gen4ReferenceLibrary({
             <p className="text-slate-400 text-sm">Library is empty</p>
           </div>
         ) : (
-          <ScrollArea className="h-64">
-            <div className="grid grid-cols-3 gap-3">
+          <ScrollArea className="h-80">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {filteredItems.map((item) => (
                 <div key={item.id} className="relative group">
                   <div 
-                    className="aspect-square rounded border border-slate-600 overflow-hidden bg-slate-800 cursor-pointer hover:border-purple-500 transition-colors"
+                    className="rounded border border-slate-600 overflow-hidden bg-slate-800 cursor-pointer hover:border-purple-500 transition-colors"
                     onClick={() => onFullscreenImage(item)}
                   >
                     <img
                       src={item.preview || item.imageData}
                       alt={item.prompt || 'Library image'}
-                      className="w-full h-full object-cover"
+                      className="w-full h-auto max-h-32 object-contain"
                     />
                     
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Maximize2 className="w-6 h-6 text-white" />
+                    {/* Hover overlay with actions */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onFullscreenImage(item)
+                        }}
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </Button>
+                      
+                      {onCategoryChange && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-white hover:bg-blue-500 bg-blue-600/80"
+                              onClick={(e) => e.stopPropagation()}
+                              title="Edit Category"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => onCategoryChange(item.id, 'people')}>
+                              <Users className="w-4 h-4 mr-2" />
+                              People
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onCategoryChange(item.id, 'places')}>
+                              <MapPin className="w-4 h-4 mr-2" />
+                              Places
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onCategoryChange(item.id, 'props')}>
+                              <Package className="w-4 h-4 mr-2" />
+                              Props
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onCategoryChange(item.id, 'unorganized')}>
+                              <ImageIcon className="w-4 h-4 mr-2" />
+                              Unorganized
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                     
                     {/* Category badge */}

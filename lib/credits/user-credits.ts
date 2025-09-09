@@ -178,7 +178,7 @@ class UserCreditService {
     startDate.setDate(startDate.getDate() - days)
 
     const { data, error } = await supabase
-      .from('usage_log')
+      .from('ai_usage')
       .select('*')
       .eq('user_id', userId)
       .gte('created_at', startDate.toISOString())
@@ -209,7 +209,7 @@ class UserCreditService {
       startDate.setDate(startDate.getDate() - days)
 
       const { data, error } = await supabase
-        .from('usage_log')
+        .from('ai_usage')
         .select('*')
         .eq('user_id', userId)
         .gte('created_at', startDate.toISOString())
@@ -232,15 +232,6 @@ class UserCreditService {
         console.log('ℹ️ No usage data found for user:', userId)
         return []
       }
-    } catch (exception) {
-      console.error('💥 Exception in getDailyUsage:', {
-        exception,
-        userId,
-        days,
-        stack: exception instanceof Error ? exception.stack : 'No stack trace'
-      })
-      return []
-    }
 
       // Group by date
       const dailyMap = new Map<string, DailyUsage>()
@@ -260,19 +251,19 @@ class UserCreditService {
           }
           
           const dayData = dailyMap.get(date)!
-          dayData.total_points += entry.points_consumed || 0
+          dayData.total_points += entry.tokens_used || 0
           dayData.total_cost += parseFloat(entry.cost_usd?.toString() || '0')
           
           // Action breakdown
-          if (entry.action_type) {
-            dayData.action_breakdown[entry.action_type] = 
-              (dayData.action_breakdown[entry.action_type] || 0) + (entry.points_consumed || 0)
+          if (entry.function_type) {
+            dayData.action_breakdown[entry.function_type] = 
+              (dayData.action_breakdown[entry.function_type] || 0) + (entry.tokens_used || 0)
           }
           
           // Model breakdown  
-          if (entry.model_name) {
-            dayData.model_breakdown[entry.model_name] = 
-              (dayData.model_breakdown[entry.model_name] || 0) + (entry.points_consumed || 0)
+          if (entry.model_id) {
+            dayData.model_breakdown[entry.model_id] = 
+              (dayData.model_breakdown[entry.model_id] || 0) + (entry.tokens_used || 0)
           }
         } catch (entryError) {
           console.warn('⚠️ Error processing usage entry:', { entry, error: entryError })
@@ -280,6 +271,15 @@ class UserCreditService {
       })
 
       return Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date))
+    } catch (exception) {
+      console.error('💥 Exception in getDailyUsage data processing:', {
+        exception,
+        userId,
+        days,
+        stack: exception instanceof Error ? exception.stack : 'No stack trace'
+      })
+      return []
+    }
   }
 
   // Add boost pack points
@@ -342,8 +342,8 @@ class UserCreditService {
       .from('user_credits')
       .select(`
         *,
-        usage_log!inner(
-          points_consumed,
+        ai_usage!inner(
+          tokens_used,
           created_at
         )
       `)
@@ -355,13 +355,13 @@ class UserCreditService {
 
     // Calculate usage summaries
     return data?.map(user => {
-      const usage = (user as any).usage_log as UsageLogEntry[]
+      const usage = (user as any).ai_usage as UsageLogEntry[]
       const recent = usage.filter(u => new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
       
       return {
         ...user,
-        recent_usage: recent.reduce((sum, u) => sum + u.points_consumed, 0),
-        total_usage: usage.reduce((sum, u) => sum + u.points_consumed, 0)
+        recent_usage: recent.reduce((sum, u) => sum + u.tokens_used, 0),
+        total_usage: usage.reduce((sum, u) => sum + u.tokens_used, 0)
       }
     }) || []
   }
@@ -374,8 +374,8 @@ class UserCreditService {
     startDate.setDate(startDate.getDate() - days)
 
     const { data, error } = await supabase
-      .from('usage_log')
-      .select('created_at, points_consumed, cost_usd, user_id')
+      .from('ai_usage')
+      .select('created_at, tokens_used, cost_usd, user_id')
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: false })
 
@@ -399,7 +399,7 @@ class UserCreditService {
       }
       
       const dayData = dailyMap.get(date)!
-      dayData.total_points += entry.points_consumed
+      dayData.total_points += entry.tokens_used
       dayData.total_cost += parseFloat(entry.cost_usd.toString())
       dayData.users.add(entry.user_id)
     })

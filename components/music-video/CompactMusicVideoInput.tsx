@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 import { Upload, Wand2, Music, User, FileText, Mic, Sparkles, Play, Pause } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
+import { DirectorSelector } from './DirectorSelector'
+import type { MusicVideoDirector } from '@/lib/director-types'
 
 interface CompactMusicVideoInputProps {
   songTitle: string
@@ -21,7 +23,11 @@ interface CompactMusicVideoInputProps {
   setVisualDescription: (description: string) => void
   selectedArtistProfile?: any
   onArtistProfileSelect: (profile: any) => void
+  directors: MusicVideoDirector[]
+  selectedDirectorId: string
+  onDirectorSelect: (directorId: string) => void
   onExtractLyrics: (audioFile: File) => void
+  onExtractReferences: () => void
   onAutoFillConcept: () => void
   onAutoFillVisual: () => void
   isLoading?: boolean
@@ -40,7 +46,11 @@ export function CompactMusicVideoInput({
   setVisualDescription,
   selectedArtistProfile,
   onArtistProfileSelect,
+  directors,
+  selectedDirectorId,
+  onDirectorSelect,
   onExtractLyrics,
+  onExtractReferences,
   onAutoFillConcept,
   onAutoFillVisual,
   isLoading = false
@@ -178,9 +188,14 @@ export function CompactMusicVideoInput({
                 size="sm"
                 onClick={onAutoFillConcept}
                 disabled={!lyrics.trim() || isLoading}
-                className="h-7 px-2"
+                className="h-7 px-2 disabled:opacity-50"
+                title="Generate concept from lyrics"
               >
-                <Wand2 className="w-3 h-3" />
+                {isLoading ? (
+                  <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Wand2 className="w-3 h-3" />
+                )}
               </EnhancedButton>
             </div>
           </PremiumCardHeader>
@@ -208,9 +223,14 @@ export function CompactMusicVideoInput({
                 size="sm"
                 onClick={onAutoFillVisual}
                 disabled={!lyrics.trim() || isLoading}
-                className="h-7 px-2"
+                className="h-7 px-2 disabled:opacity-50"
+                title="Generate visual style from lyrics"
               >
-                <Wand2 className="w-3 h-3" />
+                {isLoading ? (
+                  <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Wand2 className="w-3 h-3" />
+                )}
               </EnhancedButton>
             </div>
           </PremiumCardHeader>
@@ -226,6 +246,14 @@ export function CompactMusicVideoInput({
         </PremiumCard>
       </div>
 
+      {/* Director Selection */}
+      <DirectorSelector
+        directors={directors}
+        selectedDirectorId={selectedDirectorId}
+        onDirectorSelect={onDirectorSelect}
+        className="max-w-md"
+      />
+
       {/* Magic Wand Helper */}
       {lyrics.trim() && !musicVideoConcept.trim() && !visualDescription.trim() && (
         <div className="text-center">
@@ -233,6 +261,31 @@ export function CompactMusicVideoInput({
             <Wand2 className="w-4 h-4 animate-pulse" />
             Use the magic wand to auto-generate concept and visual style based on your lyrics
           </div>
+        </div>
+      )}
+
+      {/* Reference Extraction Button */}
+      {songTitle.trim() && lyrics.trim() && (
+        <div className="text-center">
+          <EnhancedButton
+            variant="premium" 
+            size="lg"
+            onClick={onExtractReferences}
+            disabled={isLoading}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 mr-2 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5 mr-2" />
+                Extract References & Continue
+              </>
+            )}
+          </EnhancedButton>
         </div>
       )}
     </div>

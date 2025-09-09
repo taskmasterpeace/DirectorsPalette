@@ -16,7 +16,8 @@ import {
   X,
   ImageIcon,
   Calendar,
-  Zap
+  Zap,
+  Layout
 } from 'lucide-react'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -26,6 +27,7 @@ interface UnifiedImageGalleryProps {
   currentTab: 'shot-editor' | 'shot-creator' | 'shot-animator'
   onSendToTab?: (imageUrl: string, targetTab: string) => void
   onUseAsReference?: (imageUrl: string) => void
+  onSendToLibrary?: (imageUrl: string) => void
   className?: string
 }
 
@@ -33,6 +35,7 @@ export function UnifiedImageGallery({
   currentTab, 
   onSendToTab, 
   onUseAsReference,
+  onSendToLibrary,
   className 
 }: UnifiedImageGalleryProps) {
   const { toast } = useToast()
@@ -115,7 +118,7 @@ export function UnifiedImageGallery({
             <p className="text-purple-200 text-sm mb-4">
               All images generated in Shot Editor, Shot Creator, and Shot Animator appear here
             </p>
-            <div className="flex items-center justify-center gap-6 text-sm text-purple-300">
+            <div className="flex items-center justify-center gap-4 text-sm text-purple-300">
               <div className="flex items-center gap-2">
                 <Edit className="w-4 h-4 text-blue-400" />
                 <span>Shot Editor</span>
@@ -127,6 +130,10 @@ export function UnifiedImageGallery({
               <div className="flex items-center gap-2">
                 <Film className="w-4 h-4 text-orange-400" />
                 <span>Shot Animator</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Layout className="w-4 h-4 text-green-400" />
+                <span>Layout & Annotation</span>
               </div>
             </div>
           </div>
@@ -177,46 +184,40 @@ export function UnifiedImageGallery({
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-64">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <ScrollArea className="h-80">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {images.map((image) => (
-                <div key={image.id} className="relative group">
-                  {/* Image */}
-                  <div className="relative">
+                <div key={image.id} className="space-y-2">
+                  {/* Image - Now unobstructed */}
+                  <div className="relative group">
                     <img
                       src={image.url}
                       alt={image.prompt.slice(0, 50)}
-                      className="w-full h-24 object-cover rounded border border-slate-600 bg-slate-800"
+                      className="w-full max-h-48 object-contain rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                      onClick={() => setFullscreenImage(image)}
                     />
                     
-                    {/* Source badge */}
-                    <div className="absolute top-1 left-1">
-                      <Badge className={cn("text-white text-xs px-1.5 py-0.5", getSourceColor(image.source))}>
+                    {/* Source badge - Only overlay */}
+                    <div className="absolute top-2 left-2">
+                      <Badge className={cn("text-white text-xs px-2 py-1", getSourceColor(image.source))}>
                         {getSourceIcon(image.source)}
                         <span className="ml-1 capitalize">{image.source.replace('-', ' ')}</span>
                       </Badge>
                     </div>
-                    
-                    {/* Hover overlay with magnifying glass */}
-                    <div 
-                      className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in"
-                      onClick={() => setFullscreenImage(image)}
-                    >
-                      <ZoomIn className="w-8 h-8 text-white drop-shadow-lg" />
-                    </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
-                    <div className="flex gap-1">
+                  {/* Action buttons - Bottom bar outside image */}
+                  <div className="bg-slate-800/80 rounded-lg p-2 space-y-2">
+                    {/* Send-to buttons row */}
+                    <div className="flex justify-center gap-1">
                       {currentTab !== 'shot-creator' && (
                         <Button
                           size="sm"
                           onClick={() => handleSendToTab(image.url, 'shot-creator')}
-                          className="h-5 w-5 p-0 bg-purple-600 hover:bg-purple-700 text-white"
+                          className="h-8 w-8 p-0 bg-purple-600 hover:bg-purple-700 text-white rounded"
                           title="Send to Shot Creator"
                         >
-                          <Sparkles className="w-2.5 h-2.5" />
+                          <Sparkles className="w-4 h-4" />
                         </Button>
                       )}
                       
@@ -224,10 +225,10 @@ export function UnifiedImageGallery({
                         <Button
                           size="sm"
                           onClick={() => handleSendToTab(image.url, 'shot-editor')}
-                          className="h-5 w-5 p-0 bg-blue-600 hover:bg-blue-700 text-white"
+                          className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
                           title="Send to Shot Editor"
                         >
-                          <Edit className="w-2.5 h-2.5" />
+                          <Edit className="w-4 h-4" />
                         </Button>
                       )}
                       
@@ -235,31 +236,50 @@ export function UnifiedImageGallery({
                         <Button
                           size="sm"
                           onClick={() => handleSendToTab(image.url, 'shot-animator')}
-                          className="h-5 w-5 p-0 bg-orange-600 hover:bg-orange-700 text-white"
+                          className="h-8 w-8 p-0 bg-orange-600 hover:bg-orange-700 text-white rounded"
                           title="Send to Shot Animator"
                         >
-                          <Film className="w-2.5 h-2.5" />
+                          <Film className="w-4 h-4" />
                         </Button>
                       )}
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => handleSendToTab(image.url, 'layout-annotation')}
+                        className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white rounded"
+                        title="Send to Layout & Annotation"
+                      >
+                        <Layout className="w-4 h-4" />
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => onSendToLibrary && onSendToLibrary(image.url)}
+                        className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+                        title="Save to Reference Library"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
                     </div>
-
-                    <div className="flex gap-1">
+                    
+                    {/* Utility buttons row */}
+                    <div className="flex justify-center gap-1">
                       <Button
                         size="sm"
                         onClick={() => handleCopyImageUrl(image.url)}
-                        className="h-5 w-5 p-0 bg-slate-600 hover:bg-slate-700 text-white"
+                        className="h-6 w-8 p-0 bg-slate-600 hover:bg-slate-700 text-white rounded text-xs"
                         title="Copy URL"
                       >
-                        <Copy className="w-2.5 h-2.5" />
+                        <Copy className="w-3 h-3" />
                       </Button>
                       
                       <Button
                         size="sm"
                         onClick={() => handleDeleteImage(image.id)}
-                        className="h-5 w-5 p-0 bg-red-600 hover:bg-red-700 text-white"
+                        className="h-6 w-8 p-0 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
                         title="Delete"
                       >
-                        <Trash2 className="w-2.5 h-2.5" />
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
@@ -369,10 +389,10 @@ export function UnifiedImageGallery({
                   <span className="font-medium">Prompt:</span> {fullscreenImage.prompt}
                 </p>
                 <div className="flex items-center gap-4 text-xs text-slate-300">
-                  <span>Model: {fullscreenImage.model}</span>
-                  <span>Resolution: {fullscreenImage.settings.resolution}</span>
-                  <span>Aspect: {fullscreenImage.settings.aspectRatio}</span>
-                  <span>Created: {new Date(fullscreenImage.metadata.createdAt).toLocaleDateString()}</span>
+                  <span>Model: {fullscreenImage.model || 'N/A'}</span>
+                  <span>Resolution: {fullscreenImage.settings?.resolution || 'N/A'}</span>
+                  <span>Aspect: {fullscreenImage.settings?.aspectRatio || 'N/A'}</span>
+                  <span>Created: {fullscreenImage.metadata?.createdAt ? new Date(fullscreenImage.metadata.createdAt).toLocaleDateString() : 'N/A'}</span>
                 </div>
               </div>
             </div>

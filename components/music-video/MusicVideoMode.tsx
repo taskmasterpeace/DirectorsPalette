@@ -31,6 +31,7 @@ import type { ArtistProfile } from "@/lib/artist-types"
 import type { MusicVideoDirector } from "@/lib/director-types"
 import type { ShotData } from "@/lib/export-processor"
 import { useRouter } from "next/navigation"
+import { combineMusicVideoDirectors } from "@/lib/director-utils"
 
 interface MusicVideoModeProps {
   // Song details
@@ -147,7 +148,8 @@ export function MusicVideoMode({
     musicVideoStructure: musicVideoBreakdown?.musicVideoStructure
   })
   
-  const allMusicVideoDirectors = [...(curatedDirectors || []), ...(customDirectors || [])]
+  // All directors combined - deduplicate by ID to prevent React duplicate key errors
+  const allMusicVideoDirectors = combineMusicVideoDirectors(curatedDirectors, customDirectors)
   const selectedMusicVideoDirectorInfo = allMusicVideoDirectors?.find((d) => d?.id === selectedMusicVideoDirector)
 
   const toggleSectionExpansion = (sectionId: string) => {

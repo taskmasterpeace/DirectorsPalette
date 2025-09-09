@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { extractBookReferences } from '@/app/actions/children-book/generation'
 import { ManualShotSelector } from '@/components/prototypes/ManualShotSelector'
 import { SendToPostProduction } from '@/components/shared/SendToPostProduction'
+import { UniversalShotSelector } from '@/components/shared/UniversalShotSelector'
 
 // Age Groups removed - not needed for core functionality
 
@@ -34,6 +35,9 @@ export function ChildrenBookContainerNew() {
   const [extractedReferences, setExtractedReferences] = useState<any>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [bookShots, setBookShots] = useState<ChildrenBookShot[]>([])
+  const [showShotSelection, setShowShotSelection] = useState(false)
+  const [shotSelectionMethod, setShotSelectionMethod] = useState<'auto' | 'manual' | null>(null)
+  const [manualShotSelections, setManualShotSelections] = useState<any[]>([])
   const [showManualSelector, setShowManualSelector] = useState(false)
 
   // Extract characters, locations, and props (same as other modes)
@@ -59,8 +63,8 @@ export function ChildrenBookContainerNew() {
           description: `Found ${result.data.characters.length} characters, ${result.data.locations.length} locations, ${result.data.props.length} props`
         })
         
-        // Enable manual shot selection
-        setShowManualSelector(true)
+        // Enable shot selection
+        setShowShotSelection(true)
       } else {
         throw new Error(result.error || 'Extraction failed')
       }
@@ -75,6 +79,20 @@ export function ChildrenBookContainerNew() {
     }
   }
 
+  // Handle shot selection completion
+  const handleShotSelectionComplete = (method: 'auto' | 'manual', selections?: any[]) => {
+    setShotSelectionMethod(method)
+    if (method === 'manual' && selections) {
+      setManualShotSelections(selections)
+    }
+    setShowShotSelection(false)
+    setShowManualSelector(true)
+  }
+  
+  const handleShotSelectionNext = () => {
+    setShowManualSelector(true)
+  }
+
   // Handle manual shot generation with book-specific context
   const handleShotsGenerated = (shots: any[]) => {
     const bookShots: ChildrenBookShot[] = shots.map((shot, index) => ({
@@ -83,7 +101,7 @@ export function ChildrenBookContainerNew() {
       description: shot.description,
       timestamp: new Date(),
       pageNumber: index + 1,
-      ageGroup: selectedAgeGroup.id,
+      ageGroup: 'general', // Default age group since age selection was removed
       contextBefore: shot.contextBefore,
       contextAfter: shot.contextAfter
     }))
@@ -242,6 +260,16 @@ export function ChildrenBookContainerNew() {
         </CardContent>
       </Card>
 
+      {/* Shot Selection Interface */}
+      {showShotSelection && (
+        <UniversalShotSelector
+          mode="children-book"
+          content={story}
+          onSelectionComplete={handleShotSelectionComplete}
+          onNext={handleShotSelectionNext}
+        />
+      )}
+
       {/* Manual Page Selection */}
       {showManualSelector && (
         <Card>
@@ -249,7 +277,7 @@ export function ChildrenBookContainerNew() {
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5" />
               Create Book Pages
-              <Badge variant="outline">Age: {selectedAgeGroup.name}</Badge>
+              <Badge variant="outline">Age: General</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -326,7 +354,7 @@ export function ChildrenBookContainerNew() {
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <div>
-                  {bookShots.length} pages created • Age: {selectedAgeGroup.name}
+                  {bookShots.length} pages created • Age: General
                   {theme && ` • Theme: ${theme}`}
                 </div>
                 <div className="flex items-center gap-2">

@@ -33,8 +33,9 @@ import { useTemplatesStore, type Template, type CommercialTemplate } from '@/sto
 import { CommercialQuestionCards, type CommercialDirectorQuestion } from '@/components/commercial/CommercialQuestionCards'
 import { DirectorInsights } from '@/components/commercial/DirectorInsights'
 import { CommercialErrorBoundary, useCommercialErrorHandler } from '@/components/commercial/CommercialErrorBoundary'
+import { UniversalShotSelector } from '@/components/shared/UniversalShotSelector'
 
-type WorkflowStage = 'input' | 'director-selection' | 'director-questions' | 'generation' | 'results'
+type WorkflowStage = 'input' | 'director-selection' | 'shot-selection' | 'director-questions' | 'generation' | 'results'
 
 export function CommercialContainer() {
   const { toast } = useToast()
@@ -62,6 +63,10 @@ export function CommercialContainer() {
   const [duration, setDuration] = useState<'10s' | '30s'>('10s')
   const [platform, setPlatform] = useState<'tiktok' | 'instagram' | 'youtube'>('tiktok')
   
+  // Shot selection state
+  const [shotSelectionMethod, setShotSelectionMethod] = useState<'auto' | 'manual' | null>(null)
+  const [manualShotSelections, setManualShotSelections] = useState<any[]>([])
+
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedCommercial, setGeneratedCommercial] = useState<CommercialStructure | null>(null)
@@ -86,6 +91,19 @@ export function CommercialContainer() {
 
   const handleDirectorSelection = () => {
     if (!selectedDirector) return
+    setStage('shot-selection')
+  }
+
+  const handleShotSelectionComplete = (method: 'auto' | 'manual', selections?: any[]) => {
+    setShotSelectionMethod(method)
+    if (method === 'manual' && selections) {
+      setManualShotSelections(selections)
+    }
+    setStage('director-questions')
+    setShowQuestions(true)
+  }
+  
+  const handleShotSelectionNext = () => {
     setStage('director-questions')
     setShowQuestions(true)
   }
@@ -444,6 +462,21 @@ export function CommercialContainer() {
                 Skip Questions & Generate
               </Button>
             </div>
+          </div>
+        )
+        
+      case 'shot-selection':
+        return (
+          <div className="space-y-6">
+            <UniversalShotSelector
+              mode="commercial"
+              content={commercialBrief ? 
+                `${commercialBrief.brandDescription}\n\n${commercialBrief.campaignGoals}\n\n${commercialBrief.keyMessages}` : 
+                ''
+              }
+              onSelectionComplete={handleShotSelectionComplete}
+              onNext={handleShotSelectionNext}
+            />
           </div>
         )
         

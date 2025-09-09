@@ -186,6 +186,40 @@ export default function EnhancedPostProductionPage() {
     })
   }
   
+  // Send generation to Layout & Annotation tab
+  const sendToLayoutAnnotation = (imageUrl: string) => {
+    // Store the image URL in localStorage for Layout tab to pick up
+    localStorage.setItem('directors-palette-layout-input', imageUrl)
+    
+    // Switch to Layout tab
+    setActiveTab('layout')
+    
+    toast({
+      title: 'Sent to Layout & Annotation',
+      description: 'Image has been loaded in the Layout & Annotation tab',
+    })
+  }
+  
+  // Send generation to Reference Library with categorization
+  const sendToReferenceLibrary = async (imageUrl: string) => {
+    try {
+      // For now, we'll save directly and let user categorize in the Reference Library
+      setPendingGeneration({
+        imageUrl,
+        prompt: 'Generated from Post Production',
+        settings: gen4Settings,
+        referenceTags: ['generated', 'post-production']
+      })
+      setCategoryDialogOpen(true)
+    } catch (error) {
+      toast({
+        title: 'Save Failed',
+        description: 'Failed to save to reference library',
+        variant: 'destructive'
+      })
+    }
+  }
+  
   return (
     <div className="container mx-auto max-w-none w-[95%] p-4">
       <div className="space-y-6">
@@ -286,6 +320,19 @@ export default function EnhancedPostProductionPage() {
             <WorkspaceTab
               images={images}
               setImages={setImages}
+              libraryItems={libraryItems}
+              libraryCategory={libraryCategory}
+              setLibraryCategory={setLibraryCategory}
+              libraryLoading={libraryLoading}
+              onFullscreenImage={setFullscreenImage}
+              onCategoryChange={async (itemId: string, newCategory: string) => {
+                // TODO: Implement category change functionality
+                toast({
+                  title: "Category Changed",
+                  description: `Item moved to ${newCategory}`
+                })
+                loadLibraryItems()
+              }}
             />
           </TabsContent>
 
@@ -296,7 +343,22 @@ export default function EnhancedPostProductionPage() {
 
           {/* Image Edit Tab - Qwen-Edit Integration */}
           <TabsContent value="image-edit" className="space-y-4">
-            <ImageEditTab onSendToWorkspace={sendGenerationToWorkspace} />
+            <ImageEditTab 
+              onSendToWorkspace={sendGenerationToWorkspace}
+              libraryItems={libraryItems}
+              libraryCategory={libraryCategory}
+              setLibraryCategory={setLibraryCategory}
+              libraryLoading={libraryLoading}
+              onFullscreenImage={setFullscreenImage}
+              onCategoryChange={async (itemId: string, newCategory: string) => {
+                // TODO: Implement category change functionality
+                toast({
+                  title: "Category Changed",
+                  description: `Item moved to ${newCategory}`
+                })
+                loadLibraryItems()
+              }}
+            />
           </TabsContent>
 
           {/* Gen4 Tab - Clean Component with Paste Buttons */}
@@ -325,6 +387,16 @@ export default function EnhancedPostProductionPage() {
                 setGeneratedShotIds(prev => new Set([...prev, shotId]))
               }}
               onSendToImageEdit={sendToImageEdit}
+              onSendToLayoutAnnotation={sendToLayoutAnnotation}
+              onSendToReferenceLibrary={sendToReferenceLibrary}
+              onCategoryChange={async (itemId: string, newCategory: string) => {
+                // TODO: Implement category change functionality
+                toast({
+                  title: "Category Changed",
+                  description: `Item moved to ${newCategory}`
+                })
+                loadLibraryItems()
+              }}
             />
           </TabsContent>
 

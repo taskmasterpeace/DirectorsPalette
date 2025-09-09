@@ -77,18 +77,18 @@ export function Gen4GenerationHistory({
         <CardTitle className="text-white">Generation History</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-96">
-          <div className="grid grid-cols-4 gap-4">
+        <ScrollArea className="h-[32rem]">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {gen4Generations.map(gen => (
               <div key={gen.id} className="space-y-2">
                 <div className="bg-slate-800 rounded overflow-hidden relative group">
                   {gen.outputUrl ? (
                     <>
-                      <div className="w-full h-48 bg-slate-800 rounded overflow-hidden">
+                      <div className="w-full bg-slate-800 rounded overflow-hidden">
                         <img
                           src={gen.outputUrl}
                           alt={gen.prompt}
-                          className="w-full h-full object-cover"
+                          className="w-full max-h-48 object-contain"
                         />
                       </div>
                       

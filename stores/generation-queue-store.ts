@@ -25,6 +25,7 @@ interface QueueState {
   removeFromQueue: (id: string) => void
   clearCompleted: () => void
   clearAll: () => void
+  clearStuckProcessing: () => void
   
   // Queue processing
   processQueue: () => Promise<void>
@@ -87,6 +88,16 @@ export const useGenerationQueueStore = create<QueueState>()(
       
       clearAll: () => {
         set({ requests: [], isProcessing: false, currentlyProcessing: null })
+      },
+      
+      clearStuckProcessing: () => {
+        set((state) => ({
+          requests: state.requests.map(req => 
+            req.status === 'processing' ? { ...req, status: 'failed', error: 'Cleared stuck processing' } : req
+          ),
+          isProcessing: false,
+          currentlyProcessing: null
+        }))
       },
       
       processQueue: async () => {

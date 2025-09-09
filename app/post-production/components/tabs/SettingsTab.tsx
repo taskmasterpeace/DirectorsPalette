@@ -25,7 +25,10 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Download,
+  Upload,
+  FileText
 } from 'lucide-react'
 
 interface SettingsTabProps {
@@ -342,7 +345,7 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Video className="w-5 h-5" />
-              🎥 Seedance Video Settings
+              🎥 Shot Animator Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -438,7 +441,7 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
-              🖼️ Image Edit Settings
+              🖼️ Shot Editor Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -492,14 +495,14 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
-              ✨ Gen4 Image Settings
+              ✨ Shot Creator Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label className="text-slate-300 mb-2 block">Model</Label>
               <Select
-                value={settings?.gen4?.model || 'gen4-image'}
+                value={settings?.gen4?.model || 'nano-banana'}
                 onValueChange={(value: string) =>
                   setSettings((prev: any) => ({
                     ...prev,
@@ -511,6 +514,7 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="nano-banana">Nano-Banana (Google Gemini 2.5) - Default</SelectItem>
                   <SelectItem value="gen4-image">Gen4 Image (High Quality)</SelectItem>
                   <SelectItem value="gen4-turbo">Gen4 Turbo (Faster)</SelectItem>
                 </SelectContent>
@@ -536,6 +540,10 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
             <div className="p-4 bg-slate-800 rounded-lg">
               <h4 className="font-medium text-white mb-2">⚡ Performance</h4>
               <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-slate-300">
+                  <span>Nano-Banana:</span>
+                  <span className="text-purple-400">Best quality, ~15s</span>
+                </div>
                 <div className="flex justify-between text-slate-300">
                   <span>Gen4 Image:</span>
                   <span className="text-blue-400">High quality, ~30s</span>
@@ -609,6 +617,88 @@ export function SettingsTab({ settings, setSettings }: SettingsTabProps) {
                 step={1}
                 className="w-full"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Preset Management */}
+        <Card className="bg-slate-900 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              📝 Preset Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300 mb-2 block">Export Presets</Label>
+                <Button
+                  onClick={() => {
+                    // Export all presets as YAML
+                    const allPresets = {
+                      shotEditor: JSON.parse(localStorage.getItem('directors-palette-shot-templates') || '{}'),
+                      shotCreator: JSON.parse(localStorage.getItem('directors-palette-creator-presets') || '{}'),
+                      shotAnimator: JSON.parse(localStorage.getItem('directors-palette-animator-presets') || '{}')
+                    }
+                    const yamlContent = `# Directors Palette Presets Export
+# Generated on: ${new Date().toISOString()}
+
+shotEditor:
+${Object.entries(allPresets.shotEditor).map(([k,v]) => `  "${k}": "${v}"`).join('\n')}
+
+shotCreator:
+${Object.entries(allPresets.shotCreator).map(([k,v]) => `  "${k}": "${v}"`).join('\n')}
+
+shotAnimator:  
+${Object.entries(allPresets.shotAnimator).map(([k,v]) => `  "${k}": "${v}"`).join('\n')}`
+                    
+                    const blob = new Blob([yamlContent], { type: 'text/yaml' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `directors-palette-presets-${new Date().toISOString().split('T')[0]}.yaml`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export All Presets
+                </Button>
+              </div>
+              
+              <div>
+                <Label className="text-slate-300 mb-2 block">Import Presets</Label>
+                <Button
+                  onClick={() => {
+                    const input = document.createElement('input')
+                    input.type = 'file'
+                    input.accept = '.yaml,.yml,.json'
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onload = (e) => {
+                          try {
+                            const content = e.target?.result as string
+                            // Parse YAML/JSON and merge with existing presets
+                            console.log('Importing presets:', content)
+                          } catch (error) {
+                            console.error('Import failed:', error)
+                          }
+                        }
+                        reader.readAsText(file)
+                      }
+                    }
+                    input.click()
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Presets
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

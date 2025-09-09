@@ -33,12 +33,17 @@ import {
   ZoomIn,
   ArrowRight,
   X,
-  Film
+  Film,
+  Pencil,
+  Settings
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { editImageWithQwen } from '@/app/actions/image-edit'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { UnifiedImageGallery } from '@/components/post-production/UnifiedImageGallery'
+import { Gen4ReferenceLibrary } from '@/components/post-production/Gen4ReferenceLibrary'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 export interface ImageEditSession {
   id: string
@@ -52,10 +57,22 @@ export interface ImageEditSession {
 
 interface ImageEditTabOptimizedProps {
   onSendToAIGenerator?: (imageUrl: string) => void
+  libraryItems?: any[]
+  libraryCategory?: string
+  setLibraryCategory?: (category: string) => void
+  libraryLoading?: boolean
+  onFullscreenImage?: (image: any) => void
+  onCategoryChange?: (itemId: string, newCategory: string) => void
 }
 
 export function ImageEditTabOptimized({ 
-  onSendToAIGenerator 
+  onSendToAIGenerator,
+  libraryItems = [],
+  libraryCategory = 'all',
+  setLibraryCategory = () => {},
+  libraryLoading = false,
+  onFullscreenImage = () => {},
+  onCategoryChange = () => {}
 }: ImageEditTabOptimizedProps) {
   const { toast } = useToast()
   const { addImage } = useUnifiedGalleryStore()
@@ -66,6 +83,9 @@ export function ImageEditTabOptimized({
   const [editPrompt, setEditPrompt] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [editResults, setEditResults] = useState<ImageEditSession[]>([])
+  const [editingPreset, setEditingPreset] = useState<string | null>(null)
+  const [editPresetName, setEditPresetName] = useState('')
+  const [editPresetPrompt, setEditPresetPrompt] = useState('')
   
   // Template management
   const [customTemplates, setCustomTemplates] = useState<Record<string, string>>(() => {
@@ -240,21 +260,21 @@ export function ImageEditTabOptimized({
   }, [toast])
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="w-full space-y-4">
       {/* Compact Header */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700 flex-shrink-0">
-        <Edit className="w-4 h-4 text-orange-400" />
-        <h2 className="text-lg font-semibold text-white">Shot Editor</h2>
+      <div className="flex items-center gap-2 px-4 py-3 bg-slate-900/50 border-b border-slate-700 rounded-t-lg">
+        <Edit className="w-5 h-5 text-orange-400" />
+        <h2 className="text-xl font-semibold text-white">Shot Editor</h2>
       </div>
 
-      {/* 2-Column Layout */}
-      <div className="flex-1 flex gap-3 p-3 min-h-0 overflow-hidden">
+      {/* Responsive Layout with proper scrolling */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 pb-4">
         
-        {/* LEFT COLUMN - Generated Images & Edit Results */}
-        <div className="w-1/2 flex flex-col gap-3 min-h-0">
+        {/* LEFT COLUMN - Edit Results & Generated Images */}
+        <div className="space-y-6">
           
-          {/* Edit Results Gallery - Priority */}
-          <div className="flex-1 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50">
+          {/* Edit Results Gallery */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
             <div className="p-3 border-b border-slate-700/50">
               <h3 className="text-sm font-medium text-white">Edit Results</h3>
             </div>
@@ -299,25 +319,44 @@ export function ImageEditTabOptimized({
             </ScrollArea>
           </div>
 
-          {/* Unified Gallery - Bottom */}
-          <div className="h-40 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50">
-            <UnifiedImageGallery
-              currentTab="shot-editor"
-              onSendToTab={(imageUrl, targetTab) => {
-                if (targetTab === 'shot-creator' && onSendToAIGenerator) {
-                  onSendToAIGenerator(imageUrl)
-                }
-              }}
-              compact={true}
-            />
+          {/* Tabbed Gallery - Generated Images + Reference Library */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
+            <Tabs defaultValue="generated" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="generated">Generated Images</TabsTrigger>
+                <TabsTrigger value="library">Reference Library</TabsTrigger>
+              </TabsList>
+              <TabsContent value="generated">
+                <UnifiedImageGallery
+                  currentTab="shot-editor"
+                  onSendToTab={(imageUrl, targetTab) => {
+                    if (targetTab === 'shot-creator' && onSendToAIGenerator) {
+                      onSendToAIGenerator(imageUrl)
+                    }
+                  }}
+                  compact={true}
+                />
+              </TabsContent>
+              <TabsContent value="library">
+                <Gen4ReferenceLibrary
+                  libraryItems={libraryItems}
+                  libraryCategory={libraryCategory}
+                  setLibraryCategory={setLibraryCategory}
+                  libraryLoading={libraryLoading}
+                  onFullscreenImage={onFullscreenImage}
+                  onCategoryChange={onCategoryChange}
+                  compact={true}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
         {/* RIGHT COLUMN - Image Upload & Edit Controls */}
-        <div className="w-1/2 flex flex-col gap-3 min-h-0">
+        <div className="space-y-6">
           
-          {/* Image Upload - Top */}
-          <div className="h-48 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50 p-3">
+          {/* Image Upload */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50 p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-white">Upload Image</h3>
               <div className="flex gap-1">
@@ -342,17 +381,18 @@ export function ImageEditTabOptimized({
               </div>
             </div>
             
-            <div className="border-2 border-dashed border-slate-600 rounded-lg p-4 text-center h-32 flex flex-col items-center justify-center">
+            <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center h-64 flex flex-col items-center justify-center">
               {inputImage ? (
                 <img 
                   src={inputImage} 
                   alt="Input preview" 
-                  className="max-h-24 max-w-full object-contain rounded"
+                  className="max-h-52 max-w-full object-contain rounded"
                 />
               ) : (
                 <div>
-                  <ImageIcon className="w-8 h-8 mx-auto mb-2 text-slate-500" />
-                  <p className="text-xs text-slate-400">Click Upload or drag image here</p>
+                  <ImageIcon className="w-12 h-12 mx-auto mb-3 text-slate-500" />
+                  <p className="text-sm text-slate-400">Click Upload or drag image here</p>
+                  <p className="text-xs text-slate-500 mt-1">Supports JPG, PNG, WebP</p>
                 </div>
               )}
             </div>
@@ -374,15 +414,28 @@ export function ImageEditTabOptimized({
             <div className="mb-3">
               <div className="grid grid-cols-2 gap-1 mb-2">
                 {Object.entries(customTemplates).slice(0, 6).map(([key, value]) => (
-                  <Button
-                    key={key}
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => applyTemplate(key)}
-                    className="h-7 text-xs justify-start px-2 text-slate-300 hover:text-white hover:bg-slate-700"
-                  >
-                    {key.replace('-', ' ')}
-                  </Button>
+                  <div key={key} className="relative group">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => applyTemplate(key)}
+                      className="h-7 w-full text-xs justify-start px-2 text-slate-300 hover:text-white hover:bg-slate-700"
+                    >
+                      {key.replace('-', ' ')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingPreset(key)
+                        setEditPresetName(key.replace('-', ' '))
+                        setEditPresetPrompt(value)
+                      }}
+                      className="absolute right-0 top-0 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             </div>

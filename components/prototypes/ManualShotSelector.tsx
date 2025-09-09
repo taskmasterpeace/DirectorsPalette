@@ -17,6 +17,22 @@ import {
   EyeOff
 } from 'lucide-react'
 import { TextChunker, ShotChunk } from '@/lib/text-chunking'
+import { Slider } from '@/components/ui/slider'
+
+const SHOT_COLORS = [
+  '#3B82F6', // Blue
+  '#10B981', // Green  
+  '#F59E0B', // Yellow
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#06B6D4', // Cyan
+  '#F97316', // Orange
+  '#84CC16', // Lime
+  '#EC4899', // Pink
+  '#6366F1', // Indigo
+  '#14B8A6', // Teal
+  '#F43F5E', // Rose
+] as const
 
 interface TextSelection {
   startIndex: number
@@ -50,8 +66,19 @@ export function ManualShotSelector({
   const [isGenerating, setIsGenerating] = useState(false)
   const [showPunctuationMarkers, setShowPunctuationMarkers] = useState(true)
   const [tempShotDescription, setTempShotDescription] = useState('')
+  
+  // Rainbow highlighting and precision control
+  const [precisionLevel, setPrecisionLevel] = useState<number>(8)
+  const [showRainbowHighlighting, setShowRainbowHighlighting] = useState(true)
+  const [chunks, setChunks] = useState<ShotChunk[]>([])
+  const [selectedChunk, setSelectedChunk] = useState<number | null>(null)
 
-  // Get punctuation positions for visual markers
+  // Initialize chunker for rainbow highlighting
+  const chunker = useMemo(() => new TextChunker(text, 'punctuation'), [text])
+  const boundaries = useMemo(() => chunker.getBoundaries(), [chunker])
+  const maxPossibleShots = useMemo(() => boundaries.length + 1, [boundaries])
+
+  // Get punctuation positions for visual markers (fallback)
   const punctuationMarkers = useMemo(() => {
     const markers: { position: number; type: string }[] = []
     const punctuationRegex = /[.!?,;:]/g
@@ -66,6 +93,37 @@ export function ManualShotSelector({
     
     return markers
   }, [text])
+
+  // Color helper functions from RainbowChunker
+  const getShotColor = (index: number): string => {
+    return SHOT_COLORS[index % SHOT_COLORS.length]
+  }
+
+  const getShotColorWithOpacity = (index: number, opacity: number = 0.3): string => {
+    const color = getShotColor(index)
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`
+  }
+
+  // Generate chunks when precision level changes
+  useEffect(() => {
+    if (showRainbowHighlighting) {
+      const options = {
+        targetShotCount: precisionLevel,
+        contentType
+      }
+      const newChunks = chunker.generateChunks(options)
+      setChunks(newChunks)
+    }
+  }, [precisionLevel, contentType, chunker, showRainbowHighlighting])
+
+  // Handle precision level change
+  const handlePrecisionChange = (value: number[]) => {
+    setPrecisionLevel(value[0])
+  }
 
   // Handle text selection
   const handleTextSelection = useCallback(() => {
@@ -187,8 +245,8 @@ export function ManualShotSelector({
     onShotsChange?.(updatedShots)
   }
 
-  // Split selected text intelligently
-  const splitSelection = () => {
+  // Split selected text intelligently and create two shots
+  const splitSelection = async () => {
     if (!selectedText) return
     
     // Find the best split point within the selection
@@ -216,9 +274,118 @@ export function ManualShotSelector({
     console.log(`Part 1: "${firstPart}"`)
     console.log(`Part 2: "${secondPart}"`)
     
+    // Generate shots for both parts
+    const contextBefore = text.slice(Math.max(0, selectedText.startIndex - 50), selectedText.startIndex)
+    const contextAfter = text.slice(selectedText.endIndex, Math.min(text.length, selectedText.endIndex + 50))
+    
+    try {
+      // Generate descriptions for both parts
+      const firstShotDesc = await mockGenerateShot(firstPart, contextBefore, '', contentType, text)
+      const secondShotDesc = await mockGenerateShot(secondPart, '', contextAfter, contentType, text)
+      
+      // Create two shots
+      const firstShot: GeneratedShot = {
+        id: `shot_${Date.now()}_1`,
+        sourceText: firstPart,
+        description: firstShotDesc,
+        timestamp: new Date(),
+        contextBefore,
+        contextAfter: secondPart
+      }
+      
+      const secondShot: GeneratedShot = {
+        id: `shot_${Date.now()}_2`,
+        sourceText: secondPart,
+        description: secondShotDesc,
+        timestamp: new Date(),
+        contextBefore: firstPart,
+        contextAfter
+      }
+      
+      // Add both shots to the list
+      const updatedShots = [...generatedShots, firstShot, secondShot]
+      setGeneratedShots(updatedShots)
+      onShotsChange?.(updatedShots)
+      
+      // Show success feedback
+      setTempShotDescription(`✅ Successfully split into 2 shots:\n1. "${firstPart}"\n2. "${secondPart}"`)
+      
+    } catch (error) {
+      console.error('Split generation failed:', error)
+      setTempShotDescription('Failed to generate split shots')
+    }
+    
     // Clear current selection
     setSelectedText(null)
     window.getSelection()?.removeAllRanges()
+  }
+
+  // Render text with rainbow highlighting (much better visual feedback)
+  const renderRainbowHighlightedText = () => {
+    if (!showRainbowHighlighting || chunks.length === 0) {
+      return renderSelectableText() // Fall back to punctuation dots
+    }
+
+    const elements: React.ReactNode[] = []
+    let currentPos = 0
+    
+    chunks.forEach((chunk, chunkIndex) => {
+      // Add any text before this chunk
+      if (currentPos < chunk.startPos) {
+        elements.push(
+          <span key={`gap-${chunkIndex}`} className="text-gray-400">
+            {text.slice(currentPos, chunk.startPos)}
+          </span>
+        )
+      }
+      
+      // Add the chunk with rainbow highlighting
+      const color = getShotColor(chunkIndex)
+      const bgColor = getShotColorWithOpacity(chunkIndex, selectedChunk === chunkIndex ? 0.5 : 0.2)
+      const isSelected = selectedChunk === chunkIndex
+      
+      elements.push(
+        <span
+          key={`chunk-${chunkIndex}`}
+          className={`
+            cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm
+            ${isSelected ? 'ring-2 ring-blue-400' : 'hover:bg-opacity-40'}
+            select-text
+          `}
+          style={{
+            backgroundColor: bgColor,
+            borderLeft: `3px solid ${color}`
+          }}
+          onClick={() => {
+            setSelectedChunk(selectedChunk === chunkIndex ? null : chunkIndex)
+            // Create a text selection for this chunk
+            const chunkSelection: TextSelection = {
+              startIndex: chunk.startPos,
+              endIndex: chunk.endPos,
+              text: chunk.text,
+              id: `chunk_${chunk.id}`
+            }
+            setSelectedText(chunkSelection)
+          }}
+          title={`Shot ${chunkIndex + 1} - Click to select`}
+        >
+          {chunk.text}
+        </span>
+      )
+      
+      currentPos = chunk.endPos
+    })
+    
+    // Add any remaining text
+    if (currentPos < text.length) {
+      elements.push(
+        <span key="remaining" className="text-gray-400">
+          {text.slice(currentPos)}
+        </span>
+      )
+    }
+
+    return <span className="whitespace-pre-wrap">{elements}</span>
   }
 
   // Render text with punctuation markers and selection highlighting
@@ -283,16 +450,47 @@ export function ManualShotSelector({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>{generatedShots.length} shots created • {punctuationMarkers.length} break points available</div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPunctuationMarkers(!showPunctuationMarkers)}
-            >
-              {showPunctuationMarkers ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-              Punctuation Markers
-            </Button>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div>
+                <span className="font-medium text-blue-600">{generatedShots.length} shots created</span> • {punctuationMarkers.length} break points available
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowRainbowHighlighting(!showRainbowHighlighting)}
+                >
+                  {showRainbowHighlighting ? <Eye className="w-4 h-4 mr-1" /> : <EyeOff className="w-4 h-4 mr-1" />}
+                  {showRainbowHighlighting ? 'Rainbow Mode' : 'Dots Mode'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Precision Slider */}
+            {showRainbowHighlighting && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">
+                    Precision Level: {precisionLevel} shots (max: {maxPossibleShots})
+                  </label>
+                  <Badge variant="outline" className="text-xs">
+                    {precisionLevel === maxPossibleShots ? 'Maximum' : 'Adjustable'}
+                  </Badge>
+                </div>
+                <Slider
+                  value={[precisionLevel]}
+                  onValueChange={handlePrecisionChange}
+                  min={2}
+                  max={maxPossibleShots}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="text-xs text-gray-500">
+                  Drag slider left for fewer shots, right for maximum precision
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -320,7 +518,7 @@ export function ManualShotSelector({
                 className="text-base leading-relaxed whitespace-pre-wrap select-text"
                 style={{ lineHeight: '2' }}
               >
-                {renderSelectableText()}
+                {renderRainbowHighlightedText()}
               </div>
             </div>
 

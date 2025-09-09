@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,7 +18,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Settings, Sparkles, Upload, Edit, Plus, Clock, Loader2 } from 'lucide-react'
+import { Settings, Sparkles, Upload, Edit, Plus, Clock, Loader2, Pencil } from 'lucide-react'
 import type { Gen4Settings } from '@/lib/post-production/enhanced-types'
 import { useGenerationQueueStore } from '@/stores/generation-queue-store'
 
@@ -31,6 +31,7 @@ interface Gen4PromptSettingsProps {
   onGenerate: () => void
   canGenerate: boolean
   referenceImagesCount: number
+  compact?: boolean
 }
 
 export function Gen4PromptSettings({
@@ -44,9 +45,39 @@ export function Gen4PromptSettings({
   referenceImagesCount
 }: Gen4PromptSettingsProps) {
   const [gen4Prefix, setGen4Prefix] = useState('')
-  const [gen4Suffix, setGen4Suffix] = useState(', professional photography, high quality')
+  const [gen4Suffix, setGen4Suffix] = useState('')
   const [showPrefixSuffix, setShowPrefixSuffix] = useState(false)
-  const { addToQueue, getQueuedCount, getProcessingCount } = useGenerationQueueStore()
+  const { addToQueue, getQueuedCount, getProcessingCount, clearStuckProcessing } = useGenerationQueueStore()
+  
+  // Clear stuck processing jobs on mount
+  useEffect(() => {
+    clearStuckProcessing()
+  }, [clearStuckProcessing])
+  
+  // Preset templates for Shot Creator
+  const [creatorPresets, setCreatorPresets] = useState<Record<string, string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedPresets = localStorage.getItem('directors-palette-creator-presets')
+        if (savedPresets) {
+          return JSON.parse(savedPresets)
+        }
+      } catch {
+        // Fall back to defaults
+      }
+    }
+    return {
+      'cinematic-portrait': 'A cinematic portrait with dramatic lighting',
+      'product-shot': 'Professional product photography with clean background',
+      'artistic-concept': 'Creative artistic concept with unique composition',
+      'lifestyle-photo': 'Natural lifestyle photography with authentic feel'
+    }
+  })
+  
+  const applyPreset = (presetKey: string) => {
+    const presetPrompt = creatorPresets[presetKey] || presetKey
+    setGen4Prompt(presetPrompt)
+  }
 
   return (
     <div className="space-y-4">
@@ -91,6 +122,36 @@ export function Gen4PromptSettings({
               </div>
             </CollapsibleContent>
           </Collapsible>
+          
+          {/* Preset Templates */}
+          <div className="mb-4">
+            <Label className="text-white text-xs mb-2 block">Quick Presets</Label>
+            <div className="grid grid-cols-2 gap-1">
+              {Object.entries(creatorPresets).slice(0, 4).map(([key, value]) => (
+                <div key={key} className="relative group">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => applyPreset(key)}
+                    className="h-7 w-full text-xs justify-start px-2 text-slate-300 hover:text-white hover:bg-slate-700"
+                  >
+                    {key.replace('-', ' ')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      // TODO: Open preset edit dialog
+                      console.log('Edit preset:', key, value)
+                    }}
+                    className="absolute right-0 top-0 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
           
           {/* Main Prompt */}
           <div>
@@ -198,7 +259,7 @@ export function Gen4PromptSettings({
               <Sparkles className="w-5 h-5 mr-2" />
               {getQueuedCount() > 0 || getProcessingCount() > 0 
                 ? `Add to Queue (${getQueuedCount() + getProcessingCount()} active)`
-                : 'Generate with Gen4'
+                : 'Generate'
               }
             </Button>
 

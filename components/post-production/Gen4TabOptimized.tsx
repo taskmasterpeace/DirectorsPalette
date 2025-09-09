@@ -6,6 +6,7 @@ import { Sparkles } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { UnifiedImageGallery } from '@/components/post-production/UnifiedImageGallery'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/components/auth/AuthProvider'
 import type { 
   Gen4ReferenceImage,
@@ -41,6 +42,9 @@ interface Gen4TabOptimizedProps {
   generatedShotIds?: Set<string>
   onShotGenerated?: (shotId: string, imageUrl: string) => void
   onSendToImageEdit?: (imageUrl: string) => void
+  onSendToLayoutAnnotation?: (imageUrl: string) => void
+  onSendToReferenceLibrary?: (imageUrl: string) => void
+  onCategoryChange?: (itemId: string, newCategory: string) => void
 }
 
 export function Gen4TabOptimized({
@@ -63,7 +67,10 @@ export function Gen4TabOptimized({
   shotList = [],
   generatedShotIds = new Set(),
   onShotGenerated,
-  onSendToImageEdit
+  onSendToImageEdit,
+  onSendToLayoutAnnotation,
+  onSendToReferenceLibrary,
+  onCategoryChange
 }: Gen4TabOptimizedProps) {
   const { toast } = useToast()
   const { user, getToken } = useAuth()
@@ -175,62 +182,36 @@ export function Gen4TabOptimized({
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Compact Header - Minimal space usage */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 border-b border-slate-700 flex-shrink-0">
-        <Sparkles className="w-4 h-4 text-purple-400" />
-        <h2 className="text-lg font-semibold text-white">Shot Creator</h2>
-      </div>
-
-      {/* 2-Column Layout - Maximum space utilization */}
-      <div className="flex-1 flex gap-3 p-3 min-h-0 overflow-hidden">
-        
-        {/* LEFT COLUMN - Generated Images & Reference Library */}
-        <div className="w-1/2 flex flex-col gap-3 min-h-0">
-          {/* Generated Images Gallery - Primary focus */}
-          <div className="flex-1 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50">
-            <div className="h-full overflow-hidden">
-              <Gen4GenerationHistory
-                gen4Generations={gen4Generations}
-                setGen4Generations={setGen4Generations}
-                onFullscreenImage={onFullscreenImage}
-                onSendToWorkspace={onSendToWorkspace}
-                onSendToImageEdit={onSendToImageEdit}
-                generatedShotIds={generatedShotIds}
-                onShotGenerated={onShotGenerated}
-                shotList={shotList}
-                compact={true}
-              />
-            </div>
-          </div>
-
-          {/* Reference Library - Tabbed Interface */}
-          <div className="h-72 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50">
-            <Gen4ReferenceLibrary
-              libraryItems={libraryItems}
-              libraryCategory={libraryCategory}
-              setLibraryCategory={setLibraryCategory}
-              libraryLoading={libraryLoading}
-              onFullscreenImage={onFullscreenImage}
-              compact={true}
-            />
+    <div className="w-full h-full space-y-4">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-900/50 border-b border-slate-700 rounded-t-lg">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-purple-400" />
+          <h2 className="text-xl font-semibold text-white">Shot Creator</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-sm px-3 py-1 bg-purple-900/50 border border-purple-400/30 rounded-full text-purple-300 font-medium">
+            🍌 nano-banana
           </div>
         </div>
+      </div>
 
-        {/* RIGHT COLUMN - Prompt Enhancement & Generation Settings */}
-        <div className="w-1/2 flex flex-col gap-3 min-h-0">
-          
-          {/* Reference Images Management - Compact */}
-          <div className="h-28 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50 p-3">
+      {/* Optimized 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-4">
+        
+        {/* LEFT COLUMN - Reference Images & Prompt */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Reference Images Management */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50 p-6">
             <Gen4ReferenceManager
               gen4ReferenceImages={gen4ReferenceImages}
               setGen4ReferenceImages={setGen4ReferenceImages}
-              compact={true}
+              compact={false}
             />
           </div>
 
-          {/* Prompt & Settings - Main workspace */}
-          <div className="flex-1 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50">
+          {/* Prompt & Settings */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
             <Gen4PromptSettings
               gen4Prompt={gen4Prompt}
               setGen4Prompt={setGen4Prompt}
@@ -240,27 +221,67 @@ export function Gen4TabOptimized({
               onGenerate={handleGen4Generate}
               canGenerate={canGenerate}
               referenceImagesCount={gen4ReferenceImages.length}
+              compact={false}
+            />
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN - Generated Images & Library */}
+        <div className="space-y-6">
+          {/* Generated Images Gallery */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
+            <Gen4GenerationHistory
+              gen4Generations={gen4Generations}
+              setGen4Generations={setGen4Generations}
+              onFullscreenImage={onFullscreenImage}
+              onSendToWorkspace={onSendToWorkspace}
+              onSendToImageEdit={onSendToImageEdit}
+              generatedShotIds={generatedShotIds}
+              onShotGenerated={onShotGenerated}
+              shotList={shotList}
               compact={true}
             />
           </div>
 
-          {/* Unified Gallery - Compact bottom panel */}
-          <div className="h-40 min-h-0 bg-slate-900/30 rounded-lg border border-slate-700/50">
-            <UnifiedImageGallery
-              currentTab="shot-creator"
-              onSendToTab={(imageUrl, targetTab) => {
-                if (targetTab === 'shot-editor' && onSendToImageEdit) {
-                  onSendToImageEdit(imageUrl)
-                }
-              }}
-              onUseAsReference={(imageUrl) => {
-                toast({
-                  title: "Added as Reference",
-                  description: "Image added to reference slots"
-                })
-              }}
-              compact={true}
-            />
+          {/* Tabbed Gallery - Generated Images + Reference Library */}
+          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
+            <Tabs defaultValue="generated" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="generated">Generated Images</TabsTrigger>
+                <TabsTrigger value="library">Reference Library</TabsTrigger>
+              </TabsList>
+              <TabsContent value="generated">
+                <UnifiedImageGallery
+                  currentTab="shot-creator"
+                  onSendToTab={(imageUrl, targetTab) => {
+                    if (targetTab === 'shot-editor' && onSendToImageEdit) {
+                      onSendToImageEdit(imageUrl)
+                    } else if (targetTab === 'layout-annotation' && onSendToLayoutAnnotation) {
+                      onSendToLayoutAnnotation(imageUrl)
+                    }
+                  }}
+                  onSendToLibrary={onSendToReferenceLibrary}
+                  onUseAsReference={(imageUrl) => {
+                    toast({
+                      title: "Added as Reference",
+                      description: "Image added to reference slots"
+                    })
+                  }}
+                  compact={true}
+                />
+              </TabsContent>
+              <TabsContent value="library">
+                <Gen4ReferenceLibrary
+                  libraryItems={libraryItems}
+                  libraryCategory={libraryCategory}
+                  setLibraryCategory={setLibraryCategory}
+                  libraryLoading={libraryLoading}
+                  onFullscreenImage={onFullscreenImage}
+                  onCategoryChange={onCategoryChange}
+                  compact={true}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

@@ -62,7 +62,7 @@ export interface Gen4Settings {
   aspectRatio: string
   resolution: string
   seed?: number
-  model?: 'gen4-image' | 'gen4-image-turbo'
+  model?: 'nano-banana' | 'gen4-image' | 'gen4-image-turbo'
 }
 
 export interface LibraryImageReference {
