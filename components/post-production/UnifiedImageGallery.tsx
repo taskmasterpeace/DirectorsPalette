@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +49,18 @@ export function UnifiedImageGallery({
   } = useUnifiedGalleryStore()
   
   const [selectedImages, setSelectedImages] = useState<string[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const IMAGES_PER_PAGE = 6
+  
+  // Pagination logic
+  const { paginatedImages, totalPages } = useMemo(() => {
+    const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
+    const endIndex = startIndex + IMAGES_PER_PAGE
+    return {
+      paginatedImages: images.slice(startIndex, endIndex),
+      totalPages: Math.ceil(images.length / IMAGES_PER_PAGE)
+    }
+  }, [images, currentPage])
 
   const handleCopyImageUrl = async (imageUrl: string) => {
     try {
@@ -167,41 +179,73 @@ export function UnifiedImageGallery({
             </div>
           </CardTitle>
           
-          {/* Tool Legend - Always Visible at Top */}
-          <div className="flex items-center justify-center gap-4 sm:gap-6 text-sm text-purple-300 bg-slate-800/50 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <Edit className="w-4 h-4 text-blue-400" />
-              <span>Shot Editor</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span>Shot Creator</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Film className="w-4 h-4 text-orange-400" />
-              <span>Shot Animator</span>
-            </div>
+          {/* Compact Legend - Icons Only */}
+          <div className="flex items-center justify-center gap-3 text-xs text-purple-300 bg-slate-800/30 rounded-lg px-3 py-1">
+            <Edit className="w-3 h-3 text-blue-400" title="Shot Editor" />
+            <Sparkles className="w-3 h-3 text-purple-400" title="Shot Creator" />
+            <Film className="w-3 h-3 text-orange-400" title="Shot Animator" />
+            <Layout className="w-3 h-3 text-green-400" title="Layout & Annotation" />
           </div>
         </CardHeader>
         <CardContent>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="text-purple-400 border-purple-600 hover:bg-purple-600"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <Button
+                    key={i + 1}
+                    size="sm"
+                    variant={currentPage === i + 1 ? "default" : "outline"}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={currentPage === i + 1 
+                      ? "bg-purple-600 text-white" 
+                      : "text-purple-400 border-purple-600 hover:bg-purple-600"
+                    }
+                  >
+                    {i + 1}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="text-purple-400 border-purple-600 hover:bg-purple-600"
+              >
+                Next
+              </Button>
+            </div>
+          )}
+          
           <ScrollArea className="h-80">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {images.map((image) => (
+            {/* 2 Column Grid - Bigger Images */}
+            <div className="grid grid-cols-2 gap-6">
+              {paginatedImages.map((image) => (
                 <div key={image.id} className="space-y-2">
                   {/* Image - Now unobstructed */}
                   <div className="relative group">
                     <img
                       src={image.url}
                       alt={image.prompt.slice(0, 50)}
-                      className="w-full max-h-48 object-contain rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                      className="w-full h-64 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
                       onClick={() => setFullscreenImage(image)}
                     />
                     
-                    {/* Source badge - Only overlay */}
+                    {/* Source badge - Icon only in corner */}
                     <div className="absolute top-2 left-2">
-                      <Badge className={cn("text-white text-xs px-2 py-1", getSourceColor(image.source))}>
+                      <Badge className={cn("text-white p-1", getSourceColor(image.source))} title={image.source.replace('-', ' ')}>
                         {getSourceIcon(image.source)}
-                        <span className="ml-1 capitalize">{image.source.replace('-', ' ')}</span>
                       </Badge>
                     </div>
                   </div>

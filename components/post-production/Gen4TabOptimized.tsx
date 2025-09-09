@@ -93,7 +93,9 @@ export function Gen4TabOptimized({
     
     try {
       const token = await getToken()
+      console.log('🔍 Frontend token check:', token ? `Got token (${token.length} chars)` : 'No token')
       if (!token) {
+        console.log('❌ Frontend: No authentication token available')
         throw new Error("Authentication required")
       }
 
@@ -115,12 +117,15 @@ export function Gen4TabOptimized({
       )
       
       // Generate with Gen4
+      console.log('🚀 Making API call with token:', token.substring(0, 20) + '...')
+      const headers = new Headers()
+      headers.set('Content-Type', 'application/json')
+      headers.set('Authorization', `Bearer ${token}`)
+      console.log('🔍 Headers being sent:', Object.fromEntries(headers.entries()))
+      
       const response = await fetch('/post-production/api/gen4', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: headers,
         body: JSON.stringify({
           prompt: gen4Prompt,
           aspect_ratio: gen4ReferenceImages[0]?.detectedAspectRatio || gen4Settings.aspectRatio,
