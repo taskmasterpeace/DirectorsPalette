@@ -238,7 +238,7 @@ export function UnifiedImageGallery({
                     <img
                       src={image.url}
                       alt={image.prompt.slice(0, 50)}
-                      className="w-full h-64 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                      className="w-full max-h-64 object-contain rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
                       onClick={() => setFullscreenImage(image)}
                     />
                     

@@ -18,7 +18,7 @@ import type {
 // Import the smaller components
 import { Gen4ReferenceManager } from './Gen4ReferenceManager'
 import { Gen4PromptSettings } from './Gen4PromptSettings' 
-import { Gen4GenerationHistory } from './Gen4GenerationHistory'
+// Removed Gen4GenerationHistory - using UnifiedImageGallery only
 import { Gen4ReferenceLibrary } from './Gen4ReferenceLibrary'
 
 interface Gen4TabOptimizedProps {
@@ -233,22 +233,7 @@ export function Gen4TabOptimized({
 
         {/* RIGHT COLUMN - Generated Images & Library */}
         <div className="space-y-6">
-          {/* Generated Images Gallery */}
-          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
-            <Gen4GenerationHistory
-              gen4Generations={gen4Generations}
-              setGen4Generations={setGen4Generations}
-              onFullscreenImage={onFullscreenImage}
-              onSendToWorkspace={onSendToWorkspace}
-              onSendToImageEdit={onSendToImageEdit}
-              generatedShotIds={generatedShotIds}
-              onShotGenerated={onShotGenerated}
-              shotList={shotList}
-              compact={true}
-            />
-          </div>
-
-          {/* Tabbed Gallery - Generated Images + Reference Library */}
+          {/* Single Gallery - Generated Images + Reference Library */}
           <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
             <Tabs defaultValue="generated" className="w-full">
               <TabsList className="grid w-full grid-cols-2">

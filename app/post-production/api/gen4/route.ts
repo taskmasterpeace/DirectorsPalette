@@ -51,33 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Credit calculation based on model and settings - Updated pricing
-    const getOperationCost = (model: string, resolution: string) => {
-      // Updated pricing: nano-banana=15, gen4-image=15/25, gen4-turbo=15
-      
-      // Special case: gen4-image 1080p = 25 credits (as requested)
-      if (model === 'gen4-image' && resolution === '1080p') {
-        return 25;
-      }
-      
-      const baseCosts = {
-        'nano-banana': 15,        // Simplified: 15 credits all resolutions  
-        'gen4-image': 15,         // 15 for 720p, special case above for 1080p
-        'gen4-image-turbo': 15    // Simplified: 15 credits all resolutions
-      };
-      
-      // Simplified multipliers - mostly flat pricing now
-      const resolutionMultiplier = {
-        '720p': 1,
-        '1080p': 1,    // Handled by special case above for gen4-image
-        '4K': 1        // Simplified: same as base cost
-      };
-      
-      const base = baseCosts[model as keyof typeof baseCosts] || 15;
-      const multiplier = resolutionMultiplier[resolution as keyof typeof resolutionMultiplier] || 1;
-      
-      return Math.ceil(base * multiplier);
-    };
+    // TEMP: Removed credit calculation function for debugging
 
     // TEMPORARY: Skip credit check for debugging
     console.log('🔧 TEMP: Skipping credit check - assuming sufficient credits');
