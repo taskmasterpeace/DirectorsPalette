@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { userCreditService } from '@/lib/credits/user-credits';
+import * as userCreditsModule from '@/lib/credits/user-credits';
+const userCreditService = userCreditsModule.userCreditService;
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client for auth verification
