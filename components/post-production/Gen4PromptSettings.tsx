@@ -47,7 +47,7 @@ export function Gen4PromptSettings({
   const [gen4Prefix, setGen4Prefix] = useState('')
   const [gen4Suffix, setGen4Suffix] = useState('')
   const [showPrefixSuffix, setShowPrefixSuffix] = useState(false)
-  const { addToQueue, getQueuedCount, getProcessingCount, clearStuckProcessing } = useGenerationQueueStore()
+  const { addToQueue, getQueuedCount, getProcessingCount, clearStuckProcessing, clearAll } = useGenerationQueueStore()
   
   // Clear stuck processing jobs on mount
   useEffect(() => {
@@ -238,18 +238,7 @@ export function Gen4PromptSettings({
             <Button
               onClick={() => {
                 if (canGenerate) {
-                  // Add to queue instead of direct generation
-                  addToQueue({
-                    type: 'gen4-create',
-                    prompt: `${gen4Prefix} ${gen4Prompt} ${gen4Suffix}`.trim(),
-                    inputData: {
-                      prompt: gen4Prompt,
-                      settings: gen4Settings,
-                      referenceImages: referenceImagesCount
-                    }
-                  })
-                  
-                  // Still call onGenerate for backwards compatibility
+                  // Direct generation only - no queue
                   onGenerate()
                 }
               }}
@@ -257,11 +246,20 @@ export function Gen4PromptSettings({
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-lg py-6"
             >
               <Sparkles className="w-5 h-5 mr-2" />
-              {getQueuedCount() > 0 || getProcessingCount() > 0 
-                ? `Add to Queue (${getQueuedCount() + getProcessingCount()} active)`
-                : 'Generate'
-              }
+              {gen4Processing ? 'Generating...' : 'Generate'}
             </Button>
+
+            {/* Clear Queue Button */}
+            {(getQueuedCount() > 0 || getProcessingCount() > 0) && (
+              <Button
+                onClick={() => clearAll()}
+                variant="outline"
+                size="sm"
+                className="w-full border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+              >
+                Clear Queue ({getQueuedCount() + getProcessingCount()} items)
+              </Button>
+            )}
 
             {/* Queue Status */}
             {(getQueuedCount() > 0 || getProcessingCount() > 0) && (
