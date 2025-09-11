@@ -20,6 +20,8 @@ import { Gen4ReferenceManager } from './Gen4ReferenceManager'
 import { Gen4PromptSettings } from './Gen4PromptSettings' 
 // Removed Gen4GenerationHistory - using UnifiedImageGallery only
 import { Gen4ReferenceLibrary } from './Gen4ReferenceLibrary'
+import { ModelSelector } from './ModelSelector'
+import { SeedreamSettings } from './SeedreamSettings'
 
 interface Gen4TabOptimizedProps {
   gen4ReferenceImages: Gen4ReferenceImage[]
@@ -152,7 +154,12 @@ export function Gen4TabOptimized({
               ? img.tags[0] 
               : `ref${index + 1}`
           ),
-          model: 'nano-banana'
+          model: gen4Settings.model || 'seedream-4',
+          // Seedream-4 specific parameters
+          max_images: gen4Settings.maxImages || 1,
+          custom_width: gen4Settings.customWidth,
+          custom_height: gen4Settings.customHeight,
+          sequential_generation: gen4Settings.sequentialGeneration || false
         })
       })
       
@@ -180,32 +187,50 @@ export function Gen4TabOptimized({
       }
       
       const result = await response.json()
+      console.log('🔍 API Response:', result)
       
-      const newGeneration: Gen4Generation = {
-        id: Date.now().toString(),
-        prompt: gen4Prompt,
-        referenceImages: [...gen4ReferenceImages],
-        settings: { ...gen4Settings },
-        status: 'completed',
-        outputUrl: result.images?.[0] || result.imageUrl,
-        timestamp: Date.now()
-      }
+      // Handle multi-image response from Seedream-4
+      const images = result.images || (result.imageUrl ? [result.imageUrl] : [])
+      console.log('🔍 Extracted images:', images)
+      console.log('🔍 Number of images:', images.length)
+      const imageCount = images.length
       
-      setGen4Generations(prev => [newGeneration, ...prev])
-      
-      // Save to unified gallery
-      if (newGeneration.outputUrl) {
+      // Create a generation entry for each image
+      images.forEach((imageUrl: string, index: number) => {
+        const newGeneration: Gen4Generation = {
+          id: `${Date.now()}-${index}`,
+          prompt: gen4Prompt,
+          referenceImages: [...gen4ReferenceImages],
+          settings: { ...gen4Settings },
+          status: 'completed',
+          outputUrl: imageUrl,
+          timestamp: Date.now() + index // Slightly different timestamps
+        }
+        
+        setGen4Generations(prev => [newGeneration, ...prev])
+        
+        // Save each image to unified gallery
         addImage({
-          url: newGeneration.outputUrl,
+          url: imageUrl,
           prompt: gen4Prompt,
           source: 'shot-creator',
-          timestamp: Date.now()
+          model: gen4Settings.model || 'seedream-4',
+          settings: {
+            aspectRatio: gen4Settings.aspectRatio,
+            resolution: gen4Settings.resolution,
+            seed: gen4Settings.seed
+          },
+          metadata: {
+            createdAt: Date.now(),
+            creditsUsed: Math.ceil((gen4Settings.maxImages || 1) * 0.03 * 33) // Rough estimate
+          },
+          tags: ['shot-creator', gen4Settings.model || 'seedream-4']
         })
-      }
+      })
       
       toast({
         title: "Generation Complete",
-        description: "Your new image has been generated successfully!"
+        description: `Generated ${imageCount} image${imageCount > 1 ? 's' : ''} successfully!`
       })
     } catch (error) {
       console.error('Gen4 generation error:', error)
@@ -228,9 +253,12 @@ export function Gen4TabOptimized({
           <h2 className="text-xl font-semibold text-white">Shot Creator</h2>
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-sm px-3 py-1 bg-purple-900/50 border border-purple-400/30 rounded-full text-purple-300 font-medium">
-            🍌 nano-banana
-          </div>
+          <ModelSelector
+            selectedModel={gen4Settings.model || 'seedream-4'}
+            onModelChange={(model) => setGen4Settings(prev => ({ ...prev, model }))}
+            compact={true}
+            showTooltips={false}
+          />
         </div>
       </div>
 
@@ -262,6 +290,16 @@ export function Gen4TabOptimized({
               compact={false}
             />
           </div>
+
+          {/* Seedream-4 Specific Settings */}
+          {gen4Settings.model === 'seedream-4' && (
+            <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
+              <SeedreamSettings
+                settings={gen4Settings}
+                onSettingsChange={setGen4Settings}
+              />
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN - Generated Images & Library */}

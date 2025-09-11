@@ -32,6 +32,8 @@ import { Gen4Props, Gen4Settings, Generation, ImageReference } from "@/types";
 import ReferenceLibraryBrowser from "@/app/components/ReferenceLibraryBrowser";
 import { saveImageToLibrary, referenceLibraryDB, LibraryImageReference } from "@/lib/referenceLibrary";
 import { PromptTemplateManager } from "@/components/shared/PromptTemplateManager";
+import { ModelSelector } from "@/components/post-production/ModelSelector";
+import { SeedreamSettings } from "@/components/post-production/SeedreamSettings";
 
 function Gen4({
   gen4Generations,
@@ -129,10 +131,19 @@ function Gen4({
         <div className="col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                Gen 4 Image Generation
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  Shot Creator
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <ModelSelector
+                    selectedModel={gen4Settings.model || 'seedream-4'}
+                    onModelChange={(model) => setGen4Settings(prev => ({ ...prev, model }))}
+                    compact={true}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Reference Images Upload */}
@@ -414,81 +425,89 @@ function Gen4({
               />
             </div>
 
-            {/* Generation Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Aspect Ratio
-                </Label>
-                <Select
-                  value={gen4Settings.aspectRatio}
-                  onValueChange={(value) =>
-                    setGen4Settings((prev) => ({
-                      ...prev,
-                      aspectRatio: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1:1">Square (1:1)</SelectItem>
-                    <SelectItem value="16:9">Landscape (16:9)</SelectItem>
-                    <SelectItem value="9:16">Portrait (9:16)</SelectItem>
-                    <SelectItem value="4:3">Standard (4:3)</SelectItem>
-                    <SelectItem value="3:4">Portrait (3:4)</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Model-Specific Settings */}
+            {gen4Settings.model === 'seedream-4' ? (
+              <SeedreamSettings
+                settings={gen4Settings}
+                onSettingsChange={setGen4Settings}
+              />
+            ) : (
+              // Traditional Gen4/nano-banana settings
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Aspect Ratio
+                  </Label>
+                  <Select
+                    value={gen4Settings.aspectRatio}
+                    onValueChange={(value) =>
+                      setGen4Settings((prev) => ({
+                        ...prev,
+                        aspectRatio: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1:1">Square (1:1)</SelectItem>
+                      <SelectItem value="16:9">Landscape (16:9)</SelectItem>
+                      <SelectItem value="9:16">Portrait (9:16)</SelectItem>
+                      <SelectItem value="4:3">Standard (4:3)</SelectItem>
+                      <SelectItem value="3:4">Portrait (3:4)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Resolution
+                  </Label>
+                  <Select
+                    value={gen4Settings.resolution}
+                    onValueChange={(value) =>
+                      setGen4Settings((prev) => ({
+                        ...prev,
+                        resolution: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GEN4_RESOLUTIONS.map((aspectRatio) => (
+                        <SelectItem
+                          defaultValue={aspectRatio.value}
+                          key={aspectRatio.value}
+                          value={aspectRatio.value}
+                        >
+                          {aspectRatio.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Seed (Optional)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Random"
+                    value={gen4Settings.seed || ""}
+                    onChange={(e) =>
+                      setGen4Settings((prev) => ({
+                        ...prev,
+                        seed: e.target.value
+                          ? Number.parseInt(e.target.value)
+                          : undefined,
+                      }))
+                    }
+                  />
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Resolution
-                </Label>
-                <Select
-                  value={gen4Settings.resolution}
-                  onValueChange={(value) =>
-                    setGen4Settings((prev) => ({
-                      ...prev,
-                      resolution: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GEN4_RESOLUTIONS.map((aspectRatio) => (
-                      <SelectItem
-                        defaultValue={aspectRatio.value}
-                        key={aspectRatio.value}
-                        value={aspectRatio.value}
-                      >
-                        {aspectRatio.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Seed (Optional)
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="Random"
-                  value={gen4Settings.seed || ""}
-                  onChange={(e) =>
-                    setGen4Settings((prev) => ({
-                      ...prev,
-                      seed: e.target.value
-                        ? Number.parseInt(e.target.value)
-                        : undefined,
-                    }))
-                  }
-                />
-              </div>
-            </div>
+            )}
 
             {/* Generate Button */}
             <Button
@@ -509,7 +528,7 @@ function Gen4({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Generate with Gen 4</span>
+                    <span>Generate with {gen4Settings.model === 'seedream-4' ? 'Seedream-4' : gen4Settings.model === 'nano-banana' ? 'Nano Banana' : 'Gen 4'}</span>
                   </>
                 )}
               </div>

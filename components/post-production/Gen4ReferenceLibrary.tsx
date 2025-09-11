@@ -51,7 +51,7 @@ export function Gen4ReferenceLibrary({
 }: Gen4ReferenceLibraryProps) {
   const filteredItems = libraryCategory === 'all' 
     ? libraryItems 
-    : libraryItems.filter(item => item.tags?.includes(libraryCategory))
+    : libraryItems.filter(item => item.category === libraryCategory)
 
   return (
     <Card className="bg-slate-900 border-slate-700">
@@ -112,7 +112,7 @@ export function Gen4ReferenceLibrary({
           </div>
         ) : (
           <ScrollArea className="h-80">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {filteredItems.map((item) => (
                 <div key={item.id} className="relative group">
                   <div 
@@ -122,8 +122,16 @@ export function Gen4ReferenceLibrary({
                     <img
                       src={item.preview || item.imageData}
                       alt={item.prompt || 'Library image'}
-                      className="w-full h-auto max-h-32 object-contain"
+                      className="w-full aspect-auto object-contain bg-slate-900 max-h-32"
                     />
+                    
+                    {/* Category icon - always visible */}
+                    <div className="absolute bottom-1 right-1 bg-black/80 rounded p-1">
+                      {item.category === 'people' && <Users className="w-3 h-3 text-blue-400" />}
+                      {item.category === 'places' && <MapPin className="w-3 h-3 text-green-400" />}
+                      {item.category === 'props' && <Package className="w-3 h-3 text-orange-400" />}
+                      {(!item.category || item.category === 'unorganized') && <ImageIcon className="w-3 h-3 text-slate-400" />}
+                    </div>
                     
                     {/* Hover overlay with actions */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -174,35 +182,6 @@ export function Gen4ReferenceLibrary({
                       )}
                     </div>
                     
-                    {/* Category badge */}
-                    {item.category && (
-                      <div className="absolute top-1 left-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {item.category}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Image info */}
-                  <div className="mt-1">
-                    <p className="text-xs text-slate-400 line-clamp-1">
-                      {item.prompt?.slice(0, 30) || 'No prompt'}
-                    </p>
-                    {item.tags && item.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.tags.slice(0, 2).map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {item.tags.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{item.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

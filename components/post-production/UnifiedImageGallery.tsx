@@ -120,7 +120,7 @@ export function UnifiedImageGallery({
         <CardHeader className="pb-3">
           <CardTitle className="text-white flex items-center gap-2 text-xl">
             <ImageIcon className="w-6 h-6 text-purple-400" />
-            🎬 Generated Images Gallery
+            Gallery
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -161,7 +161,7 @@ export function UnifiedImageGallery({
           <CardTitle className="text-white flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ImageIcon className="w-6 h-6 text-purple-400" />
-              🎬 Generated Images Gallery ({getTotalImages()})
+              Gallery ({getTotalImages()})
             </div>
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1 text-amber-400">
@@ -369,14 +369,15 @@ export function UnifiedImageGallery({
       {/* Fullscreen Modal */}
       {fullscreenImage && (
         <div 
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2"
           onClick={() => setFullscreenImage(null)}
         >
-          <div className="relative max-w-[95vw] max-h-[95vh]">
+          <div className="relative w-full h-full flex items-center justify-center">
             <img
               src={fullscreenImage.url}
               alt={fullscreenImage.prompt}
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
+              style={{ width: 'auto', height: 'auto' }}
             />
             
             {/* Fullscreen controls */}

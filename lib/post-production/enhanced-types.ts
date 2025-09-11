@@ -62,7 +62,12 @@ export interface Gen4Settings {
   aspectRatio: string
   resolution: string
   seed?: number
-  model?: 'nano-banana' | 'gen4-image' | 'gen4-image-turbo'
+  model?: 'nano-banana' | 'gen4-image' | 'gen4-image-turbo' | 'seedream-4'
+  // Seedream-4 specific settings
+  maxImages?: number // 1-15 for seedream-4
+  customWidth?: number // 1024-4096 when resolution is 'custom'
+  customHeight?: number // 1024-4096 when resolution is 'custom'
+  sequentialGeneration?: boolean // for seedream-4 auto mode
 }
 
 export interface LibraryImageReference {

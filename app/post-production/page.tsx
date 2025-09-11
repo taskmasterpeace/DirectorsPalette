@@ -47,8 +47,11 @@ export default function EnhancedPostProductionPage() {
   const [gen4Prompt, setGen4Prompt] = useState('')
   const [gen4Settings, setGen4Settings] = useState<Gen4Settings>({
     aspectRatio: '16:9',
-    resolution: '1080p',
-    seed: undefined
+    resolution: '2K', // Default to 2K for Seedream-4
+    seed: undefined,
+    model: 'seedream-4', // Default to Seedream-4
+    maxImages: 1, // Default single image
+    sequentialGeneration: false
   })
   const [gen4Generations, setGen4Generations] = useState<Gen4Generation[]>([])
   const [gen4Processing, setGen4Processing] = useState(false)
@@ -113,24 +116,52 @@ export default function EnhancedPostProductionPage() {
   
   // Handle category selection and save to library
   const handleCategorySave = async (category: string, tags: string[]) => {
+    console.log('🔍 handleCategorySave called with category:', category, 'tags:', tags)
+    console.log('🔍 pendingGeneration:', pendingGeneration)
+    
     if (pendingGeneration) {
-      const referenceTag = pendingGeneration.referenceTags?.[0]
-      
-      await saveImageToLibrary(
-        pendingGeneration.imageUrl,
-        tags,
-        pendingGeneration.prompt,
-        'generated',
-        pendingGeneration.settings,
-        category as any,
-        referenceTag
-      )
-      setPendingGeneration(null)
-      loadLibraryItems()
-      toast({
-        title: "Saved to Library",
-        description: `Image saved to ${category} with ${tags.length} tags`
-      })
+      try {
+        const referenceTag = pendingGeneration.referenceTags?.[0]
+        
+        console.log('🔍 About to call saveImageToLibrary with:', {
+          imageUrl: pendingGeneration.imageUrl,
+          tags,
+          prompt: pendingGeneration.prompt,
+          source: 'generated',
+          settings: pendingGeneration.settings,
+          category,
+          referenceTag
+        })
+        
+        const savedId = await saveImageToLibrary(
+          pendingGeneration.imageUrl,
+          tags,
+          pendingGeneration.prompt,
+          'generated',
+          pendingGeneration.settings,
+          category as any,
+          referenceTag
+        )
+        
+        console.log('✅ Image saved to library with ID:', savedId)
+        setPendingGeneration(null)
+        console.log('🔍 Reloading library items...')
+        loadLibraryItems()
+        
+        toast({
+          title: "Saved to Library",
+          description: `Image saved to ${category} with ${tags.length} tags`
+        })
+      } catch (error) {
+        console.error('🔴 Error in handleCategorySave:', error)
+        toast({
+          title: "Save Failed",
+          description: error instanceof Error ? error.message : "Unknown error occurred",
+          variant: "destructive"
+        })
+      }
+    } else {
+      console.log('❌ No pendingGeneration found!')
     }
   }
 
@@ -202,16 +233,26 @@ export default function EnhancedPostProductionPage() {
   
   // Send generation to Reference Library with categorization
   const sendToReferenceLibrary = async (imageUrl: string) => {
+    console.log('🔍 sendToReferenceLibrary called with imageUrl:', imageUrl)
     try {
       // For now, we'll save directly and let user categorize in the Reference Library
-      setPendingGeneration({
+      const pendingGen = {
         imageUrl,
-        prompt: 'Generated from Post Production',
+        prompt: 'Generated image',
         settings: gen4Settings,
-        referenceTags: ['generated', 'post-production']
-      })
+        referenceTags: []
+      }
+      console.log('🔍 Setting pendingGeneration:', pendingGen)
+      setPendingGeneration(pendingGen)
+      console.log('🔍 Opening category dialog...')
       setCategoryDialogOpen(true)
+      
+      toast({
+        title: 'Opening Save Dialog',
+        description: 'Category selection dialog should appear',
+      })
     } catch (error) {
+      console.error('🔴 Error in sendToReferenceLibrary:', error)
       toast({
         title: 'Save Failed',
         description: 'Failed to save to reference library',
@@ -545,7 +586,7 @@ export default function EnhancedPostProductionPage() {
         open={categoryDialogOpen}
         onOpenChange={setCategoryDialogOpen}
         onSave={handleCategorySave}
-        initialTags={['gen4', 'generated']}
+        initialTags={[]}
         imageUrl={pendingGeneration?.imageUrl}
       />
       

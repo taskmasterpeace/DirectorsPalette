@@ -29,7 +29,11 @@ export async function POST(request: NextRequest) {
       reference_tags,
       reference_images,
       seed,
-      model = 'nano-banana'
+      model = 'nano-banana',
+      max_images,
+      custom_width,
+      custom_height,
+      sequential_generation
     }: {
       prompt: string;
       aspect_ratio: string;
@@ -37,7 +41,11 @@ export async function POST(request: NextRequest) {
       reference_tags: string[];
       reference_images: string[];
       seed?: number;
-      model?: 'gen4-image' | 'gen4-image-turbo' | 'nano-banana';
+      model?: 'gen4-image' | 'gen4-image-turbo' | 'nano-banana' | 'seedream-4';
+      max_images?: number;
+      custom_width?: number;
+      custom_height?: number;
+      sequential_generation?: boolean;
     } = await request.json();
 
     if (!prompt) {
@@ -73,6 +81,23 @@ export async function POST(request: NextRequest) {
         }
       };
       modelEndpoint = 'google/nano-banana';
+    } else if (model === 'seedream-4') {
+      // Seedream-4 format
+      body = {
+        input: {
+          prompt: prompt,
+          size: resolution === 'custom' ? 'custom' : resolution, // 1K, 2K, 4K, or custom
+          ...(resolution === 'custom' && {
+            width: custom_width || 2048,
+            height: custom_height || 2048
+          }),
+          aspect_ratio: aspect_ratio || "16:9",
+          max_images: max_images || 1, // 1-15 range
+          image_input: reference_images, // 1-10 reference images
+          sequential_image_generation: sequential_generation ? 'auto' : 'disabled'
+        }
+      };
+      modelEndpoint = 'bytedance/seedream-4';
     } else {
       // Gen4 format (backward compatibility)
       body = {

@@ -18,9 +18,18 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Settings, Sparkles, Upload, Edit, Plus, Clock, Loader2, Pencil } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Settings, Sparkles, Upload, Edit, Plus, Clock, Loader2, Pencil, Save, X, Download, FileUp, Wand2 } from 'lucide-react'
 import type { Gen4Settings } from '@/lib/post-production/enhanced-types'
 import { useGenerationQueueStore } from '@/stores/generation-queue-store'
+import { EnhancedPresetManager } from '@/components/shared/EnhancedPresetManager'
+import { getPresetsForTool, type Preset } from '@/lib/presets/preset-categories'
 
 interface Gen4PromptSettingsProps {
   gen4Prompt: string
@@ -47,6 +56,8 @@ export function Gen4PromptSettings({
   const [gen4Prefix, setGen4Prefix] = useState('')
   const [gen4Suffix, setGen4Suffix] = useState('')
   const [showPrefixSuffix, setShowPrefixSuffix] = useState(false)
+  const [editingPreset, setEditingPreset] = useState<{key: string, name: string, prompt: string} | null>(null)
+  const [showEnhancedPresets, setShowEnhancedPresets] = useState(false)
   const { addToQueue, getQueuedCount, getProcessingCount, clearStuckProcessing, clearAll } = useGenerationQueueStore()
   
   // Clear stuck processing jobs on mount
@@ -56,27 +67,116 @@ export function Gen4PromptSettings({
   
   // Preset templates for Shot Creator
   const [creatorPresets, setCreatorPresets] = useState<Record<string, string>>(() => {
+    // Force update to new practical presets for film production
+    const newPresets = {
+      'character-consistency': 'Maintain this exact character appearance but place them in a different scene or outfit, preserve facial features and body proportions precisely',
+      'scene-angle-change': 'Show this exact scene from a different camera angle - low angle, high angle, or side perspective while keeping all elements the same',
+      'remove-background-clean': 'Remove the entire background, make it transparent with clean edges, preserve the main subject perfectly for compositing',
+      'add-green-screen': 'Replace the background with a solid, even green screen for chroma keying, keep original subject and lighting intact'
+    }
+    
+    // Save the new presets immediately
     if (typeof window !== 'undefined') {
-      try {
-        const savedPresets = localStorage.getItem('directors-palette-creator-presets')
-        if (savedPresets) {
-          return JSON.parse(savedPresets)
-        }
-      } catch {
-        // Fall back to defaults
-      }
+      localStorage.setItem('directors-palette-creator-presets', JSON.stringify(newPresets))
     }
-    return {
-      'cinematic-portrait': 'A cinematic portrait with dramatic lighting',
-      'product-shot': 'Professional product photography with clean background',
-      'artistic-concept': 'Creative artistic concept with unique composition',
-      'lifestyle-photo': 'Natural lifestyle photography with authentic feel'
-    }
+    
+    return newPresets
   })
   
   const applyPreset = (presetKey: string) => {
     const presetPrompt = creatorPresets[presetKey] || presetKey
     setGen4Prompt(presetPrompt)
+  }
+
+  const savePresets = (newPresets: Record<string, string>) => {
+    setCreatorPresets(newPresets)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('directors-palette-creator-presets', JSON.stringify(newPresets))
+    }
+  }
+
+  const handleEditPreset = (key: string, name: string, prompt: string) => {
+    setEditingPreset({ key, name, prompt })
+  }
+
+  const handleSavePresetEdit = () => {
+    if (editingPreset) {
+      const newPresets = { ...creatorPresets }
+      
+      // If key changed, remove old key and add new one
+      if (editingPreset.name !== editingPreset.key) {
+        delete newPresets[editingPreset.key]
+        newPresets[editingPreset.name] = editingPreset.prompt
+      } else {
+        newPresets[editingPreset.key] = editingPreset.prompt
+      }
+      
+      savePresets(newPresets)
+      setEditingPreset(null)
+    }
+  }
+
+  const handleDeletePreset = () => {
+    if (editingPreset) {
+      const newPresets = { ...creatorPresets }
+      delete newPresets[editingPreset.key]
+      savePresets(newPresets)
+      setEditingPreset(null)
+    }
+  }
+
+  const handleExportPresets = () => {
+    const presetData = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      presets: creatorPresets
+    }
+    
+    const dataStr = JSON.stringify(presetData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(dataBlob)
+    link.download = `shot-creator-presets-${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+    
+    URL.revokeObjectURL(link.href)
+  }
+
+  const handleImportPresets = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const importedData = JSON.parse(content)
+        
+        // Validate structure
+        if (importedData.presets && typeof importedData.presets === 'object') {
+          // Merge with existing presets (imported ones take precedence)
+          const mergedPresets = { ...creatorPresets, ...importedData.presets }
+          savePresets(mergedPresets)
+          
+          const importedCount = Object.keys(importedData.presets).length
+          // Toast notification would go here if available
+          console.log(`Successfully imported ${importedCount} presets`)
+        } else {
+          console.error('Invalid preset file format')
+        }
+      } catch (error) {
+        console.error('Error importing presets:', error)
+      }
+    }
+    
+    reader.readAsText(file)
+    // Clear the input so the same file can be imported again
+    event.target.value = ''
+  }
+
+  const handleApplyEnhancedPreset = (preset: Preset) => {
+    setGen4Prompt(preset.prompt)
   }
 
   return (
@@ -125,7 +225,46 @@ export function Gen4PromptSettings({
           
           {/* Preset Templates */}
           <div className="mb-4">
-            <Label className="text-white text-xs mb-2 block">Quick Presets</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-white text-xs">Quick Presets</Label>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowEnhancedPresets(true)}
+                  className="h-6 px-2 text-slate-400 hover:text-white border border-slate-600 hover:border-purple-500"
+                  title="Enhanced Preset Library"
+                >
+                  <Wand2 className="w-3 h-3 mr-1" />
+                  <span className="text-xs">Library</span>
+                </Button>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportPresets}
+                  className="hidden"
+                  id="preset-import"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => document.getElementById('preset-import')?.click()}
+                  className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                  title="Import Presets"
+                >
+                  <FileUp className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleExportPresets}
+                  className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                  title="Export Presets"
+                >
+                  <Download className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-1">
               {Object.entries(creatorPresets).slice(0, 4).map(([key, value]) => (
                 <div key={key} className="relative group">
@@ -140,10 +279,7 @@ export function Gen4PromptSettings({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => {
-                      // TODO: Open preset edit dialog
-                      console.log('Edit preset:', key, value)
-                    }}
+                    onClick={() => handleEditPreset(key, key, value)}
                     className="absolute right-0 top-0 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Pencil className="w-3 h-3" />
@@ -246,7 +382,23 @@ export function Gen4PromptSettings({
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-lg py-6"
             >
               <Sparkles className="w-5 h-5 mr-2" />
-              {gen4Processing ? 'Generating...' : 'Generate'}
+              {gen4Processing ? (
+                gen4Settings.model === 'seedream-4' && gen4Settings.maxImages && gen4Settings.maxImages > 1 
+                  ? `Generating ${gen4Settings.maxImages} images...`
+                  : 'Generating...'
+              ) : (
+                <span className="flex items-center gap-2">
+                  {gen4Settings.model === 'seedream-4' && gen4Settings.maxImages && gen4Settings.maxImages > 1 
+                    ? `Generate ${gen4Settings.maxImages} Images`
+                    : 'Generate'
+                  }
+                  {gen4Settings.model === 'seedream-4' && (
+                    <span className="text-sm opacity-75">
+                      (~${((gen4Settings.maxImages || 1) * 0.03).toFixed(2)})
+                    </span>
+                  )}
+                </span>
+              )}
             </Button>
 
             {/* Clear Queue Button */}
@@ -299,6 +451,80 @@ export function Gen4PromptSettings({
           </div>
         </CardContent>
       </Card>
+
+      {/* Preset Edit Dialog */}
+      <Dialog open={!!editingPreset} onOpenChange={() => setEditingPreset(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Preset</DialogTitle>
+          </DialogHeader>
+          
+          {editingPreset && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-white text-sm">Preset Name</Label>
+                <Input
+                  value={editingPreset.name}
+                  onChange={(e) => setEditingPreset({
+                    ...editingPreset,
+                    name: e.target.value
+                  })}
+                  className="bg-slate-800 border-slate-600 text-white"
+                  placeholder="e.g., cinematic-portrait"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-white text-sm">Prompt Template</Label>
+                <Textarea
+                  value={editingPreset.prompt}
+                  onChange={(e) => setEditingPreset({
+                    ...editingPreset,
+                    prompt: e.target.value
+                  })}
+                  className="bg-slate-800 border-slate-600 text-white min-h-20"
+                  placeholder="Enter your prompt template..."
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeletePreset}
+              className="mr-auto"
+            >
+              Delete Preset
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingPreset(null)}
+            >
+              <X className="w-3 h-3 mr-1" />
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSavePresetEdit}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              <Save className="w-3 h-3 mr-1" />
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enhanced Preset Manager */}
+      <EnhancedPresetManager
+        isOpen={showEnhancedPresets}
+        onOpenChange={setShowEnhancedPresets}
+        onApplyPreset={handleApplyEnhancedPreset}
+        currentTool="shot-creator"
+      />
     </div>
   )
 }
