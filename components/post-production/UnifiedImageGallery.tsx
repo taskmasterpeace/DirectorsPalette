@@ -228,7 +228,7 @@ export function UnifiedImageGallery({
             </div>
           )}
           
-          <ScrollArea className="h-80">
+          <ScrollArea className="h-[600px]">
             {/* 2 Column Grid - Bigger Images */}
             <div className="grid grid-cols-2 gap-6">
               {paginatedImages.map((image) => (

@@ -22,6 +22,7 @@ import { Gen4PromptSettings } from './Gen4PromptSettings'
 import { Gen4ReferenceLibrary } from './Gen4ReferenceLibrary'
 import { ModelSelector } from './ModelSelector'
 import { SeedreamSettings } from './SeedreamSettings'
+import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
 interface Gen4TabOptimizedProps {
   gen4ReferenceImages: Gen4ReferenceImage[]
@@ -78,7 +79,14 @@ export function Gen4TabOptimized({
   const { user, getToken } = useAuth()
   const { addImage } = useUnifiedGalleryStore()
 
-  const canGenerate = gen4Prompt.length > 0 && gen4ReferenceImages.length > 0
+  // Determine if we're in editing mode based on selected model
+  const isEditingMode = gen4Settings.model === 'qwen-image-edit'
+  const modelConfig = getModelConfig((gen4Settings.model || 'nano-banana') as ModelId)
+  
+  // Different validation for editing vs generation modes
+  const canGenerate = isEditingMode 
+    ? gen4Prompt.length > 0 && gen4ReferenceImages.length > 0 // Editing needs 1 input image + prompt
+    : gen4Prompt.length > 0 && gen4ReferenceImages.length > 0 // Generation needs reference images + prompt
 
   // Generation logic (simplified for space efficiency)
   // Simple content filter to avoid sensitive content errors
@@ -189,30 +197,45 @@ export function Gen4TabOptimized({
       const result = await response.json()
       console.log('🔍 API Response:', result)
       
-      // Handle multi-image response from Seedream-4
+      // Handle multi-image response with expanded prompts
       const images = result.images || (result.imageUrl ? [result.imageUrl] : [])
       console.log('🔍 Extracted images:', images)
       console.log('🔍 Number of images:', images.length)
       const imageCount = images.length
       
+      // Handle both old format (strings) and new format (objects with prompt)
+      const processedImages = images.map((item: any, index: number) => {
+        if (typeof item === 'string') {
+          // Old format - just URL
+          return { url: item, prompt: gen4Prompt, variationIndex: index + 1 }
+        } else {
+          // New format - object with URL and expanded prompt
+          return { 
+            url: item.url, 
+            prompt: item.prompt || gen4Prompt, 
+            variationIndex: item.variationIndex || index + 1 
+          }
+        }
+      })
+      
       // Create a generation entry for each image
-      images.forEach((imageUrl: string, index: number) => {
+      processedImages.forEach((imageData, index: number) => {
         const newGeneration: Gen4Generation = {
           id: `${Date.now()}-${index}`,
-          prompt: gen4Prompt,
+          prompt: imageData.prompt, // Use specific expanded prompt
           referenceImages: [...gen4ReferenceImages],
           settings: { ...gen4Settings },
           status: 'completed',
-          outputUrl: imageUrl,
+          outputUrl: imageData.url,
           timestamp: Date.now() + index // Slightly different timestamps
         }
         
         setGen4Generations(prev => [newGeneration, ...prev])
         
-        // Save each image to unified gallery
+        // Save each image to unified gallery with specific prompt
         addImage({
-          url: imageUrl,
-          prompt: gen4Prompt,
+          url: imageData.url,
+          prompt: imageData.prompt, // Use expanded prompt instead of template
           source: 'shot-creator',
           model: gen4Settings.model || 'seedream-4',
           settings: {
@@ -221,10 +244,16 @@ export function Gen4TabOptimized({
             seed: gen4Settings.seed
           },
           metadata: {
-            createdAt: Date.now(),
-            creditsUsed: Math.ceil((gen4Settings.maxImages || 1) * 0.03 * 33) // Rough estimate
+            createdAt: Date.now() + index,
+            creditsUsed: result.creditsUsed || Math.ceil((gen4Settings.maxImages || 1) * 0.03 * 33)
           },
-          tags: ['shot-creator', gen4Settings.model || 'seedream-4']
+          tags: [
+            'shot-creator', 
+            gen4Settings.model || 'seedream-4',
+            ...(result.isWildCard ? ['wild-card'] : []),
+            ...(result.isDynamic ? ['dynamic'] : []),
+            `variation-${imageData.variationIndex}`
+          ]
         })
       })
       
@@ -267,12 +296,24 @@ export function Gen4TabOptimized({
         
         {/* LEFT COLUMN - Reference Images & Prompt */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Reference Images Management */}
+          {/* Reference Images Management / Input Image for Editing */}
           <div className="bg-slate-900/30 rounded-lg border border-slate-700/50 p-6">
+            <div className="mb-4">
+              <h3 className="text-white font-medium">
+                {isEditingMode ? 'Input Image to Edit' : `Reference Images (Max ${modelConfig.maxReferenceImages || 3})`}
+              </h3>
+              {isEditingMode && (
+                <p className="text-slate-400 text-sm mt-1">
+                  Upload the image you want to edit with AI instructions
+                </p>
+              )}
+            </div>
             <Gen4ReferenceManager
               gen4ReferenceImages={gen4ReferenceImages}
               setGen4ReferenceImages={setGen4ReferenceImages}
               compact={false}
+              maxImages={isEditingMode ? 1 : (modelConfig.maxReferenceImages || 3)}
+              editingMode={isEditingMode}
             />
           </div>
 

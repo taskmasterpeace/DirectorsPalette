@@ -30,6 +30,11 @@ import type { Gen4Settings } from '@/lib/post-production/enhanced-types'
 import { useGenerationQueueStore } from '@/stores/generation-queue-store'
 import { EnhancedPresetManager } from '@/components/shared/EnhancedPresetManager'
 import { getPresetsForTool, type Preset } from '@/lib/presets/preset-categories'
+import { calculateUserCredits } from '@/lib/credits/model-costs'
+import { DynamicPromptInput } from './DynamicPromptInput'
+import { parseDynamicPrompt } from '@/lib/dynamic-prompting'
+import { ModelParameterController } from './ModelParameterController'
+import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
 interface Gen4PromptSettingsProps {
   gen4Prompt: string
@@ -58,6 +63,7 @@ export function Gen4PromptSettings({
   const [showPrefixSuffix, setShowPrefixSuffix] = useState(false)
   const [editingPreset, setEditingPreset] = useState<{key: string, name: string, prompt: string} | null>(null)
   const [showEnhancedPresets, setShowEnhancedPresets] = useState(false)
+  const [dynamicPrompts, setDynamicPrompts] = useState<string[]>([])
   const { addToQueue, getQueuedCount, getProcessingCount, clearStuckProcessing, clearAll } = useGenerationQueueStore()
   
   // Clear stuck processing jobs on mount
@@ -179,202 +185,167 @@ export function Gen4PromptSettings({
     setGen4Prompt(preset.prompt)
   }
 
+  // Determine if we're in editing mode based on selected model
+  const isEditingMode = gen4Settings.model === 'qwen-image-edit'
+
   return (
     <div className="space-y-4">
-      {/* Prompt Enhancement */}
+      {/* Main Prompt Input - Always at top */}
       <Card className="bg-slate-900 border-slate-700">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Prompt Enhancement</CardTitle>
+          <CardTitle className="text-white">
+            {isEditingMode ? 'Editing Instructions' : 'Prompt & Instructions'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Dynamic Prompt Input */}
+          <div>
+            <DynamicPromptInput
+              prompt={gen4Prompt}
+              onPromptChange={setGen4Prompt}
+              onDynamicPromptsChange={setDynamicPrompts}
+              creditsPerImage={calculateUserCredits(gen4Settings.model || 'nano-banana', 1)}
+              maxImages={5}
+              placeholder={isEditingMode 
+                ? "Describe how to edit the image... e.g., 'Change the background to a sunset'"
+                : "Describe the image... Use [option1, option2] or _wildcard_ for variations (Ctrl+Enter to generate)"
+              }
+              disabled={gen4Processing}
+              userId="7cf1a35d-e572-4e39-b4cd-a38d8f10c6d2" // TODO: Get from auth context
+            />
+          </div>
+          
+          {/* Quick Presets - Moved under prompt as requested */}
+          {!isEditingMode && (
+            <div className="mt-4 border-t border-slate-700 pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-white text-sm">Quick Presets</Label>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowEnhancedPresets(true)}
+                    className="h-6 px-2 text-slate-400 hover:text-white border border-slate-600 hover:border-purple-500"
+                    title="Enhanced Preset Library"
+                  >
+                    <Wand2 className="w-3 h-3 mr-1" />
+                    <span className="text-xs">Library</span>
+                  </Button>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportPresets}
+                    className="hidden"
+                    id="preset-import"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => document.getElementById('preset-import')?.click()}
+                    className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                    title="Import Presets"
+                  >
+                    <FileUp className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleExportPresets}
+                    className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                    title="Export Presets"
+                  >
+                    <Download className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {Object.entries(creatorPresets).slice(0, 4).map(([key, value]) => (
+                  <div key={key} className="relative group">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => applyPreset(key)}
+                      className="h-7 w-full text-xs justify-start px-2 text-slate-300 hover:text-white hover:bg-slate-700"
+                    >
+                      {key.replace('-', ' ')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEditPreset(key, key, value)}
+                      className="absolute right-0 top-0 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Prefix/Suffix Section - Moved under prompt area */}
+          <div className="border-t border-slate-700 pt-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowPrefixSuffix(!showPrefixSuffix)}
-              className="text-xs"
+              className="text-xs mb-3"
             >
               <Settings className="w-3 h-3 mr-1" />
               Show Prefix/Suffix
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Prefix/Suffix Section */}
-          <Collapsible open={showPrefixSuffix} onOpenChange={setShowPrefixSuffix}>
-            <CollapsibleContent className="space-y-3 mb-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-white text-xs">Prefix (added before prompt)</Label>
-                  <Input
-                    value={gen4Prefix}
-                    onChange={(e) => setGen4Prefix(e.target.value)}
-                    placeholder="e.g., 'A cinematic shot of'"
-                    className="bg-slate-800 border-slate-600 text-white text-sm"
-                  />
+            
+            <Collapsible open={showPrefixSuffix} onOpenChange={setShowPrefixSuffix}>
+              <CollapsibleContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-white text-xs">Prefix (added before prompt)</Label>
+                    <Input
+                      value={gen4Prefix}
+                      onChange={(e) => setGen4Prefix(e.target.value)}
+                      placeholder="e.g., 'A cinematic shot of'"
+                      className="bg-slate-800 border-slate-600 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white text-xs">Suffix (added after prompt)</Label>
+                    <Input
+                      value={gen4Suffix}
+                      onChange={(e) => setGen4Suffix(e.target.value)}
+                      className="bg-slate-800 border-slate-600 text-white text-sm"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-white text-xs">Suffix (added after prompt)</Label>
-                  <Input
-                    value={gen4Suffix}
-                    onChange={(e) => setGen4Suffix(e.target.value)}
-                    className="bg-slate-800 border-slate-600 text-white text-sm"
-                  />
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-          
-          {/* Preset Templates */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-white text-xs">Quick Presets</Label>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowEnhancedPresets(true)}
-                  className="h-6 px-2 text-slate-400 hover:text-white border border-slate-600 hover:border-purple-500"
-                  title="Enhanced Preset Library"
-                >
-                  <Wand2 className="w-3 h-3 mr-1" />
-                  <span className="text-xs">Library</span>
-                </Button>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportPresets}
-                  className="hidden"
-                  id="preset-import"
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => document.getElementById('preset-import')?.click()}
-                  className="h-6 w-6 p-0 text-slate-400 hover:text-white"
-                  title="Import Presets"
-                >
-                  <FileUp className="w-3 h-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleExportPresets}
-                  className="h-6 w-6 p-0 text-slate-400 hover:text-white"
-                  title="Export Presets"
-                >
-                  <Download className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-              {Object.entries(creatorPresets).slice(0, 4).map(([key, value]) => (
-                <div key={key} className="relative group">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => applyPreset(key)}
-                    className="h-7 w-full text-xs justify-start px-2 text-slate-300 hover:text-white hover:bg-slate-700"
-                  >
-                    {key.replace('-', ' ')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleEditPreset(key, key, value)}
-                    className="absolute right-0 top-0 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Main Prompt */}
-          <div>
-            <Label className="text-white">Prompt (Enhanced with Prefix/Suffix)</Label>
-            <Textarea
-              placeholder="Describe the image you want to generate... (Ctrl+Enter to generate)"
-              value={gen4Prompt}
-              onChange={(e) => setGen4Prompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.ctrlKey && e.key === 'Enter' && canGenerate) {
-                  onGenerate()
-                }
-              }}
-              className="min-h-24 bg-slate-800 border-slate-600 text-white"
-            />
-            {showPrefixSuffix && (
-              <div className="mt-2 p-2 bg-slate-700/50 rounded text-xs text-slate-300">
-                <strong>Final prompt:</strong> {gen4Prefix} {gen4Prompt} {gen4Suffix}
-              </div>
-            )}
+                {showPrefixSuffix && (
+                  <div className="mt-2 p-2 bg-slate-700/50 rounded text-xs text-slate-300">
+                    <strong>Final prompt:</strong> {gen4Prefix} {gen4Prompt} {gen4Suffix}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </CardContent>
       </Card>
 
-      {/* Generation Settings */}
+      {/* Model-Specific Generation Settings */}
       <Card className="bg-slate-900 border-slate-700">
         <CardHeader className="pb-4">
-          <CardTitle className="text-white">Generation Settings</CardTitle>
+          <CardTitle className="text-white">
+            {isEditingMode ? 'Editing Settings' : 'Generation Settings'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-white text-sm">Aspect Ratio</Label>
-              <Select 
-                value={gen4Settings.aspectRatio} 
-                onValueChange={(value) => setGen4Settings({ ...gen4Settings, aspectRatio: value })}
-              >
-                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="16:9">16:9 Landscape</SelectItem>
-                  <SelectItem value="9:16">9:16 Portrait</SelectItem>
-                  <SelectItem value="1:1">1:1 Square</SelectItem>
-                  <SelectItem value="4:3">4:3 Classic</SelectItem>
-                  <SelectItem value="3:4">3:4 Portrait</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label className="text-white text-sm">Resolution</Label>
-              <Select 
-                value={gen4Settings.resolution} 
-                onValueChange={(value) => setGen4Settings({ ...gen4Settings, resolution: value })}
-              >
-                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="720p">720p</SelectItem>
-                  <SelectItem value="1080p">1080p</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label className="text-white text-sm">Seed (Optional)</Label>
-              <Input
-                type="number"
-                value={gen4Settings.seed || ''}
-                onChange={(e) => setGen4Settings({ 
-                  ...gen4Settings, 
-                  seed: e.target.value ? parseInt(e.target.value) : undefined 
-                })}
-                placeholder="Random"
-                className="bg-slate-800 border-slate-600 text-white"
-              />
-            </div>
-          </div>
+          <ModelParameterController
+            modelId={(gen4Settings.model || 'nano-banana') as ModelId}
+            settings={gen4Settings}
+            onSettingsChange={setGen4Settings}
+          />
 
           {/* Generate Button */}
-          <div className="mt-6 space-y-3">
+          <div className="mt-6">
             <Button
               onClick={() => {
                 if (canGenerate) {
-                  // Direct generation only - no queue
                   onGenerate()
                 }
               }}
@@ -385,16 +356,40 @@ export function Gen4PromptSettings({
               {gen4Processing ? (
                 gen4Settings.model === 'seedream-4' && gen4Settings.maxImages && gen4Settings.maxImages > 1 
                   ? `Generating ${gen4Settings.maxImages} images...`
-                  : 'Generating...'
+                  : isEditingMode
+                    ? 'Editing image...'
+                    : 'Generating...'
               ) : (
                 <span className="flex items-center gap-2">
-                  {gen4Settings.model === 'seedream-4' && gen4Settings.maxImages && gen4Settings.maxImages > 1 
-                    ? `Generate ${gen4Settings.maxImages} Images`
-                    : 'Generate'
-                  }
-                  {gen4Settings.model === 'seedream-4' && (
+                  {(() => {
+                    const promptResult = parseDynamicPrompt(gen4Prompt)
+                    const isDynamic = promptResult.hasBrackets && promptResult.isValid
+                    const imageCount = isDynamic ? promptResult.expandedPrompts.length : (gen4Settings.maxImages || 1)
+                    const totalCredits = calculateUserCredits(gen4Settings.model || 'nano-banana', imageCount)
+                    
+                    if (isEditingMode) {
+                      return (
+                        <>
+                          <span>Edit Image</span>
+                          <span className="text-sm">(uses {totalCredits} credits)</span>
+                        </>
+                      )
+                    } else if (isDynamic) {
+                      return `Generate ${imageCount} Variations (Dynamic)`
+                    } else if (gen4Settings.model === 'seedream-4' && gen4Settings.maxImages && gen4Settings.maxImages > 1) {
+                      return `Generate ${gen4Settings.maxImages} Images`
+                    } else {
+                      return 'Generate'
+                    }
+                  })()}
+                  {!isEditingMode && (
                     <span className="text-sm opacity-75">
-                      (~${((gen4Settings.maxImages || 1) * 0.03).toFixed(2)})
+                      (uses {(() => {
+                        const promptResult = parseDynamicPrompt(gen4Prompt)
+                        const isDynamic = promptResult.hasBrackets && promptResult.isValid
+                        const imageCount = isDynamic ? promptResult.expandedPrompts.length : (gen4Settings.maxImages || 1)
+                        return calculateUserCredits(gen4Settings.model || 'nano-banana', imageCount)
+                      })()} credits)
                     </span>
                   )}
                 </span>

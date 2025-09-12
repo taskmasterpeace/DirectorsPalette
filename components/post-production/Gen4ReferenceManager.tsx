@@ -21,15 +21,30 @@ interface Gen4ReferenceManagerProps {
   gen4ReferenceImages: Gen4ReferenceImage[]
   setGen4ReferenceImages: (images: Gen4ReferenceImage[]) => void
   compact?: boolean
+  maxImages?: number
+  editingMode?: boolean
 }
 
 export function Gen4ReferenceManager({
   gen4ReferenceImages,
   setGen4ReferenceImages,
-  compact = false
+  compact = false,
+  maxImages = 3,
+  editingMode = false
 }: Gen4ReferenceManagerProps) {
   const { toast } = useToast()
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null)
+  
+  // Progressive disclosure: Start with 3, expand to 6, then 9, then max
+  const getVisibleSlots = () => {
+    const filledSlots = gen4ReferenceImages.length
+    if (filledSlots >= 9 && maxImages > 9) return maxImages // Show all when 9+ filled
+    if (filledSlots >= 6) return Math.min(9, maxImages) // Show 9 when 6+ filled  
+    if (filledSlots >= 3) return Math.min(6, maxImages) // Show 6 when 3+ filled
+    return Math.min(3, maxImages) // Always start with 3
+  }
+  
+  const visibleSlots = getVisibleSlots()
 
   // Handle file upload for reference images
   const handleGen4ImageUpload = async (file: File) => {
@@ -87,11 +102,13 @@ export function Gen4ReferenceManager({
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-white text-sm">Reference Images ({gen4ReferenceImages.length}/3)</Label>
+          <Label className="text-white text-sm">
+            {editingMode ? 'Input Image' : 'Reference Images'} ({gen4ReferenceImages.length}/{maxImages})
+          </Label>
         </div>
         {/* Horizontal compact layout */}
         <div className="flex gap-2">
-          {[0, 1, 2].map((index) => {
+          {Array.from({ length: visibleSlots }, (_, index) => index).map((index) => {
             const image = gen4ReferenceImages[index]
             const isEmpty = !image
             
@@ -151,12 +168,14 @@ export function Gen4ReferenceManager({
   return (
     <Card className="bg-slate-900 border-slate-700">
       <CardHeader>
-        <CardTitle className="text-white">Reference Images (Max 3)</CardTitle>
+        <CardTitle className="text-white">
+          {editingMode ? 'Input Image to Edit' : `Reference Images (Max ${maxImages})`}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Reference Image Slots */}
-        <div className="grid grid-cols-3 gap-4">
-          {[0, 1, 2].map((index) => {
+        <div className={`grid gap-4 ${visibleSlots === 1 ? 'grid-cols-1' : visibleSlots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {Array.from({ length: visibleSlots }, (_, index) => index).map((index) => {
             const image = gen4ReferenceImages[index]
             const isEmpty = !image
             
@@ -293,6 +312,22 @@ export function Gen4ReferenceManager({
             )
           })}
         </div>
+        
+        {/* Progressive Disclosure Indicator */}
+        {visibleSlots < maxImages && gen4ReferenceImages.length >= visibleSlots - 1 && (
+          <div className="text-center py-3 border-t border-slate-700">
+            <div className="text-sm text-slate-400">
+              <Plus className="w-4 h-4 mx-auto mb-1" />
+              <span className="font-medium">
+                {maxImages - visibleSlots} more slots available
+              </span>
+              <br />
+              <span className="text-xs">
+                Fill current slots to expand automatically
+              </span>
+            </div>
+          </div>
+        )}
         
         <p className="text-xs text-slate-400">
           Each reference slot has its own "Browse" and "Paste" buttons for targeted uploads

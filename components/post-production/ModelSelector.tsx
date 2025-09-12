@@ -14,64 +14,49 @@ import {
   Sparkles, 
   Zap, 
   Leaf,
-  Info
+  Info,
+  Edit3
 } from 'lucide-react'
+import { getAvailableModels, getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
 interface ModelSelectorProps {
   selectedModel: string
   onModelChange: (model: string) => void
   showTooltips?: boolean
   compact?: boolean
+  filterType?: 'generation' | 'editing' | 'all'
 }
 
 export function ModelSelector({ 
   selectedModel, 
   onModelChange, 
   showTooltips = true,
-  compact = false 
+  compact = false,
+  filterType = 'all'
 }: ModelSelectorProps) {
-  const models = [
-    {
-      id: 'nano-banana',
-      name: 'Nano Banana',
-      icon: '🍌',
-      iconComponent: Sparkles,
-      description: 'Fast generation, good for quick iterations',
-      badge: 'Fast',
-      badgeColor: 'bg-yellow-600',
-      textColor: 'text-yellow-300'
-    },
-    {
-      id: 'seedream-4',
-      name: 'Seedream-4',
-      icon: '🌱',
-      iconComponent: Leaf,
-      description: 'High quality 2K/4K, supports multi-image generation (1-15)',
-      badge: '2K/4K',
-      badgeColor: 'bg-green-600',
-      textColor: 'text-green-300'
-    },
-    {
-      id: 'gen4-image',
-      name: 'Gen4 Image',
-      icon: '⚡',
-      iconComponent: Zap,
-      description: 'Balanced quality and speed',
-      badge: 'Balanced',
-      badgeColor: 'bg-blue-600',
-      textColor: 'text-blue-300'
-    },
-    {
-      id: 'gen4-image-turbo',
-      name: 'Gen4 Turbo',
-      icon: '💨',
-      iconComponent: Zap,
-      description: 'Fastest generation with good quality',
-      badge: 'Turbo',
-      badgeColor: 'bg-purple-600',
-      textColor: 'text-purple-300'
+  const allModels = getAvailableModels()
+  const filteredModels = filterType === 'all' 
+    ? allModels 
+    : allModels.filter(model => model.type === filterType)
+
+  // Map to legacy format for icon components
+  const models = filteredModels.map(model => ({
+    ...model,
+    iconComponent: getIconComponent(model.id),
+    badgeColor: model.badgeColor,
+    textColor: model.textColor
+  }))
+
+  function getIconComponent(modelId: ModelId) {
+    switch (modelId) {
+      case 'nano-banana': return Sparkles
+      case 'seedream-4': return Leaf
+      case 'gen4-image': return Zap
+      case 'gen4-image-turbo': return Zap
+      case 'qwen-image-edit': return Edit3
+      default: return Sparkles
     }
-  ]
+  }
 
   const currentModel = models.find(m => m.id === selectedModel) || models[0]
 
@@ -82,7 +67,7 @@ export function ModelSelector({
           <SelectValue>
             <div className="flex items-center gap-2">
               <span className="text-lg">{currentModel.icon}</span>
-              <span className="font-medium">{currentModel.name}</span>
+              <span className="font-medium">{currentModel.displayName}</span>
               <Badge className={`${currentModel.badgeColor} text-white text-xs`}>
                 {currentModel.badge}
               </Badge>
@@ -94,7 +79,7 @@ export function ModelSelector({
             <SelectItem key={model.id} value={model.id}>
               <div className="flex items-center gap-2">
                 <span className="text-lg">{model.icon}</span>
-                <span className="font-medium">{model.name}</span>
+                <span className="font-medium">{model.displayName}</span>
                 <Badge className={`${model.badgeColor} text-white text-xs`}>
                   {model.badge}
                 </Badge>
@@ -138,7 +123,7 @@ export function ModelSelector({
               
               {/* Name */}
               <span className="text-sm font-medium text-white">
-                {model.name}
+                {model.displayName}
               </span>
               
               {/* Badge */}

@@ -46,7 +46,7 @@ export function SeedreamSettings({ settings, onSettingsChange }: SeedreamSetting
   ]
 
   const maxImages = settings.maxImages || 1
-  const estimatedCost = (maxImages * 0.03).toFixed(2)
+  const creditsNeeded = maxImages * 9  // 9 credits per image (3x markup built in)
 
   return (
     <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/30">
@@ -142,8 +142,8 @@ export function SeedreamSettings({ settings, onSettingsChange }: SeedreamSetting
               <Badge variant="outline" className="text-green-300 border-green-500">
                 {maxImages} image{maxImages > 1 ? 's' : ''}
               </Badge>
-              <Badge variant="outline" className="text-amber-300 border-amber-500">
-                ~${estimatedCost}
+              <Badge variant="outline" className="text-blue-300 border-blue-500">
+                {creditsNeeded} credits
               </Badge>
             </div>
           </div>

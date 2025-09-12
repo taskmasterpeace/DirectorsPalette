@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import * as userCreditsModule from '@/lib/credits/user-credits';
-const userCreditService = userCreditsModule.userCreditService;
 import { createClient } from '@supabase/supabase-js';
+import { calculateUserCredits, getModelInfo } from '@/lib/credits/model-costs';
+import { parseDynamicPrompt } from '@/lib/dynamic-prompting';
+import { parseWildCardPrompt } from '@/lib/wildcards/parser';
+// import { WildCardStorage } from '@/lib/wildcards/storage'; // Disabled for server-side
 
 // Initialize Supabase client for auth verification
 const supabase = createClient(
@@ -19,9 +21,22 @@ export async function POST(request: NextRequest) {
     }
     const apiKey = process.env.REPLICATE_API_TOKEN;
 
-    // TEMPORARY: Skip auth check for debugging - use hardcoded admin user
-    console.log('🔧 TEMP: Bypassing auth check for debugging');
-    const userId = '7cf1a35d-e572-4e39-b4cd-a38d8f10c6d2'; // Taskophilus Tanner from Supabase
+    // Get user from Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
+    }
+
+    // Verify the token and get user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Auth verification failed:', authError);
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const userId = user.id;
     const {
       prompt,
       aspect_ratio,
@@ -59,12 +74,110 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TEMP: Removed credit calculation function for debugging
+    // Parse dynamic prompts (bracket notation) AND wild cards  
+    let promptResult = parseDynamicPrompt(prompt);
+    let isDynamicPrompt = promptResult.hasBrackets && promptResult.isValid;
+    
+    // If no brackets, check for wild cards (temporary mock for server-side)
+    if (!isDynamicPrompt) {
+      // TODO: Replace with database lookup when tables are ready
+      const mockWildCards = [
+        {
+          id: 'temp_locations',
+          user_id: userId,
+          name: 'locations',
+          category: 'locations',
+          content: 'in a mystical forest\non a busy city street\nat the edge of a cliff\ninside an ancient library\non a spaceship bridge',
+          description: 'Diverse locations for story settings',
+          is_shared: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+      
+      const wildCardResult = parseWildCardPrompt(prompt, mockWildCards);
+      
+      if (wildCardResult.hasWildCards && wildCardResult.isValid) {
+        promptResult = {
+          isValid: wildCardResult.isValid,
+          hasBrackets: false,
+          hasWildCards: true,
+          expandedPrompts: wildCardResult.expandedPrompts,
+          originalPrompt: prompt,
+          wildCardNames: wildCardResult.wildCardNames,
+          previewCount: wildCardResult.expandedPrompts.length,
+          totalCount: wildCardResult.totalCombinations,
+          warnings: wildCardResult.warnings,
+          isCrossCombination: wildCardResult.crossCombination
+        };
+        isDynamicPrompt = true;
+      }
+    }
+    
+    const actualImageCount = isDynamicPrompt ? promptResult.expandedPrompts.length : (max_images || 1);
+    
+    // Calculate actual credits needed (with profit markup)
+    const creditsNeeded = calculateUserCredits(model, actualImageCount);
+    console.log('💰 Credits needed:', creditsNeeded, 'for model:', model, 'images:', actualImageCount);
+    
+    if (isDynamicPrompt) {
+      if (promptResult.hasBrackets) {
+        console.log('🔄 Dynamic prompt detected (brackets):', promptResult.expandedPrompts.length, 'variations');
+      } else if (promptResult.hasWildCards) {
+        console.log('🃏 Wild card prompt detected:', promptResult.expandedPrompts.length, 'variations');
+        console.log('🎯 Wild cards used:', promptResult.wildCardNames);
+      }
+      console.log('📝 Expanded prompts:', promptResult.expandedPrompts);
+    }
 
-    // TEMPORARY: Skip credit check for debugging
-    console.log('🔧 TEMP: Skipping credit check - assuming sufficient credits');
-    const operationCost = 15; // Default cost for debugging
-    console.log('💰 TEMP: Operation cost:', operationCost, 'credits');
+    // Check user has sufficient credits (direct database query)
+    const { data: userCredits, error: creditsError } = await supabase
+      .from('user_credits')
+      .select('current_points')
+      .eq('user_id', userId)
+      .single();
+
+    if (creditsError || !userCredits) {
+      // Try to initialize credits for new user
+      const { error: initError } = await supabase
+        .from('user_credits')
+        .insert({
+          user_id: userId,
+          current_points: 2500,
+          monthly_allocation: 2500,
+          tier: 'pro',
+          total_purchased_points: 0
+        });
+      
+      if (initError) {
+        console.error('❌ Failed to initialize user credits:', initError);
+        return NextResponse.json({ error: 'Unable to verify credits' }, { status: 500 });
+      }
+      
+      // Set initial credits after creation
+      const userCredits = { current_points: 2500 };
+    }
+
+    if (userCredits.current_points < creditsNeeded) {
+      return NextResponse.json({ 
+        error: 'Insufficient credits', 
+        required: creditsNeeded,
+        available: userCredits.current_points
+      }, { status: 402 });
+    }
+
+    console.log('✅ Credit check passed:', userCredits.current_points, 'available,', creditsNeeded, 'needed');
+
+    // Handle dynamic prompts - generate each variation
+    const promptsToGenerate = isDynamicPrompt ? promptResult.expandedPrompts : [prompt];
+    const allGeneratedImages: string[] = [];
+    
+    console.log(`🎯 Processing ${promptsToGenerate.length} prompt${promptsToGenerate.length > 1 ? 's' : ''}`);
+
+    // Generate images for each prompt variation
+    for (let promptIndex = 0; promptIndex < promptsToGenerate.length; promptIndex++) {
+      const currentPrompt = promptsToGenerate[promptIndex];
+      console.log(`🔄 Generating image ${promptIndex + 1}/${promptsToGenerate.length}: "${currentPrompt}"`);
 
     // Model-specific parameter mapping
     let body: any;
@@ -74,7 +187,7 @@ export async function POST(request: NextRequest) {
       // Nano-banana format
       body = {
         input: {
-          prompt: prompt,
+          prompt: currentPrompt,
           image_input: reference_images, // maps from reference_images
           output_format: "png"
           // Note: nano-banana doesn't support reference_tags, aspect_ratio, or seed
@@ -85,7 +198,7 @@ export async function POST(request: NextRequest) {
       // Seedream-4 format
       body = {
         input: {
-          prompt: prompt,
+          prompt: currentPrompt,
           size: resolution === 'custom' ? 'custom' : resolution, // 1K, 2K, 4K, or custom
           ...(resolution === 'custom' && {
             width: custom_width || 2048,
@@ -102,7 +215,7 @@ export async function POST(request: NextRequest) {
       // Gen4 format (backward compatibility)
       body = {
         input: {
-          prompt: prompt,
+          prompt: currentPrompt,
           seed: seed || undefined,
           aspect_ratio: aspect_ratio || "16:9", 
           resolution: resolution || "720p",
@@ -164,23 +277,72 @@ export async function POST(request: NextRequest) {
     }
 
     if (result.status === "succeeded") {
-      // TEMPORARY: Skip credit deduction for debugging
-      console.log('🔧 TEMP: Skipping credit deduction - image generated successfully');
-
-      return NextResponse.json({
-        success: true,
-        images: Array.isArray(result.output) ? result.output : [result.output],
-        predictionId: result.id,
-        referenceCount: reference_images.length,
-        creditsUsed: operationCost,
-        remainingCredits: 2500 // TEMP: Hardcoded for debugging
+      // Collect images from this generation with prompt mapping
+      const images = Array.isArray(result.output) ? result.output : [result.output];
+      images.forEach((imageUrl: string) => {
+        allGeneratedImages.push({
+          url: imageUrl,
+          prompt: currentPrompt,
+          variationIndex: promptIndex + 1,
+          originalPrompt: prompt
+        });
       });
+      console.log(`✅ Generated ${images.length} image(s) for prompt ${promptIndex + 1}`);
     } else {
+      console.error(`❌ Generation failed for prompt ${promptIndex + 1}:`, result.error || result.status);
+    }
+    
+    } // End of for loop
+
+    // Check if any images were generated successfully
+    if (allGeneratedImages.length === 0) {
       return NextResponse.json(
-        { error: result.error || "Generation failed" },
+        { error: "No images generated successfully" },
         { status: 500 }
       );
     }
+
+    // Deduct credits after all successful generations (direct database operation)
+    const totalCreditsToDeduct = calculateUserCredits(model, allGeneratedImages.length);
+    const { data: updatedCredits, error: deductError } = await supabase
+      .from('user_credits')
+      .update({ current_points: userCredits.current_points - totalCreditsToDeduct })
+      .eq('user_id', userId)
+      .select('current_points')
+      .single();
+
+    if (deductError) {
+      console.error('⚠️ Credit deduction failed:', deductError);
+      // Still return success since images were generated
+    } else {
+      console.log('✅ Credits deducted successfully:', totalCreditsToDeduct, 'credits. New balance:', updatedCredits?.current_points);
+    }
+
+    // Log usage for tracking
+    const modelInfo = getModelInfo(model);
+    await supabase.from('usage_log').insert({
+      user_id: userId,
+      action_type: isDynamicPrompt ? 'dynamic_image_generation' : 'image_generation',
+      model_id: model,
+      model_name: model,
+      points_consumed: totalCreditsToDeduct,
+      cost_usd: modelInfo.apiCost * allGeneratedImages.length,
+      function_name: 'gen4_api',
+      success: true
+    });
+
+    return NextResponse.json({
+      success: true,
+      images: allGeneratedImages,
+      originalPrompt: prompt,
+      expandedPrompts: promptsToGenerate,
+      isDynamic: isDynamicPrompt,
+      isWildCard: isDynamicPrompt && promptResult.hasWildCards,
+      promptVariations: isDynamicPrompt ? promptsToGenerate.length : 1,
+      referenceCount: reference_images.length,
+      creditsUsed: totalCreditsToDeduct,
+      remainingCredits: updatedCredits?.current_points || userCredits.current_points - totalCreditsToDeduct
+    });
   } catch (error) {
     console.error("Gen 4 generation error:", error);
     return NextResponse.json(

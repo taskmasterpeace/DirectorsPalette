@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Activity, Settings as SettingsIcon, User } from 'lucide-react'
+import { ArrowLeft, Activity, Settings as SettingsIcon, User, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { SettingsTab } from '@/app/post-production/components/tabs/SettingsTab'
 import { UserDashboard } from '@/components/dashboard/UserDashboard'
+import { WildCardManager } from '@/components/settings/WildCardManager'
 import { defaultSettings } from '@/lib/post-production/settings-data'
 import { useAuth } from '@/components/auth/AuthProvider'
 
@@ -45,10 +46,14 @@ export default function SettingsPage() {
       {/* Settings Content */}
       <div className="container mx-auto max-w-7xl p-6">
         <Tabs defaultValue="usage" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="usage" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
               Usage & Points
+            </TabsTrigger>
+            <TabsTrigger value="wildcards" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Wild Cards
             </TabsTrigger>
             <TabsTrigger value="account" className="flex items-center gap-2">
               <User className="w-4 h-4" />
@@ -63,6 +68,11 @@ export default function SettingsPage() {
           {/* Usage Dashboard */}
           <TabsContent value="usage">
             <UserDashboard />
+          </TabsContent>
+
+          {/* Wild Cards */}
+          <TabsContent value="wildcards">
+            <WildCardManager userId={user?.id || 'anonymous'} />
           </TabsContent>
 
           {/* Account Settings */}
