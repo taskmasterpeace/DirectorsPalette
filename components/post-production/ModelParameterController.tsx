@@ -175,21 +175,23 @@ export function ModelParameterController({
         </div>
       )}
 
-      {/* Model Info */}
-      <div className="text-xs text-slate-400 bg-slate-800/50 rounded p-3">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg">{modelConfig.icon}</span>
-          <span className="font-medium text-white">{modelConfig.displayName}</span>
-          <span className="text-slate-500">•</span>
-          <span>${modelConfig.costPerImage} per image</span>
+      {/* Model Info - Hide for simple models like Nano Banana */}
+      {modelId !== 'nano-banana' && (
+        <div className="text-xs text-slate-400 bg-slate-800/50 rounded p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">{modelConfig.icon}</span>
+            <span className="font-medium text-white">{modelConfig.displayName}</span>
+            <span className="text-slate-500">•</span>
+            <span>${modelConfig.costPerImage} per image</span>
+          </div>
+          <p>{modelConfig.description}</p>
+          {modelConfig.maxReferenceImages && (
+            <p className="mt-1">
+              <strong>Reference Images:</strong> Up to {modelConfig.maxReferenceImages} supported
+            </p>
+          )}
         </div>
-        <p>{modelConfig.description}</p>
-        {modelConfig.maxReferenceImages && (
-          <p className="mt-1">
-            <strong>Reference Images:</strong> Up to {modelConfig.maxReferenceImages} supported
-          </p>
-        )}
-      </div>
+      )}
     </div>
   )
 }

@@ -283,66 +283,8 @@ export function Gen4PromptSettings({
             </div>
           )}
 
-          {/* Prefix/Suffix Section - Moved under prompt area */}
+          {/* Generate Button - Immediately after prompt */}
           <div className="border-t border-slate-700 pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPrefixSuffix(!showPrefixSuffix)}
-              className="text-xs mb-3"
-            >
-              <Settings className="w-3 h-3 mr-1" />
-              Show Prefix/Suffix
-            </Button>
-            
-            <Collapsible open={showPrefixSuffix} onOpenChange={setShowPrefixSuffix}>
-              <CollapsibleContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-white text-xs">Prefix (added before prompt)</Label>
-                    <Input
-                      value={gen4Prefix}
-                      onChange={(e) => setGen4Prefix(e.target.value)}
-                      placeholder="e.g., 'A cinematic shot of'"
-                      className="bg-slate-800 border-slate-600 text-white text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-white text-xs">Suffix (added after prompt)</Label>
-                    <Input
-                      value={gen4Suffix}
-                      onChange={(e) => setGen4Suffix(e.target.value)}
-                      className="bg-slate-800 border-slate-600 text-white text-sm"
-                    />
-                  </div>
-                </div>
-                {showPrefixSuffix && (
-                  <div className="mt-2 p-2 bg-slate-700/50 rounded text-xs text-slate-300">
-                    <strong>Final prompt:</strong> {gen4Prefix} {gen4Prompt} {gen4Suffix}
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Model-Specific Generation Settings */}
-      <Card className="bg-slate-900 border-slate-700">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-white">
-            {isEditingMode ? 'Editing Settings' : 'Generation Settings'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ModelParameterController
-            modelId={(gen4Settings.model || 'nano-banana') as ModelId}
-            settings={gen4Settings}
-            onSettingsChange={setGen4Settings}
-          />
-
-          {/* Generate Button */}
-          <div className="mt-6">
             <Button
               onClick={() => {
                 if (canGenerate) {
@@ -350,7 +292,7 @@ export function Gen4PromptSettings({
                 }
               }}
               disabled={!canGenerate}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-lg py-6"
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-lg py-6 mb-4"
             >
               <Sparkles className="w-5 h-5 mr-2" />
               {gen4Processing ? (
@@ -396,39 +338,9 @@ export function Gen4PromptSettings({
               )}
             </Button>
 
-            {/* Clear Queue Button */}
-            {(getQueuedCount() > 0 || getProcessingCount() > 0) && (
-              <Button
-                onClick={() => clearAll()}
-                variant="outline"
-                size="sm"
-                className="w-full border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-              >
-                Clear Queue ({getQueuedCount() + getProcessingCount()} items)
-              </Button>
-            )}
-
-            {/* Queue Status */}
-            {(getQueuedCount() > 0 || getProcessingCount() > 0) && (
-              <div className="flex items-center justify-center gap-4 text-sm">
-                {getQueuedCount() > 0 && (
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    <Clock className="w-3 h-3" />
-                    <span>{getQueuedCount()} queued</span>
-                  </div>
-                )}
-                {getProcessingCount() > 0 && (
-                  <div className="flex items-center gap-1 text-blue-400">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>{getProcessingCount()} processing</span>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Validation messages */}
+            {/* Validation messages under generate button */}
             {!canGenerate && !gen4Processing && (
-              <div className="text-center text-sm text-slate-400 mt-2 space-y-1">
+              <div className="text-center text-sm text-slate-400 mb-4 space-y-1">
                 {referenceImagesCount === 0 && (
                   <div className="flex items-center justify-center gap-2">
                     <Upload className="w-4 h-4" />
@@ -444,8 +356,67 @@ export function Gen4PromptSettings({
               </div>
             )}
           </div>
+
+          {/* Prefix/Suffix Section - After generate button */}
+          <div className="border-t border-slate-700 pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPrefixSuffix(!showPrefixSuffix)}
+              className="text-xs mb-3"
+            >
+              {showPrefixSuffix ? '👁️ Hide Prefix/Suffix' : '👁️ Show Prefix/Suffix'}
+            </Button>
+            
+            <Collapsible open={showPrefixSuffix} onOpenChange={setShowPrefixSuffix}>
+              <CollapsibleContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-white text-xs">Prefix (added before prompt)</Label>
+                    <Input
+                      value={gen4Prefix}
+                      onChange={(e) => setGen4Prefix(e.target.value)}
+                      placeholder="e.g., 'A cinematic shot of'"
+                      className="bg-slate-800 border-slate-600 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white text-xs">Suffix (added after prompt)</Label>
+                    <Input
+                      value={gen4Suffix}
+                      onChange={(e) => setGen4Suffix(e.target.value)}
+                      className="bg-slate-800 border-slate-600 text-white text-sm"
+                    />
+                  </div>
+                </div>
+                {showPrefixSuffix && (
+                  <div className="mt-2 p-2 bg-slate-700/50 rounded text-xs text-slate-300">
+                    <strong>Final prompt:</strong> {gen4Prefix} {gen4Prompt} {gen4Suffix}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Model-Specific Generation Settings - Only for complex models */}
+      {gen4Settings.model !== 'nano-banana' && (
+        <Card className="bg-slate-900 border-slate-700">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-white">
+              {isEditingMode ? 'Editing Settings' : 'Generation Settings'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ModelParameterController
+              modelId={(gen4Settings.model || 'nano-banana') as ModelId}
+              settings={gen4Settings}
+              onSettingsChange={setGen4Settings}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Preset Edit Dialog */}
       <Dialog open={!!editingPreset} onOpenChange={() => setEditingPreset(null)}>

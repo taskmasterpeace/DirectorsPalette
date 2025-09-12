@@ -25,6 +25,7 @@ import {
 import { artistDB } from "@/lib/artist-db"
 import { autofillArtistProfile, createArtistFromDescription, createArtistFromLyrics } from "@/app/actions/artists"
 import { useArtistStore } from "@/lib/artist-store"
+import { GenreCommandMulti } from "@/components/shared/GenreCommandMulti"
 
 type Props = {
   initial?: Partial<ArtistProfile>
@@ -618,29 +619,14 @@ export default function ArtistProfileFormTabbed({ initial, onSaved }: Props) {
           <TabsContent value="musical" className="space-y-4">
             <h3 className="text-lg font-semibold text-white">🎵 Musical Style</h3>
             
-            <div>
-              <Label className="text-slate-300 text-sm">Genres *</Label>
-              <div className="grid md:grid-cols-3 gap-3">
-                <Input
-                  value={(state.genres || []).join(", ")}
-                  onChange={(e) => set("genres", toCSVArray(e.target.value))}
-                  className="bg-slate-950 border-slate-700 text-white"
-                  placeholder="Primary: Hip-Hop, Pop"
-                />
-                <Input
-                  value={(state.sub_genres || []).join(", ")}
-                  onChange={(e) => set("sub_genres", toCSVArray(e.target.value))}
-                  className="bg-slate-950 border-slate-700 text-white"
-                  placeholder="Sub: Trap, Alt-R&B"
-                />
-                <Input
-                  value={(state.micro_genres || []).join(", ")}
-                  onChange={(e) => set("micro_genres", toCSVArray(e.target.value))}
-                  className="bg-slate-950 border-slate-700 text-white"
-                  placeholder="Micro: Miami Bass, Drill"
-                />
-              </div>
-            </div>
+            <GenreCommandMulti
+              primaryGenres={state.genres || []}
+              subGenres={state.sub_genres || []}
+              microGenres={state.micro_genres || []}
+              onPrimaryGenresChange={(genres) => set("genres", genres)}
+              onSubGenresChange={(genres) => set("sub_genres", genres)}
+              onMicroGenresChange={(genres) => set("micro_genres", genres)}
+            />
             
             <div className="grid md:grid-cols-2 gap-3">
               <div>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { GenreCommandSingle } from "@/components/shared/GenreCommandSingle"
 import {
   PlayCircle,
   ChevronDown,
@@ -470,12 +471,12 @@ export function MusicVideoMode({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-white mb-1 block">Genre</label>
-              <input
-                placeholder="Enter genre..."
+              <label className="text-sm font-medium text-white mb-2 block">Genre</label>
+              <GenreCommandSingle
                 value={genre}
-                onChange={(e) => setGenre(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-md text-white text-sm"
+                onChange={(value) => setGenre(value)}
+                placeholder="Select genre..."
+                triggerClassName="bg-slate-900/50 border-slate-600 hover:bg-slate-800/50"
               />
             </div>
           </div>
