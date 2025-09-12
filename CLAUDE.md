@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Director's Palette (ImgPromptGen) is a Next.js 15 application for generating AI image prompts for story and music video production. It allows users to break down stories or music videos into shot lists with director-specific styles.
 
+**📖 For comprehensive platform documentation, see**: `DIRECTORS-PALETTE-PRODUCTION-AUDIT-REPORT.md`  
+*Complete technical audit with component grades, system analysis, and production readiness assessment.*
+
 ## Tech Stack
 
 - **Framework**: Next.js 15.2.4 with App Router
