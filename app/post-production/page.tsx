@@ -82,20 +82,7 @@ export default function EnhancedPostProductionPage() {
   
   // Track generated shot IDs
   const [generatedShotIds, setGeneratedShotIds] = useState<Set<string>>(new Set())
-  
-  // Check for transferred shots and load library on mount
-  useEffect(() => {
-    const transferredShots = retrieveTransferredShots()
-    if (transferredShots && transferredShots.length > 0) {
-      addShots(transferredShots)
-      toast({
-        title: "Shots Imported",
-        description: `Successfully imported ${transferredShots.length} shots from Director's Palette`,
-      })
-    }
-    loadLibraryItems()
-  }, [addShots, loadLibraryItems, toast])
-  
+
   // Load library items from IndexedDB
   const loadLibraryItems = useCallback(async () => {
     setLibraryLoading(true)
@@ -114,7 +101,20 @@ export default function EnhancedPostProductionPage() {
       setLibraryLoading(false)
     }
   }, [toast])
-  
+
+  // Check for transferred shots and load library on mount
+  useEffect(() => {
+    const transferredShots = retrieveTransferredShots()
+    if (transferredShots && transferredShots.length > 0) {
+      addShots(transferredShots)
+      toast({
+        title: "Shots Imported",
+        description: `Successfully imported ${transferredShots.length} shots from Director's Palette`,
+      })
+    }
+    loadLibraryItems()
+  }, [addShots, loadLibraryItems, toast])
+
   // Handle category selection and save to library
   const handleCategorySave = async (category: string, tags: string[]) => {
     console.log('🔍 handleCategorySave called with category:', category, 'tags:', tags)
