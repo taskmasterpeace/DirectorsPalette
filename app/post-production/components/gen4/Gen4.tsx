@@ -152,7 +152,7 @@ function Gen4({
                   Reference Images
                 </Label>
                 <div
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-8 sm:p-6 text-center hover:border-purple-400 transition-colors cursor-pointer touch-manipulation"
                   onDrop={(e) => {
                     if (e.target === e.currentTarget) handleDrop(e, true);
                   }}
@@ -168,19 +168,19 @@ function Gen4({
                     }
                   }}
                 >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="font-medium mb-1">
-                  <span className="font-bold text-purple-600">Paste (Ctrl+V)</span>, drop, or click to add reference images
+                <Upload className="w-12 h-12 sm:w-8 sm:h-8 mx-auto mb-3 text-slate-400" />
+                <p className="font-medium mb-2 text-lg sm:text-base">
+                  <span className="font-bold text-purple-600">Tap to Upload</span> Reference Images
                 </p>
-                <p className="text-sm text-slate-500">
-                  You can paste screenshots or images copied to your clipboard, drag and drop, or click to select files. Up to 3 images for style reference.
+                <p className="text-base sm:text-sm text-slate-500 leading-relaxed">
+                  Upload up to 10 images for style reference. Supports drag & drop or clipboard paste.
                 </p>
-                {/* Individual paste buttons for each reference slot */}
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                {/* Individual paste buttons for each reference slot - HIDDEN ON MOBILE */}
+                <div className="mt-4 hidden sm:grid sm:grid-cols-3 sm:gap-2">
                   <Button 
                     variant="secondary" 
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-12 sm:h-8 text-base sm:text-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.read().then(items => {
@@ -206,10 +206,10 @@ function Gen4({
                     📌 1st
                   </Button>
                   
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-12 sm:h-8 text-base sm:text-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.read().then(items => {
@@ -235,10 +235,10 @@ function Gen4({
                     📌 2nd
                   </Button>
                   
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-12 sm:h-8 text-base sm:text-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.read().then(items => {
@@ -277,7 +277,7 @@ function Gen4({
 
             {/* Reference Images Display */}
             {gen4ReferenceImages.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-4 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
                 {gen4ReferenceImages.map((image, index) => (
                   <div
                     key={image.id}
