@@ -349,7 +349,7 @@ export function ChildrenBookContainer() {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <Image className="w-4 h-4 text-orange-400" />
+                <Image className="w-4 h-4 text-orange-400" alt="Book format icon" />
                 Book Format: {selectedFormat.name}
               </CardTitle>
             </CardHeader>
@@ -410,7 +410,7 @@ export function ChildrenBookContainer() {
               <CardHeader>
                 <CardTitle className="text-white flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Image className="w-4 h-4 text-orange-400" />
+                    <Image className="w-4 h-4 text-orange-400" alt="Generated pages icon" />
                     Generated Pages ({bookPages.length})
                   </div>
                   <Badge variant="outline" className="text-xs bg-orange-900/30 text-orange-200">

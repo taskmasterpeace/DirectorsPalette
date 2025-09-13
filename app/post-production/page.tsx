@@ -94,10 +94,10 @@ export default function EnhancedPostProductionPage() {
       })
     }
     loadLibraryItems()
-  }, [addShots])
+  }, [addShots, loadLibraryItems, toast])
   
   // Load library items from IndexedDB
-  const loadLibraryItems = async () => {
+  const loadLibraryItems = useCallback(async () => {
     setLibraryLoading(true)
     try {
       await referenceLibraryDB.init()
@@ -113,7 +113,7 @@ export default function EnhancedPostProductionPage() {
     } finally {
       setLibraryLoading(false)
     }
-  }
+  }, [toast])
   
   // Handle category selection and save to library
   const handleCategorySave = async (category: string, tags: string[]) => {

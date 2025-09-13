@@ -101,7 +101,7 @@ export function LayerManager({ layers, onLayerUpdate }: LayerManagerProps) {
   const getLayerIcon = (type: CanvasLayer['type']) => {
     switch (type) {
       case 'image':
-        return <Image className="w-4 h-4 text-blue-400" />
+        return <Image className="w-4 h-4 text-blue-400" alt="Image layer icon" />
       case 'annotation':
         return <PenTool className="w-4 h-4 text-green-400" />
       default:

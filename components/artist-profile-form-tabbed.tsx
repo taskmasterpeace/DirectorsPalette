@@ -436,7 +436,7 @@ export default function ArtistProfileFormTabbed({ initial, onSaved }: Props) {
               <span className="hidden lg:inline">Writing</span>
             </TabsTrigger>
             <TabsTrigger value="visual" className="text-xs flex items-center gap-1">
-              <Image className="w-3 h-3" />
+              <Image className="w-3 h-3" alt="Visual tab icon" />
               <span className="hidden lg:inline">Visual</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="text-xs flex items-center gap-1">
