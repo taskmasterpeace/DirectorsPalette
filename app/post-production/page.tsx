@@ -263,16 +263,17 @@ export default function EnhancedPostProductionPage() {
   }
   
   return (
-    <div className="container mx-auto max-w-none w-[95%] p-4">
+    <div className="container mx-auto max-w-none w-[95%] p-6 sm:p-4">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <Film className="w-8 h-8 text-purple-500" />
-              Post Production Studio
+            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
+              <Film className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
+              <span className="hidden sm:inline">Post Production Studio</span>
+              <span className="sm:hidden">Post Production</span>
             </h1>
-            <p className="text-slate-400 mt-1">
+            <p className="text-slate-400 mt-1 text-sm sm:text-base">
               Advanced image generation with Director's Palette integration
             </p>
           </div>
@@ -284,7 +285,7 @@ export default function EnhancedPostProductionPage() {
           <div className="block sm:hidden">
             <div className="mb-3">
               <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full h-12 text-base bg-slate-800 border-slate-600 text-white">
+                <SelectTrigger className="w-full h-14 text-lg bg-slate-800 border-slate-600 text-white touch-manipulation">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -330,7 +331,7 @@ export default function EnhancedPostProductionPage() {
           </div>
 
           {/* Desktop: Original Tab Layout */}
-          <TabsList className="hidden sm:grid grid-cols-6 w-full max-w-none min-h-[44px]">
+          <TabsList className="hidden sm:grid grid-cols-6 w-full max-w-none min-h-[48px] h-auto">
             <TabsTrigger value="shot-list" className="flex items-center gap-2 min-h-[44px]">
               <List className="w-4 h-4" />
               <span className="hidden lg:inline">Shot List</span>
