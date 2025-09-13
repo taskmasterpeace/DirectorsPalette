@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Input } from '@/components/ui/input'
 import { 
   ZoomIn, 
   Trash2, 
@@ -20,9 +20,9 @@ import {
   Zap,
   Layout,
   FileText,
+  Search,
   ChevronLeft,
-  ChevronRight,
-  Search
+  ChevronRight
 } from 'lucide-react'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -58,28 +58,27 @@ export function UnifiedImageGallery({
   const [searchQuery, setSearchQuery] = useState('')
   const IMAGES_PER_PAGE = 8
   
-  // Search and pagination logic
+  // Filter and pagination logic
   const { filteredImages, paginatedImages, totalPages } = useMemo(() => {
-    // Filter images by search query
-    const filtered = searchQuery.trim() 
-      ? images.filter(image => 
-          image.prompt.toLowerCase().includes(searchQuery.toLowerCase())
+    // Filter by search query
+    const filtered = searchQuery.trim() === '' 
+      ? images 
+      : images.filter(image => 
+          image.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          image.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          image.source.toLowerCase().includes(searchQuery.toLowerCase())
         )
-      : images
     
+    // Pagination
     const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
     const endIndex = startIndex + IMAGES_PER_PAGE
+    
     return {
       filteredImages: filtered,
       paginatedImages: filtered.slice(startIndex, endIndex),
       totalPages: Math.ceil(filtered.length / IMAGES_PER_PAGE)
     }
   }, [images, currentPage, searchQuery])
-
-  // Reset to first page when search query changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
 
   const handleCopyImageUrl = async (imageUrl: string) => {
     try {
@@ -130,6 +129,53 @@ export function UnifiedImageGallery({
       description: "Image ready for use"
     })
   }
+
+  // Keyboard navigation for fullscreen modal
+  const navigateToImage = useCallback((direction: 'next' | 'previous') => {
+    if (!fullscreenImage || images.length <= 1) return
+    
+    const currentIndex = images.findIndex(img => img.id === fullscreenImage.id)
+    if (currentIndex === -1) return
+    
+    let newIndex: number
+    if (direction === 'next') {
+      newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1
+    } else {
+      newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1
+    }
+    
+    setFullscreenImage(images[newIndex])
+  }, [fullscreenImage, images, setFullscreenImage])
+
+  // Keyboard event handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!fullscreenImage) return
+      
+      switch (event.key) {
+        case 'ArrowRight':
+          event.preventDefault()
+          navigateToImage('next')
+          break
+        case 'ArrowLeft':
+          event.preventDefault()
+          navigateToImage('previous')
+          break
+        case 'Escape':
+          event.preventDefault()
+          setFullscreenImage(null)
+          break
+      }
+    }
+
+    if (fullscreenImage) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [fullscreenImage, navigateToImage, setFullscreenImage])
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -197,11 +243,6 @@ export function UnifiedImageGallery({
             <div className="flex items-center gap-2">
               <ImageIcon className="w-6 h-6 text-purple-400" />
               Gallery ({getTotalImages()})
-              {searchQuery && (
-                <Badge variant="secondary" className="ml-2 bg-purple-600/20 text-purple-300">
-                  {filteredImages.length} filtered
-                </Badge>
-              )}
             </div>
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1 text-amber-400">
@@ -227,31 +268,26 @@ export function UnifiedImageGallery({
             <Layout className="w-3 h-3 text-green-400" title="Layout & Annotation" />
           </div>
         </CardHeader>
-
         <CardContent>
           {/* Search Bar */}
-          <div className="mb-4">
+          <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-purple-400" />
               <Input
-                type="text"
-                placeholder="Search images by prompt..."
+                placeholder="Search by prompt, model, or source..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-800/50 border-purple-600/50 text-white placeholder:text-purple-300 focus:border-purple-400"
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1) // Reset to first page when searching
+                }}
+                className="pl-10 bg-slate-800/50 border-purple-500/30 text-white placeholder-purple-300 focus:border-purple-400"
               />
-              {searchQuery && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-purple-400 hover:text-white"
-                  title="Clear search"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
             </div>
+            {searchQuery.trim() && (
+              <div className="mt-2 text-sm text-purple-300">
+                Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"
+              </div>
+            )}
           </div>
 
           {/* Pagination Controls */}
@@ -264,13 +300,23 @@ export function UnifiedImageGallery({
                 disabled={currentPage === 1}
                 className="text-purple-400 border-purple-600 hover:bg-purple-600"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
               </Button>
               <div className="flex items-center gap-2">
-                <span className="text-purple-300 text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <Button
+                    key={i + 1}
+                    size="sm"
+                    variant={currentPage === i + 1 ? "default" : "outline"}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={currentPage === i + 1 
+                      ? "bg-purple-600 text-white" 
+                      : "text-purple-400 border-purple-600 hover:bg-purple-600"
+                    }
+                  >
+                    {i + 1}
+                  </Button>
+                ))}
               </div>
               <Button
                 size="sm"
@@ -280,141 +326,33 @@ export function UnifiedImageGallery({
                 className="text-purple-400 border-purple-600 hover:bg-purple-600"
               >
                 Next
-                <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           )}
           
           <ScrollArea className="h-[600px]">
-            {/* No results message */}
-            {searchQuery && filteredImages.length === 0 && (
-              <div className="text-center py-12">
-                <Search className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                <p className="text-white text-lg font-medium mb-2">No images found</p>
-                <p className="text-purple-200 text-sm mb-4">
-                  No images match your search for "{searchQuery}"
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setSearchQuery('')}
-                  className="border-purple-600 text-purple-400 hover:bg-purple-600"
-                >
-                  Clear Search
-                </Button>
-              </div>
-            )}
-            
-            {/* 2 Column Grid - 8 Images (4 rows) */}
-            {filteredImages.length > 0 && (
-              <div className="grid grid-cols-2 gap-6">
-                {paginatedImages.map((image) => (
-                  <div key={image.id} className="space-y-2">
-                    {/* Image - Now unobstructed */}
-                    <div className="relative group">
-                      <img
-                        src={image.url}
-                        alt={image.prompt.slice(0, 50)}
-                        className="w-full max-h-64 object-contain rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
-                        onClick={() => setFullscreenImage(image)}
-                      />
-                      
-                      {/* Source badge - Icon only in corner */}
-                      <div className="absolute top-2 left-2">
-                        <Badge className={cn("text-white p-1", getSourceColor(image.source))} title={image.source.replace('-', ' ')}>
-                          {getSourceIcon(image.source)}
-                        </Badge>
-                      </div>
+            {/* 2x4 Grid - 8 Images Per Page */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {paginatedImages.map((image) => (
+                <div key={image.id} className="space-y-2">
+                  {/* Image - Now unobstructed */}
+                  <div className="relative group">
+                    <img
+                      src={image.url}
+                      alt={image.prompt.slice(0, 50)}
+                      className="w-full h-48 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                      onClick={() => setFullscreenImage(image)}
+                    />
+                    
+                    {/* Source badge - Icon only in corner */}
+                    <div className="absolute top-2 left-2">
+                      <Badge className={cn("text-white p-1", getSourceColor(image.source))} title={image.source.replace('-', ' ')}>
+                        {getSourceIcon(image.source)}
+                      </Badge>
                     </div>
-
-                    {/* Action buttons - Bottom bar outside image */}
-                    <div className="bg-slate-800/80 rounded-lg p-2 space-y-2">
-                      {/* Send-to buttons row */}
-                      <div className="flex justify-center gap-1">
-                        {currentTab !== 'shot-creator' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleSendToTab(image.url, 'shot-creator')}
-                            className="h-8 w-8 p-0 bg-purple-600 hover:bg-purple-700 text-white rounded"
-                            title="Send to Shot Creator"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                          </Button>
-                        )}
-                        
-                        {currentTab !== 'shot-editor' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleSendToTab(image.url, 'shot-editor')}
-                            className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
-                            title="Send to Shot Editor"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        )}
-                        
-                        {currentTab !== 'shot-animator' && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleSendToTab(image.url, 'shot-animator')}
-                            className="h-8 w-8 p-0 bg-orange-600 hover:bg-orange-700 text-white rounded"
-                            title="Send to Shot Animator"
-                          >
-                            <Film className="w-4 h-4" />
-                          </Button>
-                        )}
-                        
-                        <Button
-                          size="sm"
-                          onClick={() => handleSendToTab(image.url, 'layout-annotation')}
-                          className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white rounded"
-                          title="Send to Layout & Annotation"
-                        >
-                          <Layout className="w-4 h-4" />
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          onClick={() => onSendToLibrary && onSendToLibrary(image.url)}
-                          className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
-                          title="Save to Reference Library"
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      {/* Utility buttons row */}
-                      <div className="flex justify-center gap-1">
-                        <Button
-                          size="sm"
-                          onClick={() => handleCopyImageUrl(image.url)}
-                          className="h-6 w-8 p-0 bg-slate-600 hover:bg-slate-700 text-white rounded text-xs"
-                          title="Copy URL"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          onClick={() => handleCopyPrompt(image.prompt)}
-                          className="h-6 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
-                          title="Copy Prompt"
-                        >
-                          <FileText className="w-3 h-3" />
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          onClick={() => handleDeleteImage(image.id)}
-                          className="h-6 w-8 p-0 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-
+                    
                     {/* Prompt tooltip on hover */}
-                    <div className="absolute bottom-full left-0 right-0 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="absolute bottom-full left-0 right-0 mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                       <div className="bg-slate-900 text-white text-xs p-2 rounded shadow-lg">
                         <p className="font-medium mb-1">Prompt:</p>
                         <p className="text-slate-300">{image.prompt.slice(0, 100)}...</p>
@@ -427,9 +365,87 @@ export function UnifiedImageGallery({
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  {/* Action buttons - Bottom bar outside image */}
+                  <div className="bg-slate-800/80 rounded-lg p-2 space-y-2">
+                    {/* Send-to buttons row */}
+                    <div className="flex justify-center gap-1">
+                      {currentTab !== 'shot-creator' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSendToTab(image.url, 'shot-creator')}
+                          className="h-8 w-8 p-0 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                          title="Send to Shot Creator"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                      )}
+                      
+                      {currentTab !== 'shot-editor' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSendToTab(image.url, 'shot-editor')}
+                          className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                          title="Send to Shot Editor"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      )}
+                      
+                      {currentTab !== 'shot-animator' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSendToTab(image.url, 'shot-animator')}
+                          className="h-8 w-8 p-0 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                          title="Send to Shot Animator"
+                        >
+                          <Film className="w-4 h-4" />
+                        </Button>
+                      )}
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => handleSendToTab(image.url, 'layout-annotation')}
+                        className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white rounded"
+                        title="Send to Layout & Annotation"
+                      >
+                        <Layout className="w-4 h-4" />
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => onSendToLibrary && onSendToLibrary(image.url)}
+                        className="h-8 w-8 p-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+                        title="Save to Reference Library"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* Utility buttons row */}
+                    <div className="flex justify-center gap-1">
+                      <Button
+                        size="sm"
+                        onClick={() => handleCopyImageUrl(image.url)}
+                        className="h-6 w-8 p-0 bg-slate-600 hover:bg-slate-700 text-white rounded text-xs"
+                        title="Copy URL"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        onClick={() => handleDeleteImage(image.id)}
+                        className="h-6 w-8 p-0 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </ScrollArea>
 
           {/* Bulk actions */}
@@ -465,6 +481,37 @@ export function UnifiedImageGallery({
               className="max-w-full max-h-full object-contain"
               style={{ width: 'auto', height: 'auto' }}
             />
+
+            {/* Navigation arrows - only show if multiple images */}
+            {images.length > 1 && (
+              <>
+                {/* Previous button */}
+                <Button
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigateToImage('previous')
+                  }}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 border-0 text-white"
+                  title="Previous image (Left arrow)"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+                
+                {/* Next button */}
+                <Button
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigateToImage('next')
+                  }}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 border-0 text-white"
+                  title="Next image (Right arrow)"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              </>
+            )}
             
             {/* Fullscreen controls */}
             <div className="absolute top-4 left-4 right-4 flex justify-between">
@@ -477,6 +524,16 @@ export function UnifiedImageGallery({
                   <Zap className="w-3 h-3 mr-1" />
                   {fullscreenImage.metadata.creditsUsed} credits
                 </Badge>
+                {/* Position indicator */}
+                {images.length > 1 && (
+                  <Badge className="bg-slate-700 text-white">
+                    <ImageIcon className="w-3 h-3 mr-1" />
+                    {(() => {
+                      const currentIndex = images.findIndex(img => img.id === fullscreenImage.id)
+                      return `${currentIndex + 1} of ${images.length}`
+                    })()}
+                  </Badge>
+                )}
               </div>
               
               <div className="flex gap-2">
@@ -540,6 +597,12 @@ export function UnifiedImageGallery({
                   <span>Aspect: {fullscreenImage.settings?.aspectRatio || 'N/A'}</span>
                   <span>Created: {fullscreenImage.metadata?.createdAt ? new Date(fullscreenImage.metadata.createdAt).toLocaleDateString() : 'N/A'}</span>
                 </div>
+                {/* Navigation hint - only show if multiple images */}
+                {images.length > 1 && (
+                  <div className="mt-2 text-xs text-slate-400 text-center">
+                    Use ← → arrow keys or click arrows to navigate • Press ESC to close
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -21,7 +21,6 @@ import { retrieveTransferredShots } from '@/lib/post-production/transfer'
 import { useToast } from '@/components/ui/use-toast'
 import LayoutPlanner from './components/layout-planner/LayoutPlanner'
 import { LayoutEditorRefactored as CompleteLayoutEditor } from '@/components/layout/LayoutEditorRefactored'
-import { LayoutAnnotationWrapper } from '@/components/post-production/LayoutAnnotationWrapper'
 import type { 
   ImageData,
   Gen4ReferenceImage,
@@ -444,7 +443,7 @@ export default function EnhancedPostProductionPage() {
 
           {/* Complete Layout & Annotation Editor Tab */}
           <TabsContent value="layout">
-            <LayoutAnnotationWrapper />
+            <CompleteLayoutEditor />
           </TabsContent>
 
           {/* Entity Manager Tab - Find & Replace System */}

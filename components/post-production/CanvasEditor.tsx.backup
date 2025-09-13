@@ -1,0 +1,457 @@
+'use client'
+
+import { 
+  useEffect, 
+  useRef, 
+  useImperativeHandle, 
+  forwardRef, 
+  useCallback 
+} from 'react'
+import { Canvas, PencilBrush, Rect, Circle, IText, FabricImage, TPointerEvent, TEvent, Line, Polygon } from 'fabric'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { 
+  ZoomIn, 
+  ZoomOut, 
+  Maximize2, 
+  Grid,
+  Move
+} from 'lucide-react'
+import type { CanvasState } from './LayoutAnnotationTab'
+
+interface CanvasEditorProps {
+  canvasState: CanvasState
+  onStateChange: (updates: Partial<CanvasState>) => void
+  incomingImages: string[]
+  onImagesProcessed: () => void
+  aspectRatio?: string
+  canvasWidth?: number
+  canvasHeight?: number
+  backgroundColor?: string
+}
+
+export interface CanvasEditorRef {
+  undo: () => void
+  redo: () => void
+  clear: () => void
+  exportCanvas: (format: string) => string
+  addImage: (imageUrl: string) => void
+  getCanvas: () => Canvas | null
+}
+
+const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
+  canvasState,
+  onStateChange,
+  incomingImages,
+  onImagesProcessed,
+  aspectRatio = '16:9',
+  canvasWidth = 800,
+  canvasHeight = 600,
+  backgroundColor = '#ffffff'
+}, ref) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fabricCanvasRef = useRef<Canvas | null>(null)
+  const historyRef = useRef<any[]>([])
+  const historyIndexRef = useRef<number>(-1)
+  const isRedoingRef = useRef<boolean>(false)
+  const drawingStateRef = useRef<{ isDrawing: boolean; startPoint: any }>({ 
+    isDrawing: false, 
+    startPoint: null 
+  })
+
+  // Initialize Fabric.js canvas
+  useEffect(() => {
+    if (!canvasRef.current || fabricCanvasRef.current) return
+
+    const canvas = new Canvas(canvasRef.current, {
+      width: canvasWidth,
+      height: canvasHeight,
+      backgroundColor: backgroundColor
+    })
+
+    fabricCanvasRef.current = canvas
+
+    // Set up event handlers
+    canvas.on('object:added', () => saveState())
+    canvas.on('object:modified', () => saveState())
+    canvas.on('object:removed', () => saveState())
+    canvas.on('path:created', () => saveState())
+    
+    // Handle drawing mode based on tool
+    canvas.on('mouse:down', handleMouseDown)
+    canvas.on('mouse:move', handleMouseMove)
+    canvas.on('mouse:up', handleMouseUp)
+
+    // Save initial state
+    saveState()
+
+    return () => {
+      canvas.dispose()
+      fabricCanvasRef.current = null
+    }
+  }, [canvasWidth, canvasHeight, backgroundColor])
+
+  // Update canvas properties when state changes
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current
+    if (!canvas) return
+
+    // Update canvas size if needed
+    if (canvas.getWidth() !== canvasWidth || canvas.getHeight() !== canvasHeight) {
+      canvas.setDimensions({ width: canvasWidth, height: canvasHeight })
+    }
+
+    // Update background color
+    canvas.backgroundColor = backgroundColor
+    
+    // Update drawing mode
+    canvas.isDrawingMode = canvasState.tool === 'brush'
+    canvas.selection = canvasState.tool === 'select'
+
+    if (canvasState.tool === 'brush') {
+      canvas.freeDrawingBrush = new PencilBrush(canvas)
+      canvas.freeDrawingBrush.width = canvasState.brushSize
+      canvas.freeDrawingBrush.color = canvasState.color
+    }
+
+    // Update zoom
+    canvas.setZoom(canvasState.zoom)
+    canvas.renderAll()
+  }, [canvasState.tool, canvasState.brushSize, canvasState.color, canvasState.zoom, canvasWidth, canvasHeight, backgroundColor])
+
+  // Handle incoming images
+  useEffect(() => {
+    if (incomingImages.length > 0) {
+      incomingImages.forEach(addImage)
+      onImagesProcessed()
+    }
+  }, [incomingImages, onImagesProcessed])
+
+  const saveState = useCallback(() => {
+    if (!fabricCanvasRef.current || isRedoingRef.current) return
+    
+    const currentState = JSON.stringify(fabricCanvasRef.current.toObject())
+    
+    // Clear forward history if we're adding a new state
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1)
+    }
+    
+    historyRef.current.push(currentState)
+    historyIndexRef.current = historyRef.current.length - 1
+    
+    // Limit history size
+    if (historyRef.current.length > 50) {
+      historyRef.current.shift()
+      historyIndexRef.current--
+    }
+
+    onStateChange({ 
+      historyIndex: historyIndexRef.current,
+      history: [...historyRef.current]
+    })
+  }, [onStateChange])
+
+  const addImage = useCallback((imageUrl: string) => {
+    const canvas = fabricCanvasRef.current
+    if (!canvas) return
+
+    FabricImage.fromURL(imageUrl, {
+      crossOrigin: 'anonymous'
+    }).then((img) => {
+      // Scale image to fit canvas while preserving aspect ratio
+      const canvasWidth = canvas.getWidth()
+      const canvasHeight = canvas.getHeight()
+      
+      const scaleX = canvasWidth * 0.8 / img.width
+      const scaleY = canvasHeight * 0.8 / img.height
+      const scale = Math.min(scaleX, scaleY)
+      
+      img.set({
+        left: canvasWidth / 2,
+        top: canvasHeight / 2,
+        originX: 'center',
+        originY: 'center',
+        scaleX: scale,
+        scaleY: scale
+      })
+      
+      canvas.add(img)
+      canvas.setActiveObject(img)
+      canvas.renderAll()
+    }).catch((error) => {
+      console.error('Error loading image:', error)
+    })
+  }, [])
+
+  const handleMouseDown = useCallback((e: TPointerEvent) => {
+    const canvas = fabricCanvasRef.current
+    if (!canvas || !e.pointer) return
+
+    if (canvasState.tool === 'rectangle') {
+      const rect = new Rect({
+        left: e.pointer.x,
+        top: e.pointer.y,
+        width: 0,
+        height: 0,
+        fill: 'transparent',
+        stroke: canvasState.color,
+        strokeWidth: canvasState.brushSize,
+        opacity: canvasState.opacity
+      })
+      canvas.add(rect)
+      canvas.setActiveObject(rect)
+    } else if (canvasState.tool === 'circle') {
+      const circle = new Circle({
+        left: e.pointer.x,
+        top: e.pointer.y,
+        radius: 0,
+        fill: 'transparent',
+        stroke: canvasState.color,
+        strokeWidth: canvasState.brushSize,
+        opacity: canvasState.opacity
+      })
+      canvas.add(circle)
+      canvas.setActiveObject(circle)
+    } else if (canvasState.tool === 'line') {
+      drawingStateRef.current.isDrawing = true
+      drawingStateRef.current.startPoint = { x: e.pointer.x, y: e.pointer.y }
+    } else if (canvasState.tool === 'arrow') {
+      drawingStateRef.current.isDrawing = true
+      drawingStateRef.current.startPoint = { x: e.pointer.x, y: e.pointer.y }
+    } else if (canvasState.tool === 'text') {
+      const text = new IText('Click to edit', {
+        left: e.pointer.x,
+        top: e.pointer.y,
+        fontFamily: canvasState.fontFamily,
+        fontSize: canvasState.fontSize,
+        fill: canvasState.color,
+        opacity: canvasState.opacity
+      })
+      canvas.add(text)
+      canvas.setActiveObject(text)
+      text.enterEditing()
+    }
+  }, [canvasState])
+
+  const handleMouseMove = useCallback((e: TPointerEvent) => {
+    const canvas = fabricCanvasRef.current
+    if (!canvas || !e.pointer || !drawingStateRef.current?.isDrawing) return
+
+    // Handle line and arrow preview during drag (optional: show preview line)
+    // This could be implemented to show a live preview during drawing
+  }, [])
+
+  const handleMouseUp = useCallback((e: TPointerEvent) => {
+    const canvas = fabricCanvasRef.current
+    if (!canvas || !e.pointer) return
+
+    if (drawingStateRef.current?.isDrawing && drawingStateRef.current.startPoint) {
+      const startPoint = drawingStateRef.current.startPoint
+      const endPoint = { x: e.pointer.x, y: e.pointer.y }
+
+      if (canvasState.tool === 'line') {
+        const line = new Line([startPoint.x, startPoint.y, endPoint.x, endPoint.y], {
+          stroke: canvasState.color,
+          strokeWidth: canvasState.brushSize,
+          opacity: canvasState.opacity
+        })
+        canvas.add(line)
+      } else if (canvasState.tool === 'arrow') {
+        // Create arrow as a group of line + arrowhead
+        const line = new Line([startPoint.x, startPoint.y, endPoint.x, endPoint.y], {
+          stroke: canvasState.color,
+          strokeWidth: canvasState.brushSize,
+          opacity: canvasState.opacity
+        })
+        
+        // Calculate arrowhead points
+        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x)
+        const arrowLength = 15
+        const arrowAngle = Math.PI / 6 // 30 degrees
+        
+        const arrowHead = new Polygon([
+          { x: endPoint.x, y: endPoint.y },
+          { 
+            x: endPoint.x - arrowLength * Math.cos(angle - arrowAngle), 
+            y: endPoint.y - arrowLength * Math.sin(angle - arrowAngle) 
+          },
+          { 
+            x: endPoint.x - arrowLength * Math.cos(angle + arrowAngle), 
+            y: endPoint.y - arrowLength * Math.sin(angle + arrowAngle) 
+          }
+        ], {
+          fill: canvasState.color,
+          opacity: canvasState.opacity
+        })
+        
+        canvas.add(line)
+        canvas.add(arrowHead)
+      }
+      
+      drawingStateRef.current.isDrawing = false
+      drawingStateRef.current.startPoint = null
+      canvas.renderAll()
+    }
+  }, [canvasState])
+
+  const undo = useCallback(() => {
+    if (historyIndexRef.current > 0) {
+      isRedoingRef.current = true
+      historyIndexRef.current--
+      const previousState = historyRef.current[historyIndexRef.current]
+      
+      fabricCanvasRef.current?.loadFromJSON(previousState, () => {
+        fabricCanvasRef.current?.renderAll()
+        isRedoingRef.current = false
+        onStateChange({ historyIndex: historyIndexRef.current })
+      })
+    }
+  }, [onStateChange])
+
+  const redo = useCallback(() => {
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      isRedoingRef.current = true
+      historyIndexRef.current++
+      const nextState = historyRef.current[historyIndexRef.current]
+      
+      fabricCanvasRef.current?.loadFromJSON(nextState, () => {
+        fabricCanvasRef.current?.renderAll()
+        isRedoingRef.current = false
+        onStateChange({ historyIndex: historyIndexRef.current })
+      })
+    }
+  }, [onStateChange])
+
+  const clear = useCallback(() => {
+    fabricCanvasRef.current?.clear()
+    fabricCanvasRef.current?.set({ backgroundColor: backgroundColor })
+    fabricCanvasRef.current?.renderAll()
+    historyRef.current = []
+    historyIndexRef.current = -1
+    saveState()
+  }, [saveState, backgroundColor])
+
+  const exportCanvas = useCallback((format: string = 'png') => {
+    if (!fabricCanvasRef.current) return ''
+    
+    const multiplier = format === 'png' ? 2 : 1 // Higher resolution for PNG
+    return fabricCanvasRef.current.toDataURL({
+      format: format === 'jpg' ? 'jpeg' : format,
+      quality: 0.9,
+      multiplier
+    })
+  }, [])
+
+  const handleZoomIn = () => {
+    const newZoom = Math.min(canvasState.zoom * 1.2, 5)
+    onStateChange({ zoom: newZoom })
+  }
+
+  const handleZoomOut = () => {
+    const newZoom = Math.max(canvasState.zoom * 0.8, 0.1)
+    onStateChange({ zoom: newZoom })
+  }
+
+  const handleFitToScreen = () => {
+    onStateChange({ zoom: 1 })
+  }
+
+  const toggleGrid = () => {
+    onStateChange({ gridEnabled: !canvasState.gridEnabled })
+  }
+
+  // Expose methods through ref
+  useImperativeHandle(ref, () => ({
+    undo,
+    redo,
+    clear,
+    exportCanvas,
+    addImage,
+    getCanvas: () => fabricCanvasRef.current
+  }))
+
+  return (
+    <Card className="bg-slate-800/50 border-slate-600 h-full flex flex-col">
+      <CardContent className="p-4 flex-1 flex flex-col">
+        {/* Canvas Controls */}
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            size="sm"
+            onClick={handleZoomOut}
+            className="bg-slate-700 hover:bg-slate-600 text-white"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </Button>
+          
+          <Button
+            size="sm"
+            onClick={handleFitToScreen}
+            className="bg-slate-700 hover:bg-slate-600 text-white"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </Button>
+          
+          <Button
+            size="sm"
+            onClick={handleZoomIn}
+            className="bg-slate-700 hover:bg-slate-600 text-white"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </Button>
+          
+          <Button
+            size="sm"
+            onClick={toggleGrid}
+            className={`${canvasState.gridEnabled 
+              ? 'bg-green-600 hover:bg-green-700' 
+              : 'bg-slate-700 hover:bg-slate-600'} text-white`}
+          >
+            <Grid className="w-4 h-4" />
+          </Button>
+
+          <div className="text-sm text-slate-300 ml-auto">
+            {Math.round(canvasState.zoom * 100)}% zoom | {canvasWidth}×{canvasHeight}
+          </div>
+        </div>
+
+        {/* Canvas Container - CRITICAL FIX - MAKE VISIBLE */}
+        <div className="flex-1 bg-slate-800 rounded-lg p-4 relative flex items-center justify-center min-h-96">
+          <canvas
+            ref={canvasRef}
+            className="border-4 border-purple-400 bg-white shadow-2xl rounded-lg"
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              cursor: canvasState.tool === 'brush' ? 'crosshair' : 
+                     canvasState.tool === 'select' ? 'default' : 'crosshair'
+            }}
+          />
+          
+          {/* Grid Overlay */}
+          {canvasState.gridEnabled && (
+            <div 
+              className="absolute pointer-events-none"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: canvasWidth * canvasState.zoom,
+                height: canvasHeight * canvasState.zoom,
+                backgroundImage: `
+                  linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+                `,
+                backgroundSize: '20px 20px'
+              }}
+            />
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+})
+
+CanvasEditor.displayName = 'CanvasEditor'
+
+export { CanvasEditor }
