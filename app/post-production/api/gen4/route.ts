@@ -412,8 +412,9 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
   }
 }
 
-// Export the authenticated and rate-limited endpoint
-export const POST = withApiAuth(handleGen4Request, 'image:generate')
+// Temporarily use direct export for internal frontend calls
+// TODO: Implement proper API key system for external access
+export const POST = handleGen4Request
 
 // Handle preflight requests for CORS
 export async function OPTIONS(request: NextRequest) {
