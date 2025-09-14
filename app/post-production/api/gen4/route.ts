@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { calculateUserCredits, getModelInfo } from '@/lib/credits/model-costs';
 import { parseDynamicPrompt } from '@/lib/dynamic-prompting';
 import { parseWildCardPrompt } from '@/lib/wildcards/parser';
+import { withApiAuth, addCorsHeaders, addSecurityHeaders } from '@/lib/middleware/api-middleware';
 // import { WildCardStorage } from '@/lib/wildcards/storage'; // Disabled for server-side
 
 // Initialize Supabase client for auth verification
@@ -11,7 +12,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(request: NextRequest) {
+async function handleGen4Request(request: NextRequest, context: { apiKey: any }) {
   try {
     if (!process.env.REPLICATE_API_TOKEN) {
       return NextResponse.json(
@@ -345,13 +346,23 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Gen 4 generation error:", error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       {
         error:
           error instanceof Error ? error.message : "Unknown error occurred",
-        details: error instanceof Error ? error.stack : undefined,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: 500 }
     );
+    return addSecurityHeaders(addCorsHeaders(errorResponse));
   }
+}
+
+// Export the authenticated and rate-limited endpoint
+export const POST = withApiAuth(handleGen4Request, 'image:generate')
+
+// Handle preflight requests for CORS
+export async function OPTIONS(request: NextRequest) {
+  const response = new NextResponse(null, { status: 200 })
+  return addCorsHeaders(response)
 }
