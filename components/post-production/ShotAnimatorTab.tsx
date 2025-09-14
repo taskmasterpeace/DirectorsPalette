@@ -50,31 +50,39 @@ const SEEDANCE_MODELS: SeeeDanceModel[] = [
   {
     id: 'seedance-lite',
     name: 'SeeeDance Lite',
-    description: 'Fast video generation with good quality',
+    description: 'Fast video generation - 480p/720p output',
     icon: '⚡',
     maxResolution: '720p',
-    creditsPerSecond: 20,
-    features: ['Text-to-Video', 'Image-to-Video', '720p Max', 'Fast Generation'],
+    creditsPerSecond: 15, // More accurate based on research
+    features: ['Text-to-Video', 'Image-to-Video', '720p Max', '24 FPS', '3-12 seconds'],
     apiProvider: 'replicate',
     endpoint: 'bytedance/seedance-1-lite'
   },
   {
     id: 'seedance-pro',
     name: 'SeeeDance Pro',
-    description: 'Professional quality with 1080p output',
+    description: 'Professional quality - 1080p cinematic output',
     icon: '🎬',
     maxResolution: '1080p',
-    creditsPerSecond: 40,
-    features: ['Text-to-Video', 'Image-to-Video', '1080p Max', 'Cinematic Quality', 'Multi-shot Support'],
-    apiProvider: 'aiml', // Note: Limited Replicate access
+    creditsPerSecond: 35, // More accurate based on research
+    features: ['Text-to-Video', 'Image-to-Video', '1080p Max', 'Reference Images', 'Professional Quality'],
+    apiProvider: 'replicate', // Available on Replicate
     endpoint: 'bytedance/seedance-1-pro'
   }
 ]
 
 const RESOLUTION_OPTIONS = [
-  { value: '480p', label: '480p (Fast)', width: 720, height: 480 },
-  { value: '720p', label: '720p (Standard)', width: 1280, height: 720 },
-  { value: '1080p', label: '1080p (Pro Only)', width: 1920, height: 1080 }
+  { value: '480p', label: '480p (Fast)', width: 720, height: 480, description: 'Quick generation' },
+  { value: '720p', label: '720p (Standard)', width: 1280, height: 720, description: 'Balanced quality' },
+  { value: '1080p', label: '1080p (Pro Only)', width: 1920, height: 1080, description: 'Professional quality' }
+]
+
+const DURATION_OPTIONS = [
+  { value: 3, label: '3 seconds', credits: 3 },
+  { value: 5, label: '5 seconds', credits: 5 },
+  { value: 8, label: '8 seconds', credits: 8 },
+  { value: 10, label: '10 seconds', credits: 10 },
+  { value: 12, label: '12 seconds', credits: 12 }
 ]
 
 const ASPECT_RATIOS = [
@@ -127,7 +135,7 @@ export function ShotAnimatorTab({
   const [selectedModel, setSelectedModel] = useState<SeeeDanceModel>(SEEDANCE_MODELS[0])
   const [prompt, setPrompt] = useState('')
   const [inputImages, setInputImages] = useState<File[]>([])
-  const [duration, setDuration] = useState([5])
+  const [duration, setDuration] = useState(5)
   const [resolution, setResolution] = useState('720p')
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [cameraFixed, setCameraFixed] = useState(false)
@@ -216,7 +224,7 @@ export function ShotAnimatorTab({
         id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         prompt: prompt.trim(),
         model: selectedModel.id,
-        duration: duration[0],
+        duration: duration,
         resolution,
         aspectRatio,
         inputImage: inputImages.length > 0 ? URL.createObjectURL(inputImages[0]) : undefined,
@@ -233,7 +241,7 @@ export function ShotAnimatorTab({
       const formData = new FormData()
       formData.append('prompt', prompt.trim())
       formData.append('model', selectedModel.id)
-      formData.append('duration', duration[0].toString())
+      formData.append('duration', duration.toString())
       formData.append('resolution', resolution)
       formData.append('aspect_ratio', aspectRatio)
       formData.append('camera_fixed', cameraFixed.toString())
@@ -244,7 +252,7 @@ export function ShotAnimatorTab({
 
       console.log('🎬 Starting SeeeDance video generation...', {
         model: selectedModel.id,
-        duration: duration[0],
+        duration: duration,
         resolution,
         aspectRatio,
         hasInputImage: inputImages.length > 0
@@ -285,7 +293,7 @@ export function ShotAnimatorTab({
           },
           creditsUsed: newGeneration.creditsUsed,
           metadata: {
-            duration: duration[0],
+            duration: duration,
             videoFormat: 'mp4',
             isVideo: true
           },
@@ -326,7 +334,8 @@ export function ShotAnimatorTab({
   }, [prompt, selectedModel, duration, resolution, aspectRatio, cameraFixed, inputImages, user, getToken, addImage, toast])
 
   // Calculate total credits for current settings
-  const totalCredits = selectedModel.creditsPerSecond * duration[0]
+  const resolutionMultiplier = resolution === '1080p' ? 2 : resolution === '720p' ? 1.5 : 1
+  const totalCredits = Math.ceil(selectedModel.creditsPerSecond * duration * resolutionMultiplier)
 
   // Check if generation is possible
   const canGenerate = prompt.trim().length > 0 && !isGenerating
@@ -475,21 +484,23 @@ export function ShotAnimatorTab({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-white">Duration</Label>
-                  <div className="space-y-2">
-                    <Slider
-                      value={duration}
-                      onValueChange={setDuration}
-                      min={3}
-                      max={12}
-                      step={1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-slate-400">
-                      <span>3s</span>
-                      <span className="font-medium text-white">{duration[0]}s</span>
-                      <span>12s</span>
-                    </div>
-                  </div>
+                  <Select value={duration.toString()} onValueChange={(value) => setDuration(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DURATION_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{option.label}</span>
+                            <Badge variant="outline" className="text-xs ml-2">
+                              {Math.ceil(selectedModel.creditsPerSecond * option.value)} credits
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -519,7 +530,11 @@ export function ShotAnimatorTab({
 
                 <div className="space-y-2">
                   <Label className="text-white">Aspect Ratio</Label>
-                  <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                  <Select
+                    value={aspectRatio}
+                    onValueChange={setAspectRatio}
+                    disabled={inputImages.length > 0}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -534,6 +549,11 @@ export function ShotAnimatorTab({
                       ))}
                     </SelectContent>
                   </Select>
+                  {inputImages.length > 0 && (
+                    <p className="text-xs text-amber-400">
+                      ⚠️ Aspect ratio determined by input image
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -570,12 +590,33 @@ export function ShotAnimatorTab({
                   </Badge>
                 </div>
                 <p className="text-sm text-slate-300 mb-3">{selectedModel.description}</p>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 mb-3">
                   {selectedModel.features.map((feature, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {feature}
                     </Badge>
                   ))}
+                </div>
+
+                {/* Generation Info */}
+                <div className="space-y-1 text-xs text-slate-400">
+                  <div className="flex justify-between">
+                    <span>Video Duration:</span>
+                    <span className="text-white">{duration} seconds</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Resolution:</span>
+                    <span className="text-white">{resolution}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Estimated Credits:</span>
+                    <span className="text-amber-400">{totalCredits} credits</span>
+                  </div>
+                  {inputImages.length > 0 && (
+                    <div className="text-blue-400 mt-2">
+                      📷 Image-to-Video mode active
+                    </div>
+                  )}
                 </div>
               </div>
 
