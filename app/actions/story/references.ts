@@ -103,7 +103,9 @@ export async function generateStoryBreakdownWithReferences(
   cameraStyleEnabled: boolean = false,
   colorPaletteEnabled: boolean = false,
   chapterMethod: string = "ai-suggested",
-  userChapterCount: number = 4
+  userChapterCount: number = 4,
+  shotSelectionMethod: 'auto' | 'manual' = 'auto',
+  manualShotSelections: any[] = []
 ) {
   console.log('Generating breakdown with configured references...')
   
@@ -120,6 +122,27 @@ export async function generateStoryBreakdownWithReferences(
     .map(p => `${p.reference} - ${p.name}: ${p.description}`)
     .join('\n')
 
+  // Handle manual shot selections
+  let shotInstructions = ''
+  if (shotSelectionMethod === 'manual' && manualShotSelections.length > 0) {
+    const manualShots = manualShotSelections.map((shot, index) => 
+      `Shot ${index + 1}: "${shot.sourceText}" - ${shot.description}`
+    ).join('\n')
+    
+    shotInstructions = `
+
+MANUAL SHOT SELECTIONS (expand these specific shots):
+${manualShots}
+
+Focus on expanding these manually selected shots into full cinematic descriptions while maintaining the exact text selections provided.
+`
+  } else {
+    shotInstructions = `
+
+AUTOMATIC SHOT SELECTION: AI should intelligently break the story into cinematic shots based on narrative flow and dramatic moments.
+`
+  }
+
   // Add reference constraints to director notes
   const constrainedNotes = `
 ${directorNotes}
@@ -135,6 +158,8 @@ ${locationList || 'None specified'}
 
 PROPS (use these exact references):
 ${propList || 'None specified'}
+
+${shotInstructions}
 
 DO NOT introduce any characters, locations, or props not listed above.
 Use the exact @reference handles provided (e.g., @john, @warehouse).

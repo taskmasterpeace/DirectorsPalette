@@ -30,10 +30,8 @@ export function AppSidebar() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent("dsvb:mode-change", { detail: { mode: newMode } }))
     }
-    // Only navigate to /create if not already on a mode page
-    if (pathname === "/") {
-      router.push("/create")
-    }
+    // Always navigate to /create when mode changes
+    router.push("/create")
   }
 
   // Production tools for video generation

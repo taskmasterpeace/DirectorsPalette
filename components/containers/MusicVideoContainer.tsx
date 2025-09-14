@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { MusicVideoInput } from '@/components/music-video/MusicVideoInput'
+import { CompactMusicVideoInput } from '@/components/music-video/CompactMusicVideoInput'
+import { TemplateBanner } from '@/components/shared/TemplateBanner'
 import { MusicVideoWorkflow } from '@/components/music-video/MusicVideoWorkflow'
 import { MusicVideoMode } from '@/components/music-video/MusicVideoMode'
+import { UniversalShotSelector } from '@/components/shared/UniversalShotSelector'
 import { useMusicVideoGeneration } from '@/hooks/useMusicVideoGeneration'
 import { useDirectorManagement } from '@/hooks/useDirectorManagement'
 import { useMusicVideoStore } from '@/stores/music-video-store'
@@ -11,6 +13,7 @@ import { useMusicVideoWorkflowStore } from '@/stores/music-video-workflow-store'
 import { useAppStore } from '@/stores/app-store'
 import { curatedMusicVideoDirectors } from '@/lib/curated-directors'
 import { extractMusicVideoReferences } from '@/app/actions/music-video/references'
+import { generateMusicVideoConcept, generateVisualStyle } from '@/app/actions/music-video/auto-fill'
 import { useToast } from '@/components/ui/use-toast'
 import { getExportedSong } from '@/lib/song-export-utils'
 
@@ -48,8 +51,13 @@ export function MusicVideoContainer() {
   
   const { customMusicVideoDirectors } = useDirectorManagement()
   
-  // All directors combined
-  const allDirectors = [...(curatedMusicVideoDirectors || []), ...(customMusicVideoDirectors || [])]
+  // All directors combined - deduplicate by ID
+  const allDirectors = [
+    ...(curatedMusicVideoDirectors || []), 
+    ...(customMusicVideoDirectors || [])
+  ].filter((director, index, array) => 
+    array.findIndex(d => d.id === director.id) === index
+  )
   
   // Handle reference extraction
   const handleExtractReferences = async () => {
@@ -75,7 +83,7 @@ export function MusicVideoContainer() {
       
       if (result.success) {
         workflowStore.setExtractedReferences(result.data)
-        workflowStore.setShowReferenceConfig(true)
+        workflowStore.setShowShotSelection(true)
       } else {
         throw new Error(result.error)
       }
@@ -89,6 +97,20 @@ export function MusicVideoContainer() {
     } finally {
       workflowStore.setIsExtractingRefs(false)
     }
+  }
+
+  // Handle shot selection completion
+  const handleShotSelectionComplete = (method: 'auto' | 'manual', selections?: any[]) => {
+    workflowStore.setShotSelectionMethod(method)
+    if (method === 'manual' && selections) {
+      workflowStore.setManualShotSelections(selections)
+    }
+    workflowStore.setShowShotSelection(false)
+    workflowStore.setShowReferenceConfig(true)
+  }
+  
+  const handleShotSelectionNext = () => {
+    workflowStore.setShowReferenceConfig(true)
   }
   
   // Handle breakdown completion
@@ -127,37 +149,129 @@ export function MusicVideoContainer() {
 
   return (
     <div className="space-y-6">
+      {/* Template Banner */}
+      <TemplateBanner
+        mode="music-video"
+        templates={[]} // TODO: Add actual templates
+        selectedTemplate={null}
+        onTemplateSelect={() => {}} // TODO: Implement template selection
+        onCreateNew={() => {}} // TODO: Implement template creation
+      />
+      
       {/* Only show input if we don't have a breakdown yet */}
       {!musicVideoStore.musicVideoBreakdown && (
         <>
-          {/* Music Video Input Section */}
-          <MusicVideoInput
+          {/* Compact Music Video Input Section */}
+          <CompactMusicVideoInput
             songTitle={musicVideoStore.songTitle}
             setSongTitle={musicVideoStore.setSongTitle}
-            artist={musicVideoStore.artist}
-            setArtist={musicVideoStore.setArtist}
-            genre={musicVideoStore.genre}
-            setGenre={musicVideoStore.setGenre}
+            artistName={musicVideoStore.artist}
+            setArtistName={musicVideoStore.setArtist}
             lyrics={musicVideoStore.lyrics}
             setLyrics={musicVideoStore.setLyrics}
-            mvConcept={musicVideoStore.mvConcept}
-            setMvConcept={musicVideoStore.setMvConcept}
-            mvDirectorNotes={musicVideoStore.mvDirectorNotes}
-            setMvDirectorNotes={musicVideoStore.setMvDirectorNotes}
-            selectedArtistId={musicVideoStore.selectedArtistId}
-            setSelectedArtistId={musicVideoStore.setSelectedArtistId}
+            musicVideoConcept={musicVideoStore.mvConcept}
+            setMusicVideoConcept={musicVideoStore.setMvConcept}
+            visualDescription={musicVideoStore.artistVisualDescription}
+            setVisualDescription={musicVideoStore.setArtistVisualDescription}
             selectedArtistProfile={musicVideoStore.selectedArtistProfile}
-            setSelectedArtistProfile={musicVideoStore.setSelectedArtistProfile}
-            artistVisualDescription={musicVideoStore.artistVisualDescription}
-            setArtistVisualDescription={musicVideoStore.setArtistVisualDescription}
-            selectedMusicVideoDirector={musicVideoStore.selectedMusicVideoDirector}
-            setSelectedMusicVideoDirector={musicVideoStore.setSelectedMusicVideoDirector}
-            allDirectors={allDirectors}
-            onGenerateReferences={handleExtractReferences}
-            onClear={handleClearMusicVideo}
+            onArtistProfileSelect={musicVideoStore.setSelectedArtistProfile}
+            directors={allDirectors}
+            selectedDirectorId={musicVideoStore.selectedMusicVideoDirector}
+            onDirectorSelect={musicVideoStore.setSelectedMusicVideoDirector}
+            onExtractLyrics={async (audioFile: File) => {
+              // TODO: Implement audio extraction
+              console.log('Extract lyrics from:', audioFile.name)
+            }}
+            onExtractReferences={handleExtractReferences}
+            onAutoFillConcept={async () => {
+              if (!musicVideoStore.songTitle.trim() || !musicVideoStore.lyrics.trim()) {
+                toast({
+                  title: "Input Required",
+                  description: "Please enter song title and lyrics first.",
+                  variant: "destructive"
+                })
+                return
+              }
+
+              setIsLoading(true)
+              try {
+                const result = await generateMusicVideoConcept(
+                  musicVideoStore.songTitle,
+                  musicVideoStore.artist,
+                  musicVideoStore.lyrics
+                )
+                
+                if (result.success) {
+                  musicVideoStore.setMvConcept(result.data)
+                  toast({
+                    title: "Concept Generated",
+                    description: "Music video concept has been generated from your lyrics."
+                  })
+                } else {
+                  throw new Error(result.error)
+                }
+              } catch (error) {
+                console.error('Error generating concept:', error)
+                toast({
+                  title: "Generation Failed",
+                  description: error instanceof Error ? error.message : "Failed to generate concept",
+                  variant: "destructive"
+                })
+              } finally {
+                setIsLoading(false)
+              }
+            }}
+            onAutoFillVisual={async () => {
+              if (!musicVideoStore.songTitle.trim() || !musicVideoStore.lyrics.trim()) {
+                toast({
+                  title: "Input Required",
+                  description: "Please enter song title and lyrics first.",
+                  variant: "destructive"
+                })
+                return
+              }
+
+              setIsLoading(true)
+              try {
+                const result = await generateVisualStyle(
+                  musicVideoStore.songTitle,
+                  musicVideoStore.artist,
+                  musicVideoStore.lyrics,
+                  musicVideoStore.mvConcept
+                )
+                
+                if (result.success) {
+                  musicVideoStore.setArtistVisualDescription(result.data)
+                  toast({
+                    title: "Visual Style Generated",
+                    description: "Visual style description has been generated from your lyrics."
+                  })
+                } else {
+                  throw new Error(result.error)
+                }
+              } catch (error) {
+                console.error('Error generating visual style:', error)
+                toast({
+                  title: "Generation Failed",
+                  description: error instanceof Error ? error.message : "Failed to generate visual style",
+                  variant: "destructive"
+                })
+              } finally {
+                setIsLoading(false)
+              }
+            }}
             isLoading={isLoading || workflowStore.isExtractingRefs}
-            hasBreakdown={!!musicVideoStore.musicVideoBreakdown}
           />
+
+          {/* Shot Selection Interface */}
+          {workflowStore.showShotSelection && (
+            <UniversalShotSelector
+              mode="music-video"
+              content={musicVideoStore.lyrics}
+              onSelectionComplete={handleShotSelectionComplete}
+              onNext={handleShotSelectionNext}
+            />
+          )}
           
           {/* Workflow Components (Progress, Reference Config) */}
           <MusicVideoWorkflow

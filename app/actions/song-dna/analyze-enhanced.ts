@@ -438,7 +438,7 @@ Return a JSON object with:
         metaphor_density: aiAnalysis.metaphors?.length || 0,
         alliteration_frequency: 3, // Would need phonetic analysis
         internal_rhyme_density: detectInternalRhymes(lyrics),
-        repetition_patterns: detectRepetitions(lyrics),
+        repetition_patterns: detectRepetitions(lyrics) as any,
       },
       
       musical: {

@@ -121,3 +121,189 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Custom Animation Utilities */
+  
+  /* Shimmer animations */
+  @keyframes shimmer-right {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  @keyframes shimmer-left {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+  
+  @keyframes shimmer-up {
+    0% { transform: translateY(100%); }
+    100% { transform: translateY(-100%); }
+  }
+  
+  @keyframes shimmer-down {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+  
+  .animate-shimmer-right {
+    animation: shimmer-right 2s infinite;
+  }
+  
+  .animate-shimmer-left {
+    animation: shimmer-left 2s infinite;
+  }
+  
+  .animate-shimmer-up {
+    animation: shimmer-up 2s infinite;
+  }
+  
+  .animate-shimmer-down {
+    animation: shimmer-down 2s infinite;
+  }
+  
+  /* Floating animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(var(--float-distance, -10px)); }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Glow pulse */
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.4); }
+  }
+  
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  /* Scale breathing */
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+  
+  .animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+  
+  /* Rotation variations */
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+  
+  .animate-spin-slower {
+    animation: spin 12s linear infinite;
+  }
+  
+  /* Bounce variations */
+  .animate-bounce-slow {
+    animation: bounce 3s infinite;
+  }
+  
+  /* Gradient animation */
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+  
+  /* Text reveal animation */
+  @keyframes text-reveal {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-text-reveal {
+    animation: text-reveal 0.6s ease-out forwards;
+  }
+  
+  /* Staggered reveals */
+  .animate-text-reveal-1 {
+    animation: text-reveal 0.6s ease-out 0.1s forwards;
+    opacity: 0;
+  }
+  
+  .animate-text-reveal-2 {
+    animation: text-reveal 0.6s ease-out 0.2s forwards;
+    opacity: 0;
+  }
+  
+  .animate-text-reveal-3 {
+    animation: text-reveal 0.6s ease-out 0.3s forwards;
+    opacity: 0;
+  }
+  
+  /* Advanced hover transforms */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  .hover-tilt {
+    transition: transform 0.3s ease;
+  }
+  
+  .hover-tilt:hover {
+    transform: perspective(1000px) rotateY(5deg) rotateX(2deg);
+  }
+  
+  /* Glass morphism utilities */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Neon effects */
+  .neon-blue {
+    text-shadow: 0 0 5px rgba(59, 130, 246, 0.8), 0 0 10px rgba(59, 130, 246, 0.6), 0 0 15px rgba(59, 130, 246, 0.4);
+  }
+  
+  .neon-purple {
+    text-shadow: 0 0 5px rgba(168, 85, 247, 0.8), 0 0 10px rgba(168, 85, 247, 0.6), 0 0 15px rgba(168, 85, 247, 0.4);
+  }
+  
+  .neon-amber {
+    text-shadow: 0 0 5px rgba(245, 158, 11, 0.8), 0 0 10px rgba(245, 158, 11, 0.6), 0 0 15px rgba(245, 158, 11, 0.4);
+  }
+  
+  /* Perspective utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .perspective-500 {
+    perspective: 500px;
+  }
+  
+  /* Transform 3D utilities */
+  .transform-3d {
+    transform-style: preserve-3d;
+  }
+}

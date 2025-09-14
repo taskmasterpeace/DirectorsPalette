@@ -56,7 +56,7 @@ Based on this music video treatment, suggest specific locations, wardrobe, and p
 Song: "${songTitle}" by ${artistName}
 Treatment Concept: ${treatment.concept}
 Visual Theme: ${treatment.visualTheme}
-${artistProfile ? `Artist Style: ${artistProfile.visual_style}` : ''}
+${artistProfile ? `Artist Style: ${(artistProfile as any).visual_style || 'No style specified'}` : ''}
 
 Lyrics for context:
 ${lyrics}

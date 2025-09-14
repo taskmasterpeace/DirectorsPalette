@@ -15,6 +15,7 @@ import { useStoryWorkflowStore } from '@/stores/story-workflow-store'
 import { useAppStore } from '@/stores/app-store'
 import { useDirectorManagement } from '@/hooks/useDirectorManagement'
 import { curatedFilmDirectors } from '@/lib/curated-directors'
+import { combineFilmDirectors } from '@/lib/director-utils'
 
 interface StoryInputConnectedProps {
   onExtractReferences: () => void
@@ -57,8 +58,8 @@ export function StoryInputConnected({
   const { isLoading } = useAppStore()
   const { customDirectors } = useDirectorManagement()
   
-  // Combine directors
-  const allDirectors = [...(curatedFilmDirectors || []), ...(customDirectors || [])]
+  // Combine directors - deduplicate by ID to prevent React duplicate key errors
+  const allDirectors = combineFilmDirectors(curatedFilmDirectors, customDirectors)
   const selectedDirectorInfo = allDirectors?.find((d) => d?.id === selectedDirector)
   const hasBreakdown = !!breakdown
 

@@ -23,6 +23,32 @@ We believe the future of AI creativity tools should be **open, collaborative, an
 
 ---
 
+## 📸 **Application Screenshots**
+
+### 🎬 Main Dashboard
+*Professional creative platform with multiple format options and credit system*
+
+![Director's Palette Dashboard](docs/images/directors-palette-landing-authenticated.png)
+
+### 📚 Children's Book Mode
+*Create page-by-page shot lists with consistent character illustrations and age-appropriate content*
+
+![Children's Book Creator Interface](docs/images/directors-palette-childrens-book.png)
+
+### 📖 Story Mode  
+*Professional story-to-shot conversion with AI character extraction and comprehensive shot generation*
+
+![Story Mode Interface](docs/images/directors-palette-story-mode.png)
+
+### 🎯 Complete Workflow  
+*Full AI-powered shot generation pipeline with professional cinematography details*
+
+![Complete Workflow Interface](docs/images/directors-palette-complete-workflow.png)
+
+> **Note**: Screenshots show actual production interface with AI-powered character consistency system, professional shot lists, and enterprise-grade creative tools. Features include real-time character extraction, professional shot generation, and comprehensive export capabilities.
+
+---
+
 ## 🎬 **What Director's Palette Does**
 
 Director's Palette transforms creative concepts into professional, production-ready shot lists using AI-powered director-specific styling. It bridges the gap between creative vision and practical production planning.

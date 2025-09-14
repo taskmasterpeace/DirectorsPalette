@@ -3,6 +3,7 @@
  * Tests template system integration with commercial mode functionality
  */
 
+import React from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { useTemplatesStore } from '@/stores/templates-store'
@@ -16,30 +17,34 @@ vi.mock('@/stores/templates-store', () => ({
 
 // Mock components
 vi.mock('@/components/shared/TemplateManager', () => ({
-  TemplateManager: ({ onLoadTemplate, trigger }: any) => (
-    <div data-testid="template-manager">
-      <div 
-        data-testid="load-template-trigger"
-        onClick={() => onLoadTemplate && onLoadTemplate({
-          id: 'test-template',
-          type: 'commercial',
-          name: 'Test Template',
-          category: 'sample',
-          content: {
-            brandDescription: 'Test brand description',
-            campaignGoals: 'Test goals',
-            targetAudience: 'Test audience',
-            keyMessages: 'Test messages',
-            constraints: 'Test constraints'
-          },
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })}
-      >
-        {trigger}
+  TemplateManager: ({ onLoadTemplate, trigger }: any) => {
+    const mockTemplate = {
+      id: 'test-template',
+      type: 'commercial' as const,
+      name: 'Test Template',
+      category: 'sample',
+      content: {
+        brandDescription: 'Test brand description',
+        campaignGoals: 'Test goals',
+        targetAudience: 'Test audience',
+        keyMessages: 'Test messages',
+        constraints: 'Test constraints'
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
+    return (
+      <div data-testid="template-manager">
+        <div
+          data-testid="load-template-trigger"
+          onClick={() => onLoadTemplate && onLoadTemplate(mockTemplate)}
+        >
+          {trigger}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 }))
 
 describe('Commercial Template System', () => {

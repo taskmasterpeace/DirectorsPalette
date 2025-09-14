@@ -134,7 +134,15 @@ export function detectAspectRatio(width: number, height: number): string {
  */
 export async function getImageDimensions(file: File): Promise<{ width: number; height: number; aspectRatio: string }> {
   return new Promise((resolve, reject) => {
+    // Validate input
+    if (!file || typeof file !== 'object' || !file.type?.startsWith('image/')) {
+      reject(new Error('Invalid file provided - must be an image File object'));
+      return;
+    }
+
     const img = new Image();
+    let objectUrl: string;
+    
     img.onload = () => {
       const aspectRatio = detectAspectRatio(img.width, img.height);
       resolve({ 
@@ -142,13 +150,24 @@ export async function getImageDimensions(file: File): Promise<{ width: number; h
         height: img.height,
         aspectRatio
       });
-      URL.revokeObjectURL(img.src);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
+    
     img.onerror = () => {
-      URL.revokeObjectURL(img.src);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
       reject(new Error('Failed to load image'));
     };
-    img.src = URL.createObjectURL(file);
+    
+    try {
+      objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+    } catch (error) {
+      reject(new Error(`Failed to create object URL: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    }
   });
 }
 

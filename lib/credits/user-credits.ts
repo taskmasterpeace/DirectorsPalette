@@ -1,5 +1,3 @@
-'use client'
-
 import { supabase } from '@/lib/supabase'
 
 // User Credit Types
@@ -79,24 +77,49 @@ class UserCreditService {
 
   // Get user's current credit balance
   async getUserCredits(userId: string): Promise<UserCredits | null> {
-    if (!supabase) return null
-
-    const { data, error } = await supabase
-      .from('user_credits')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-
-    if (error) {
-      console.error('❌ Failed to get user credits:', error)
-      // Try to initialize if user doesn't exist
-      if (error.code === 'PGRST116') {
-        return await this.initializeUserCredits(userId)
-      }
+    if (!supabase) {
+      console.warn('⚠️ Supabase client not initialized')
       return null
     }
 
-    return data
+    if (!userId) {
+      console.warn('⚠️ User ID is required for getUserCredits')
+      return null
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_credits')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+      if (error) {
+        console.error('❌ Failed to get user credits:', {
+          error: error.message || error,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          userId
+        })
+        
+        // Try to initialize if user doesn't exist
+        if (error.code === 'PGRST116') {
+          console.log('ℹ️ User credits not found, attempting to initialize for:', userId)
+          return await this.initializeUserCredits(userId)
+        }
+        return null
+      }
+
+      return data
+    } catch (exception) {
+      console.error('💥 Exception in getUserCredits:', {
+        exception,
+        userId,
+        stack: exception instanceof Error ? exception.stack : 'No stack trace'
+      })
+      return null
+    }
   }
 
   // Deduct points for AI usage
@@ -153,7 +176,7 @@ class UserCreditService {
     startDate.setDate(startDate.getDate() - days)
 
     const { data, error } = await supabase
-      .from('usage_log')
+      .from('ai_usage')
       .select('*')
       .eq('user_id', userId)
       .gte('created_at', startDate.toISOString())
@@ -169,53 +192,92 @@ class UserCreditService {
 
   // Get daily usage breakdown for user dashboard
   async getDailyUsage(userId: string, days: number = 7): Promise<DailyUsage[]> {
-    if (!supabase) return []
-
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
-
-    const { data, error } = await supabase
-      .from('usage_log')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('❌ Failed to get daily usage:', error)
+    if (!supabase) {
+      console.warn('⚠️ Supabase client not initialized')
       return []
     }
 
-    // Group by date
-    const dailyMap = new Map<string, DailyUsage>()
-    
-    data?.forEach(entry => {
-      const date = entry.created_at.split('T')[0]
-      
-      if (!dailyMap.has(date)) {
-        dailyMap.set(date, {
-          date,
-          total_points: 0,
-          total_cost: 0,
-          action_breakdown: {},
-          model_breakdown: {}
-        })
-      }
-      
-      const dayData = dailyMap.get(date)!
-      dayData.total_points += entry.points_consumed
-      dayData.total_cost += parseFloat(entry.cost_usd.toString())
-      
-      // Action breakdown
-      dayData.action_breakdown[entry.action_type] = 
-        (dayData.action_breakdown[entry.action_type] || 0) + entry.points_consumed
-      
-      // Model breakdown  
-      dayData.model_breakdown[entry.model_name] = 
-        (dayData.model_breakdown[entry.model_name] || 0) + entry.points_consumed
-    })
+    if (!userId) {
+      console.warn('⚠️ User ID is required for getDailyUsage')
+      return []
+    }
 
-    return Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date))
+    try {
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - days)
+
+      const { data, error } = await supabase
+        .from('ai_usage')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Failed to get daily usage:', {
+          error: error.message || error,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          userId,
+          days
+        })
+        // Don't crash the app - return safe fallback  
+        return []
+      }
+
+      if (!data) {
+        console.log('ℹ️ No usage data found for user:', userId)
+        return []
+      }
+
+      // Group by date
+      const dailyMap = new Map<string, DailyUsage>()
+      
+      data?.forEach(entry => {
+        try {
+          const date = entry.created_at.split('T')[0]
+          
+          if (!dailyMap.has(date)) {
+            dailyMap.set(date, {
+              date,
+              total_points: 0,
+              total_cost: 0,
+              action_breakdown: {},
+              model_breakdown: {}
+            })
+          }
+          
+          const dayData = dailyMap.get(date)!
+          dayData.total_points += entry.tokens_used || 0
+          dayData.total_cost += parseFloat(entry.cost_usd?.toString() || '0')
+          
+          // Action breakdown
+          if (entry.function_type) {
+            dayData.action_breakdown[entry.function_type] = 
+              (dayData.action_breakdown[entry.function_type] || 0) + (entry.tokens_used || 0)
+          }
+          
+          // Model breakdown  
+          if (entry.model_id) {
+            dayData.model_breakdown[entry.model_id] = 
+              (dayData.model_breakdown[entry.model_id] || 0) + (entry.tokens_used || 0)
+          }
+        } catch (entryError) {
+          console.warn('⚠️ Error processing usage entry:', { entry, error: entryError })
+        }
+      })
+
+      return Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date))
+    } catch (exception) {
+      console.error('💥 Exception in getDailyUsage data processing:', {
+        exception,
+        userId,
+        days,
+        stack: exception instanceof Error ? exception.stack : 'No stack trace'
+      })
+      return []
+    }
   }
 
   // Add boost pack points
@@ -278,8 +340,8 @@ class UserCreditService {
       .from('user_credits')
       .select(`
         *,
-        usage_log!inner(
-          points_consumed,
+        ai_usage!inner(
+          tokens_used,
           created_at
         )
       `)
@@ -291,13 +353,13 @@ class UserCreditService {
 
     // Calculate usage summaries
     return data?.map(user => {
-      const usage = (user as any).usage_log as UsageLogEntry[]
+      const usage = (user as any).ai_usage as UsageLogEntry[]
       const recent = usage.filter(u => new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
       
       return {
         ...user,
-        recent_usage: recent.reduce((sum, u) => sum + u.points_consumed, 0),
-        total_usage: usage.reduce((sum, u) => sum + u.points_consumed, 0)
+        recent_usage: recent.reduce((sum, u) => sum + u.tokens_used, 0),
+        total_usage: usage.reduce((sum, u) => sum + u.tokens_used, 0)
       }
     }) || []
   }
@@ -310,8 +372,8 @@ class UserCreditService {
     startDate.setDate(startDate.getDate() - days)
 
     const { data, error } = await supabase
-      .from('usage_log')
-      .select('created_at, points_consumed, cost_usd, user_id')
+      .from('ai_usage')
+      .select('created_at, tokens_used, cost_usd, user_id')
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: false })
 
@@ -335,7 +397,7 @@ class UserCreditService {
       }
       
       const dayData = dailyMap.get(date)!
-      dayData.total_points += entry.points_consumed
+      dayData.total_points += entry.tokens_used
       dayData.total_cost += parseFloat(entry.cost_usd.toString())
       dayData.users.add(entry.user_id)
     })

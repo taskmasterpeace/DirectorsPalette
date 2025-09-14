@@ -54,7 +54,7 @@ const BOOST_PACKS: BoostPack[] = [
 ]
 
 interface BoostPacksProps {
-  currentCredits: number
+  currentCredits?: number
   onPurchase: (boostPackId: string) => Promise<void>
   isLoading?: boolean
 }
@@ -96,7 +96,7 @@ export function BoostPacks({ currentCredits, onPurchase, isLoading = false }: Bo
         <div className="flex items-center justify-center gap-2">
           <div className="text-white font-medium">Current Credits:</div>
           <Badge variant="outline" className="text-orange-400 border-orange-400 text-lg px-3 py-1">
-            {currentCredits.toLocaleString()} points
+            {(currentCredits || 0).toLocaleString()} points
           </Badge>
         </div>
       </div>

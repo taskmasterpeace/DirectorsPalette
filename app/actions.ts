@@ -415,9 +415,9 @@ export async function generateFullMusicVideoBreakdown(
     throw new Error("No treatments available");
   }
 
-  const locationString = config.locations.map(l => `${l.reference}: ${l.name} - ${l.description}`).join("\n");
-  const wardrobeString = config.wardrobe.map(w => `${w.reference}: ${w.name} - ${w.description}`).join("\n");
-  const propString = config.props.map(p => `${p.reference}: ${p.name} - ${p.description}`).join("\n");
+  const locationString = config.locations.map((l: any) => `${l.reference}: ${l.name} - ${l.description}`).join("\n");
+  const wardrobeString = config.wardrobe.map((w: any) => `${w.reference}: ${w.name} - ${w.description}`).join("\n");
+  const propString = config.props.map((p: any) => `${p.reference}: ${p.name} - ${p.description}`).join("\n");
 
   const sectionBreakdowns = await Promise.all(
     musicVideoStructure.sections.map(async (section) => {
@@ -471,9 +471,9 @@ export async function generateAdditionalMusicVideoShots(
   const selectedTreatment = config.customTreatment || treatmentsData.treatments.find(t => t.id === config.selectedTreatmentId);
   if (!selectedTreatment) throw new Error("Selected treatment not found.");
 
-  const locationString = config.locations.map(l => `${l.reference}: ${l.name} - ${l.description}`).join("\n");
-  const wardrobeString = config.wardrobe.map(w => `${w.reference}: ${w.name} - ${w.description}`).join("\n");
-  const propString = config.props.map(p => `${p.reference}: ${p.name} - ${p.description}`).join("\n");
+  const locationString = config.locations.map((l: any) => `${l.reference}: ${l.name} - ${l.description}`).join("\n");
+  const wardrobeString = config.wardrobe.map((w: any) => `${w.reference}: ${w.name} - ${w.description}`).join("\n");
+  const propString = config.props.map((p: any) => `${p.reference}: ${p.name} - ${p.description}`).join("\n");
 
   const allExistingShots = [...existingBreakdown.shots, ...existingAdditionalShots];
 

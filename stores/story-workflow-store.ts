@@ -11,6 +11,11 @@ interface StoryWorkflowState {
   extractedReferences: any | null
   isExtractingRefs: boolean
   
+  // Shot selection workflow
+  showShotSelection: boolean
+  shotSelectionMethod: 'auto' | 'manual' | null
+  manualShotSelections: any[]
+  
   // Director questions workflow
   showDirectorQuestions: boolean
   directorAnswers: any[]
@@ -25,6 +30,11 @@ interface StoryWorkflowActions {
   setShowReferenceConfig: (show: boolean) => void
   setExtractedReferences: (refs: any | null) => void
   setIsExtractingRefs: (extracting: boolean) => void
+  
+  // Shot selection actions
+  setShowShotSelection: (show: boolean) => void
+  setShotSelectionMethod: (method: 'auto' | 'manual' | null) => void
+  setManualShotSelections: (selections: any[]) => void
   
   // Director questions actions
   setShowDirectorQuestions: (show: boolean) => void
@@ -42,6 +52,9 @@ const initialState: StoryWorkflowState = {
   showReferenceConfig: false,
   extractedReferences: null,
   isExtractingRefs: false,
+  showShotSelection: false,
+  shotSelectionMethod: null,
+  manualShotSelections: [],
   showDirectorQuestions: false,
   directorAnswers: []
 }
@@ -59,6 +72,11 @@ export const useStoryWorkflowStore = create<StoryWorkflowStore>()(
       setShowReferenceConfig: (show) => set({ showReferenceConfig: show }),
       setExtractedReferences: (refs) => set({ extractedReferences: refs }),
       setIsExtractingRefs: (extracting) => set({ isExtractingRefs: extracting }),
+      
+      // Shot selection actions
+      setShowShotSelection: (show) => set({ showShotSelection: show }),
+      setShotSelectionMethod: (method) => set({ shotSelectionMethod: method }),
+      setManualShotSelections: (selections) => set({ manualShotSelections: selections }),
       
       // Director questions actions
       setShowDirectorQuestions: (show) => set({ showDirectorQuestions: show }),

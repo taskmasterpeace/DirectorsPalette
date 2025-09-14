@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { TemplateBanner } from '@/components/shared/TemplateBanner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,13 +13,9 @@ import { useToast } from '@/components/ui/use-toast'
 import { extractBookReferences } from '@/app/actions/children-book/generation'
 import { ManualShotSelector } from '@/components/prototypes/ManualShotSelector'
 import { SendToPostProduction } from '@/components/shared/SendToPostProduction'
+import { UniversalShotSelector } from '@/components/shared/UniversalShotSelector'
 
-// Age Groups for Children's Books
-const AGE_GROUPS = [
-  { id: '3-5', name: 'Preschool (3-5)', description: 'Simple words, bright pictures' },
-  { id: '6-8', name: 'Early Reader (6-8)', description: 'Short sentences, engaging stories' },
-  { id: '9-12', name: 'Chapter Books (9-12)', description: 'Longer stories, complex themes' },
-]
+// Age Groups removed - not needed for core functionality
 
 interface ChildrenBookShot {
   id: string
@@ -34,11 +31,13 @@ interface ChildrenBookShot {
 export function ChildrenBookContainerNew() {
   const { toast } = useToast()
   const [story, setStory] = useState('')
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState(AGE_GROUPS[0])
   const [theme, setTheme] = useState('')
   const [extractedReferences, setExtractedReferences] = useState<any>(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [bookShots, setBookShots] = useState<ChildrenBookShot[]>([])
+  const [showShotSelection, setShowShotSelection] = useState(false)
+  const [shotSelectionMethod, setShotSelectionMethod] = useState<'auto' | 'manual' | null>(null)
+  const [manualShotSelections, setManualShotSelections] = useState<any[]>([])
   const [showManualSelector, setShowManualSelector] = useState(false)
 
   // Extract characters, locations, and props (same as other modes)
@@ -64,8 +63,8 @@ export function ChildrenBookContainerNew() {
           description: `Found ${result.data.characters.length} characters, ${result.data.locations.length} locations, ${result.data.props.length} props`
         })
         
-        // Enable manual shot selection
-        setShowManualSelector(true)
+        // Enable shot selection
+        setShowShotSelection(true)
       } else {
         throw new Error(result.error || 'Extraction failed')
       }
@@ -80,6 +79,20 @@ export function ChildrenBookContainerNew() {
     }
   }
 
+  // Handle shot selection completion
+  const handleShotSelectionComplete = (method: 'auto' | 'manual', selections?: any[]) => {
+    setShotSelectionMethod(method)
+    if (method === 'manual' && selections) {
+      setManualShotSelections(selections)
+    }
+    setShowShotSelection(false)
+    setShowManualSelector(true)
+  }
+  
+  const handleShotSelectionNext = () => {
+    setShowManualSelector(true)
+  }
+
   // Handle manual shot generation with book-specific context
   const handleShotsGenerated = (shots: any[]) => {
     const bookShots: ChildrenBookShot[] = shots.map((shot, index) => ({
@@ -88,7 +101,7 @@ export function ChildrenBookContainerNew() {
       description: shot.description,
       timestamp: new Date(),
       pageNumber: index + 1,
-      ageGroup: selectedAgeGroup.id,
+      ageGroup: 'general', // Default age group since age selection was removed
       contextBefore: shot.contextBefore,
       contextAfter: shot.contextAfter
     }))
@@ -120,6 +133,15 @@ export function ChildrenBookContainerNew() {
 
   return (
     <div className="space-y-6">
+      {/* Template Banner */}
+      <TemplateBanner
+        mode="children-book"
+        templates={[]} // TODO: Add actual templates
+        selectedTemplate={null}
+        onTemplateSelect={() => {}} // TODO: Implement template selection
+        onCreateNew={() => {}} // TODO: Implement template creation
+      />
+      
       {/* Header */}
       <Card>
         <CardHeader>
@@ -158,39 +180,15 @@ export function ChildrenBookContainerNew() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Age Group</Label>
-                <Select value={selectedAgeGroup.id} onValueChange={(value) => {
-                  const ageGroup = AGE_GROUPS.find(ag => ag.id === value)
-                  if (ageGroup) setSelectedAgeGroup(ageGroup)
-                }}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AGE_GROUPS.map((ageGroup) => (
-                      <SelectItem key={ageGroup.id} value={ageGroup.id}>
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{ageGroup.name}</span>
-                          <span className="text-xs text-gray-500">{ageGroup.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="theme">Theme/Lesson (Optional)</Label>
-                <Textarea
+            <div>
+              <Label htmlFor="theme">Theme/Lesson (Optional)</Label>
+              <Textarea
                   id="theme"
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                   placeholder="What theme or lesson should the book teach? (friendship, kindness, adventure, etc.)"
                   className="min-h-20"
                 />
-              </div>
             </div>
           </div>
         </CardContent>
@@ -262,6 +260,16 @@ export function ChildrenBookContainerNew() {
         </CardContent>
       </Card>
 
+      {/* Shot Selection Interface */}
+      {showShotSelection && (
+        <UniversalShotSelector
+          mode="children-book"
+          content={story}
+          onSelectionComplete={handleShotSelectionComplete}
+          onNext={handleShotSelectionNext}
+        />
+      )}
+
       {/* Manual Page Selection */}
       {showManualSelector && (
         <Card>
@@ -269,7 +277,7 @@ export function ChildrenBookContainerNew() {
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5" />
               Create Book Pages
-              <Badge variant="outline">Age: {selectedAgeGroup.name}</Badge>
+              <Badge variant="outline">Age: General</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -279,7 +287,7 @@ export function ChildrenBookContainerNew() {
                 <li>• Select text portions that should appear on each book page</li>
                 <li>• Each selection becomes one page illustration</li>
                 <li>• Use @character_name references for consistent illustrations</li>
-                <li>• Consider {selectedAgeGroup.description.toLowerCase()} for this age group</li>
+                <li>• Create engaging, age-appropriate illustrations</li>
               </ul>
             </div>
 
@@ -346,7 +354,7 @@ export function ChildrenBookContainerNew() {
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <div>
-                  {bookShots.length} pages created • Age: {selectedAgeGroup.name}
+                  {bookShots.length} pages created • Age: General
                   {theme && ` • Theme: ${theme}`}
                 </div>
                 <div className="flex items-center gap-2">

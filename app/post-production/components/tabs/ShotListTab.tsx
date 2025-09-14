@@ -1,6 +1,6 @@
 'use client'
 
-import { ShotListManager } from '@/components/post-production/ShotListManager'
+import { ShotListManagerRefactored as ShotListManager } from '@/components/shot-list/ShotListManagerRefactored'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { List, Film, Music } from 'lucide-react'

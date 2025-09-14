@@ -32,6 +32,8 @@ import { Gen4Props, Gen4Settings, Generation, ImageReference } from "@/types";
 import ReferenceLibraryBrowser from "@/app/components/ReferenceLibraryBrowser";
 import { saveImageToLibrary, referenceLibraryDB, LibraryImageReference } from "@/lib/referenceLibrary";
 import { PromptTemplateManager } from "@/components/shared/PromptTemplateManager";
+import { ModelSelector } from "@/components/post-production/ModelSelector";
+import { SeedreamSettings } from "@/components/post-production/SeedreamSettings";
 
 function Gen4({
   gen4Generations,
@@ -129,10 +131,19 @@ function Gen4({
         <div className="col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                Gen 4 Image Generation
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  Shot Creator
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <ModelSelector
+                    selectedModel={gen4Settings.model || 'seedream-4'}
+                    onModelChange={(model) => setGen4Settings(prev => ({ ...prev, model }))}
+                    compact={true}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Reference Images Upload */}
@@ -141,7 +152,7 @@ function Gen4({
                   Reference Images
                 </Label>
                 <div
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-8 sm:p-6 text-center hover:border-purple-400 transition-colors cursor-pointer touch-manipulation"
                   onDrop={(e) => {
                     if (e.target === e.currentTarget) handleDrop(e, true);
                   }}
@@ -157,19 +168,19 @@ function Gen4({
                     }
                   }}
                 >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="font-medium mb-1">
-                  <span className="font-bold text-purple-600">Paste (Ctrl+V)</span>, drop, or click to add reference images
+                <Upload className="w-12 h-12 sm:w-8 sm:h-8 mx-auto mb-3 text-slate-400" />
+                <p className="font-medium mb-2 text-lg sm:text-base">
+                  <span className="font-bold text-purple-600">Tap to Upload</span> Reference Images
                 </p>
-                <p className="text-sm text-slate-500">
-                  You can paste screenshots or images copied to your clipboard, drag and drop, or click to select files. Up to 3 images for style reference.
+                <p className="text-base sm:text-sm text-slate-500 leading-relaxed">
+                  Upload up to 10 images for style reference. Supports drag & drop or clipboard paste.
                 </p>
-                {/* Individual paste buttons for each reference slot */}
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                {/* Individual paste buttons for each reference slot - HIDDEN ON MOBILE */}
+                <div className="mt-4 hidden sm:grid sm:grid-cols-3 sm:gap-2">
                   <Button 
                     variant="secondary" 
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-12 sm:h-8 text-base sm:text-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.read().then(items => {
@@ -195,10 +206,10 @@ function Gen4({
                     📌 1st
                   </Button>
                   
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-12 sm:h-8 text-base sm:text-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.read().then(items => {
@@ -224,10 +235,10 @@ function Gen4({
                     📌 2nd
                   </Button>
                   
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     size="sm"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-12 sm:h-8 text-base sm:text-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigator.clipboard.read().then(items => {
@@ -266,7 +277,7 @@ function Gen4({
 
             {/* Reference Images Display */}
             {gen4ReferenceImages.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-4 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
                 {gen4ReferenceImages.map((image, index) => (
                   <div
                     key={image.id}
@@ -414,81 +425,89 @@ function Gen4({
               />
             </div>
 
-            {/* Generation Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Aspect Ratio
-                </Label>
-                <Select
-                  value={gen4Settings.aspectRatio}
-                  onValueChange={(value) =>
-                    setGen4Settings((prev) => ({
-                      ...prev,
-                      aspectRatio: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1:1">Square (1:1)</SelectItem>
-                    <SelectItem value="16:9">Landscape (16:9)</SelectItem>
-                    <SelectItem value="9:16">Portrait (9:16)</SelectItem>
-                    <SelectItem value="4:3">Standard (4:3)</SelectItem>
-                    <SelectItem value="3:4">Portrait (3:4)</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Model-Specific Settings */}
+            {gen4Settings.model === 'seedream-4' ? (
+              <SeedreamSettings
+                settings={gen4Settings}
+                onSettingsChange={setGen4Settings}
+              />
+            ) : (
+              // Traditional Gen4/nano-banana settings
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Aspect Ratio
+                  </Label>
+                  <Select
+                    value={gen4Settings.aspectRatio}
+                    onValueChange={(value) =>
+                      setGen4Settings((prev) => ({
+                        ...prev,
+                        aspectRatio: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1:1">Square (1:1)</SelectItem>
+                      <SelectItem value="16:9">Landscape (16:9)</SelectItem>
+                      <SelectItem value="9:16">Portrait (9:16)</SelectItem>
+                      <SelectItem value="4:3">Standard (4:3)</SelectItem>
+                      <SelectItem value="3:4">Portrait (3:4)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Resolution
+                  </Label>
+                  <Select
+                    value={gen4Settings.resolution}
+                    onValueChange={(value) =>
+                      setGen4Settings((prev) => ({
+                        ...prev,
+                        resolution: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GEN4_RESOLUTIONS.map((aspectRatio) => (
+                        <SelectItem
+                          defaultValue={aspectRatio.value}
+                          key={aspectRatio.value}
+                          value={aspectRatio.value}
+                        >
+                          {aspectRatio.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Seed (Optional)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Random"
+                    value={gen4Settings.seed || ""}
+                    onChange={(e) =>
+                      setGen4Settings((prev) => ({
+                        ...prev,
+                        seed: e.target.value
+                          ? Number.parseInt(e.target.value)
+                          : undefined,
+                      }))
+                    }
+                  />
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Resolution
-                </Label>
-                <Select
-                  value={gen4Settings.resolution}
-                  onValueChange={(value) =>
-                    setGen4Settings((prev) => ({
-                      ...prev,
-                      resolution: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GEN4_RESOLUTIONS.map((aspectRatio) => (
-                      <SelectItem
-                        defaultValue={aspectRatio.value}
-                        key={aspectRatio.value}
-                        value={aspectRatio.value}
-                      >
-                        {aspectRatio.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Seed (Optional)
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="Random"
-                  value={gen4Settings.seed || ""}
-                  onChange={(e) =>
-                    setGen4Settings((prev) => ({
-                      ...prev,
-                      seed: e.target.value
-                        ? Number.parseInt(e.target.value)
-                        : undefined,
-                    }))
-                  }
-                />
-              </div>
-            </div>
+            )}
 
             {/* Generate Button */}
             <Button
@@ -509,7 +528,7 @@ function Gen4({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Generate with Gen 4</span>
+                    <span>Generate with {gen4Settings.model === 'seedream-4' ? 'Seedream-4' : gen4Settings.model === 'nano-banana' ? 'Nano Banana' : 'Gen 4'}</span>
                   </>
                 )}
               </div>

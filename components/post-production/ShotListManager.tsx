@@ -757,7 +757,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[80vh]">
             <div className="space-y-3">
               {filteredShots.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
@@ -813,7 +813,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleCopyShot(shot)}
-                                      className="h-9 flex-1"
+                                      className="h-12 sm:h-9 flex-1 text-base sm:text-sm"
                                     >
                                       <Copy className="w-4 h-4 mr-1" />
                                       Copy
@@ -822,7 +822,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleEditShot(shot)}
-                                      className="h-9 flex-1"
+                                      className="h-12 sm:h-9 flex-1 text-base sm:text-sm"
                                     >
                                       <Edit className="w-4 h-4 mr-1" />
                                       Edit
@@ -844,7 +844,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                     onClick={() => handleCopyShot(shot)}
                                     title="Copy shot"
                                   >
-                                    <Copy className="w-3 h-3" />
+                                    <Copy className="w-4 h-4 sm:w-3 sm:h-3" />
                                   </Button>
                                   <Button
                                     size="sm"
@@ -852,7 +852,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                     onClick={() => handleSendToGen4(shot)}
                                     title="Send to Gen4"
                                   >
-                                    <Camera className="w-3 h-3" />
+                                    <Camera className="w-4 h-4 sm:w-3 sm:h-3" />
                                   </Button>
                                   <Button
                                     size="sm"
@@ -860,7 +860,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                     onClick={() => handleMarkAsCompleted(shot.id)}
                                     title="Mark as completed"
                                   >
-                                    <CheckCircle className="w-3 h-3" />
+                                    <CheckCircle className="w-4 h-4 sm:w-3 sm:h-3" />
                                   </Button>
                                   <Button
                                     size="sm"
@@ -868,7 +868,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                     onClick={() => handleEditShot(shot)}
                                     title="Edit shot"
                                   >
-                                    <Edit className="w-3 h-3" />
+                                    <Edit className="w-4 h-4 sm:w-3 sm:h-3" />
                                   </Button>
                                   <Button
                                     size="sm"
@@ -876,14 +876,14 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                                     onClick={() => removeShot(shot.id)}
                                     title="Remove shot"
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
                                   </Button>
                                 </div>
                               </div>
 
                               {/* Shot description - FULL VISIBILITY */}
-                              <div className="bg-muted/50 p-3 rounded border-l-4 border-primary">
-                                <div className="text-sm leading-relaxed">
+                              <div className="bg-muted/50 p-4 sm:p-3 rounded border-l-4 border-primary">
+                                <div className="text-base sm:text-sm leading-relaxed">
                                   {shot.description}
                                 </div>
                               </div>
@@ -973,31 +973,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Statistics */}
-      {allShots.length > 0 && (
-        <Card>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-blue-500">{allShots.length}</div>
-                <div className="text-xs text-muted-foreground">Total Shots</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-500">{shotQueue.length}</div>
-                <div className="text-xs text-muted-foreground">Pending</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-500">{completedShots.length}</div>
-                <div className="text-xs text-muted-foreground">Completed</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-500">{failedShots.length}</div>
-                <div className="text-xs text-muted-foreground">Failed</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

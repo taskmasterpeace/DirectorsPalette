@@ -46,6 +46,7 @@ import type {
   ChapterBreakdown 
 } from "@/lib/types/story-types"
 import type { DirectorType } from "@/lib/types/director-types"
+import { combineFilmDirectors } from "@/lib/director-utils"
 
 interface StoryModeProps {
   // Story input state
@@ -155,7 +156,8 @@ export function StoryMode({
   const [selectedShots, setSelectedShots] = useState<Set<string>>(new Set())
   const [isSelectionMode, setIsSelectionMode] = useState(false)
 
-  const allDirectors = [...(curatedDirectors || []), ...(customDirectors || [])]
+  // All directors combined - deduplicate by ID to prevent React duplicate key errors
+  const allDirectors = combineFilmDirectors(curatedDirectors, customDirectors)
   const selectedDirectorInfo = allDirectors?.find((d) => d?.id === selectedDirector)
 
   // Extract references from breakdown

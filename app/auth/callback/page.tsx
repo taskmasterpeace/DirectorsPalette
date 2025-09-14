@@ -46,14 +46,14 @@ export default function AuthCallback() {
           
           // Initialize user credits (core requirement)
           try {
-            const { userCreditService } = await import('@/lib/credits/user-credits')
-            const credits = await userCreditService.getUserCredits(data.session.user.id)
+            const userCreditModule = await import('@/lib/credits/user-credits')
+            const credits = await userCreditModule.userCreditService.getUserCredits(data.session.user.id)
             
             if (!credits) {
               // Initialize credits for new user
               const isAdmin = data.session.user.email === 'taskmasterpeace@gmail.com'
               const tier = isAdmin ? 'pro' : 'pro' // All users get pro for now
-              await userCreditService.initializeUserCredits(data.session.user.id, tier)
+              await userCreditModule.userCreditService.initializeUserCredits(data.session.user.id, tier)
               console.log('✅ User credits initialized')
             } else {
               console.log('✅ Existing user credits found')

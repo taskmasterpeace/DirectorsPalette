@@ -7,6 +7,11 @@ interface MusicVideoWorkflowState {
   extractedReferences: any | null
   isExtractingRefs: boolean
   
+  // Shot selection workflow
+  showShotSelection: boolean
+  shotSelectionMethod: 'auto' | 'manual' | null
+  manualShotSelections: any[]
+  
   // Generation progress
   generationStage: 'idle' | 'structure' | 'breakdowns' | 'complete'
   stageProgress: { current: number; total: number }
@@ -20,6 +25,11 @@ interface MusicVideoWorkflowActions {
   setShowReferenceConfig: (show: boolean) => void
   setExtractedReferences: (refs: any | null) => void
   setIsExtractingRefs: (extracting: boolean) => void
+  
+  // Shot selection actions
+  setShowShotSelection: (show: boolean) => void
+  setShotSelectionMethod: (method: 'auto' | 'manual' | null) => void
+  setManualShotSelections: (selections: any[]) => void
   
   // Progress actions
   setGenerationStage: (stage: 'idle' | 'structure' | 'breakdowns' | 'complete') => void
@@ -38,6 +48,9 @@ const initialState: MusicVideoWorkflowState = {
   showReferenceConfig: false,
   extractedReferences: null,
   isExtractingRefs: false,
+  showShotSelection: false,
+  shotSelectionMethod: null,
+  manualShotSelections: [],
   generationStage: 'idle',
   stageProgress: { current: 0, total: 0 },
   stageMessage: '',
@@ -54,6 +67,11 @@ export const useMusicVideoWorkflowStore = create<MusicVideoWorkflowStore>()(
       setShowReferenceConfig: (show) => set({ showReferenceConfig: show }),
       setExtractedReferences: (refs) => set({ extractedReferences: refs }),
       setIsExtractingRefs: (extracting) => set({ isExtractingRefs: extracting }),
+      
+      // Shot selection actions
+      setShowShotSelection: (show) => set({ showShotSelection: show }),
+      setShotSelectionMethod: (method) => set({ shotSelectionMethod: method }),
+      setManualShotSelections: (selections) => set({ manualShotSelections: selections }),
       
       // Progress actions
       setGenerationStage: (stage) => set({ generationStage: stage }),

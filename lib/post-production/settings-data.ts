@@ -86,7 +86,7 @@ export const defaultSettings = {
     cameraFixed: false,
   },
   gen4: {
-    model: "gen4-image",
+    model: "nano-banana",
     defaultAspectRatio: "16:9",
     defaultResolution: "1080p",
     autoDetectAspectRatio: true

@@ -95,13 +95,24 @@ export async function universalGoogleLogin(): Promise<{ success: boolean; user?:
         if (typeof window === 'undefined') return 'https://v0-director-style-workflow.vercel.app/auth/callback'
         
         const { protocol, host } = window.location
+        console.log('🔍 Current host for OAuth redirect:', host)
         
-        // Use production URL for production, current host for development
-        if (host.includes('localhost') || host.includes('127.0.0.1')) {
-          return `${protocol}//${host}/auth/callback`
-        } else {
-          return 'https://v0-director-style-workflow.vercel.app/auth/callback'
+        // Check if we're in a proper dev deployment (not localhost)
+        if (host.includes('vercel.app') || host.includes('netlify.app') || host.includes('dev.')) {
+          // Use the actual dev deployment URL
+          const redirectUrl = `${protocol}//${host}/auth/callback`
+          console.log('🔍 Dev deployment OAuth redirect URL:', redirectUrl)
+          return redirectUrl
         }
+        
+        // For localhost development only - but you said dev should NOT use localhost
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+          console.log('⚠️ WARNING: Using localhost for OAuth redirect. This should not happen on dev deployment.')
+          return `${protocol}//${host}/auth/callback`
+        } 
+        
+        // Fallback to production URL
+        return 'https://v0-director-style-workflow.vercel.app/auth/callback'
       }
 
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -142,6 +153,24 @@ export async function universalLogout(): Promise<void> {
   } else {
     logoutUser()
   }
+}
+
+export async function universalGetToken(): Promise<string | null> {
+  if (USE_SUPABASE) {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error || !session) {
+        return null
+      }
+      return session.access_token
+    } catch (error) {
+      console.error('Failed to get auth token:', error)
+      return null
+    }
+  }
+  
+  // For localStorage mode, we don't have tokens
+  return null
 }
 
 export async function universalGetSession(): Promise<AuthSession> {

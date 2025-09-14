@@ -20,7 +20,8 @@ import { usePostProductionStore } from '@/stores/post-production-store'
 import { retrieveTransferredShots } from '@/lib/post-production/transfer'
 import { useToast } from '@/components/ui/use-toast'
 import LayoutPlanner from './components/layout-planner/LayoutPlanner'
-import CompleteLayoutEditor from './components/layout-planner/CompleteLayoutEditor'
+import { LayoutEditorRefactored as CompleteLayoutEditor } from '@/components/layout/LayoutEditorRefactored'
+import { LayoutAnnotationWrapper } from '@/components/post-production/LayoutAnnotationWrapper'
 import type { 
   ImageData,
   Gen4ReferenceImage,
@@ -31,10 +32,10 @@ import type {
 import { referenceLibraryDB, saveImageToLibrary } from '@/lib/post-production/referenceLibrary'
 import CategorySelectionDialog from './components/CategorySelectionDialog'
 import FullscreenImageModal from './components/FullscreenImageModal'
-import { Gen4Tab } from './components/tabs/Gen4Tab'
+import { Gen4TabOptimized as Gen4Tab } from '@/components/post-production/Gen4TabOptimized'
 import { WorkspaceTab } from './components/tabs/WorkspaceTab'
 import { ShotListTab } from './components/tabs/ShotListTab'
-import { ImageEditTab } from './components/tabs/ImageEditTab'
+import { ImageEditTabOptimized as ImageEditTab } from '@/components/post-production/ImageEditTabOptimized'
 
 export default function EnhancedPostProductionPage() {
   const { toast } = useToast()
@@ -47,8 +48,11 @@ export default function EnhancedPostProductionPage() {
   const [gen4Prompt, setGen4Prompt] = useState('')
   const [gen4Settings, setGen4Settings] = useState<Gen4Settings>({
     aspectRatio: '16:9',
-    resolution: '1080p',
-    seed: undefined
+    resolution: '2K', // Default to 2K for Seedream-4
+    seed: undefined,
+    model: 'seedream-4', // Default to Seedream-4
+    maxImages: 1, // Default single image
+    sequentialGeneration: false
   })
   const [gen4Generations, setGen4Generations] = useState<Gen4Generation[]>([])
   const [gen4Processing, setGen4Processing] = useState(false)
@@ -78,22 +82,9 @@ export default function EnhancedPostProductionPage() {
   
   // Track generated shot IDs
   const [generatedShotIds, setGeneratedShotIds] = useState<Set<string>>(new Set())
-  
-  // Check for transferred shots and load library on mount
-  useEffect(() => {
-    const transferredShots = retrieveTransferredShots()
-    if (transferredShots && transferredShots.length > 0) {
-      addShots(transferredShots)
-      toast({
-        title: "Shots Imported",
-        description: `Successfully imported ${transferredShots.length} shots from Director's Palette`,
-      })
-    }
-    loadLibraryItems()
-  }, [addShots])
-  
+
   // Load library items from IndexedDB
-  const loadLibraryItems = async () => {
+  const loadLibraryItems = useCallback(async () => {
     setLibraryLoading(true)
     try {
       await referenceLibraryDB.init()
@@ -109,28 +100,69 @@ export default function EnhancedPostProductionPage() {
     } finally {
       setLibraryLoading(false)
     }
-  }
-  
+  }, [toast])
+
+  // Check for transferred shots and load library on mount
+  useEffect(() => {
+    const transferredShots = retrieveTransferredShots()
+    if (transferredShots && transferredShots.length > 0) {
+      addShots(transferredShots)
+      toast({
+        title: "Shots Imported",
+        description: `Successfully imported ${transferredShots.length} shots from Director's Palette`,
+      })
+    }
+    loadLibraryItems()
+  }, [addShots, loadLibraryItems, toast])
+
   // Handle category selection and save to library
   const handleCategorySave = async (category: string, tags: string[]) => {
+    console.log('🔍 handleCategorySave called with category:', category, 'tags:', tags)
+    console.log('🔍 pendingGeneration:', pendingGeneration)
+    
     if (pendingGeneration) {
-      const referenceTag = pendingGeneration.referenceTags?.[0]
-      
-      await saveImageToLibrary(
-        pendingGeneration.imageUrl,
-        tags,
-        pendingGeneration.prompt,
-        'generated',
-        pendingGeneration.settings,
-        category as any,
-        referenceTag
-      )
-      setPendingGeneration(null)
-      loadLibraryItems()
-      toast({
-        title: "Saved to Library",
-        description: `Image saved to ${category} with ${tags.length} tags`
-      })
+      try {
+        const referenceTag = pendingGeneration.referenceTags?.[0]
+        
+        console.log('🔍 About to call saveImageToLibrary with:', {
+          imageUrl: pendingGeneration.imageUrl,
+          tags,
+          prompt: pendingGeneration.prompt,
+          source: 'generated',
+          settings: pendingGeneration.settings,
+          category,
+          referenceTag
+        })
+        
+        const savedId = await saveImageToLibrary(
+          pendingGeneration.imageUrl,
+          tags,
+          pendingGeneration.prompt,
+          'generated',
+          pendingGeneration.settings,
+          category as any,
+          referenceTag
+        )
+        
+        console.log('✅ Image saved to library with ID:', savedId)
+        setPendingGeneration(null)
+        console.log('🔍 Reloading library items...')
+        loadLibraryItems()
+        
+        toast({
+          title: "Saved to Library",
+          description: `Image saved to ${category} with ${tags.length} tags`
+        })
+      } catch (error) {
+        console.error('🔴 Error in handleCategorySave:', error)
+        toast({
+          title: "Save Failed",
+          description: error instanceof Error ? error.message : "Unknown error occurred",
+          variant: "destructive"
+        })
+      }
+    } else {
+      console.log('❌ No pendingGeneration found!')
     }
   }
 
@@ -186,17 +218,62 @@ export default function EnhancedPostProductionPage() {
     })
   }
   
+  // Send generation to Layout & Annotation tab
+  const sendToLayoutAnnotation = (imageUrl: string) => {
+    // Store the image URL in localStorage for Layout tab to pick up
+    localStorage.setItem('directors-palette-layout-input', imageUrl)
+    
+    // Switch to Layout tab
+    setActiveTab('layout')
+    
+    toast({
+      title: 'Sent to Layout & Annotation',
+      description: 'Image has been loaded in the Layout & Annotation tab',
+    })
+  }
+  
+  // Send generation to Reference Library with categorization
+  const sendToReferenceLibrary = async (imageUrl: string) => {
+    console.log('🔍 sendToReferenceLibrary called with imageUrl:', imageUrl)
+    try {
+      // For now, we'll save directly and let user categorize in the Reference Library
+      const pendingGen = {
+        imageUrl,
+        prompt: 'Generated image',
+        settings: gen4Settings,
+        referenceTags: []
+      }
+      console.log('🔍 Setting pendingGeneration:', pendingGen)
+      setPendingGeneration(pendingGen)
+      console.log('🔍 Opening category dialog...')
+      setCategoryDialogOpen(true)
+      
+      toast({
+        title: 'Opening Save Dialog',
+        description: 'Category selection dialog should appear',
+      })
+    } catch (error) {
+      console.error('🔴 Error in sendToReferenceLibrary:', error)
+      toast({
+        title: 'Save Failed',
+        description: 'Failed to save to reference library',
+        variant: 'destructive'
+      })
+    }
+  }
+  
   return (
-    <div className="container mx-auto max-w-none w-[95%] p-4">
+    <div className="container mx-auto max-w-none w-[95%] p-6 sm:p-4">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <Film className="w-8 h-8 text-purple-500" />
-              Post Production Studio
+            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
+              <Film className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
+              <span className="hidden sm:inline">Post Production Studio</span>
+              <span className="sm:hidden">Post Production</span>
             </h1>
-            <p className="text-slate-400 mt-1">
+            <p className="text-slate-400 mt-1 text-sm sm:text-base">
               Advanced image generation with Director's Palette integration
             </p>
           </div>
@@ -208,7 +285,7 @@ export default function EnhancedPostProductionPage() {
           <div className="block sm:hidden">
             <div className="mb-3">
               <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full h-12 text-base bg-slate-800 border-slate-600 text-white">
+                <SelectTrigger className="w-full h-14 text-lg bg-slate-800 border-slate-600 text-white touch-manipulation">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,7 +331,7 @@ export default function EnhancedPostProductionPage() {
           </div>
 
           {/* Desktop: Original Tab Layout */}
-          <TabsList className="hidden sm:grid grid-cols-6 w-full max-w-none min-h-[44px]">
+          <TabsList className="hidden sm:grid grid-cols-6 w-full max-w-none min-h-[48px] h-auto">
             <TabsTrigger value="shot-list" className="flex items-center gap-2 min-h-[44px]">
               <List className="w-4 h-4" />
               <span className="hidden lg:inline">Shot List</span>
@@ -286,6 +363,19 @@ export default function EnhancedPostProductionPage() {
             <WorkspaceTab
               images={images}
               setImages={setImages}
+              libraryItems={libraryItems}
+              libraryCategory={libraryCategory}
+              setLibraryCategory={setLibraryCategory}
+              libraryLoading={libraryLoading}
+              onFullscreenImage={setFullscreenImage}
+              onCategoryChange={async (itemId: string, newCategory: string) => {
+                // TODO: Implement category change functionality
+                toast({
+                  title: "Category Changed",
+                  description: `Item moved to ${newCategory}`
+                })
+                loadLibraryItems()
+              }}
             />
           </TabsContent>
 
@@ -296,7 +386,22 @@ export default function EnhancedPostProductionPage() {
 
           {/* Image Edit Tab - Qwen-Edit Integration */}
           <TabsContent value="image-edit" className="space-y-4">
-            <ImageEditTab onSendToWorkspace={sendGenerationToWorkspace} />
+            <ImageEditTab 
+              onSendToWorkspace={sendGenerationToWorkspace}
+              libraryItems={libraryItems}
+              libraryCategory={libraryCategory}
+              setLibraryCategory={setLibraryCategory}
+              libraryLoading={libraryLoading}
+              onFullscreenImage={setFullscreenImage}
+              onCategoryChange={async (itemId: string, newCategory: string) => {
+                // TODO: Implement category change functionality
+                toast({
+                  title: "Category Changed",
+                  description: `Item moved to ${newCategory}`
+                })
+                loadLibraryItems()
+              }}
+            />
           </TabsContent>
 
           {/* Gen4 Tab - Clean Component with Paste Buttons */}
@@ -325,12 +430,22 @@ export default function EnhancedPostProductionPage() {
                 setGeneratedShotIds(prev => new Set([...prev, shotId]))
               }}
               onSendToImageEdit={sendToImageEdit}
+              onSendToLayoutAnnotation={sendToLayoutAnnotation}
+              onSendToReferenceLibrary={sendToReferenceLibrary}
+              onCategoryChange={async (itemId: string, newCategory: string) => {
+                // TODO: Implement category change functionality
+                toast({
+                  title: "Category Changed",
+                  description: `Item moved to ${newCategory}`
+                })
+                loadLibraryItems()
+              }}
             />
           </TabsContent>
 
           {/* Complete Layout & Annotation Editor Tab */}
           <TabsContent value="layout">
-            <CompleteLayoutEditor />
+            <LayoutAnnotationWrapper />
           </TabsContent>
 
           {/* Entity Manager Tab - Find & Replace System */}
@@ -347,8 +462,8 @@ export default function EnhancedPostProductionPage() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Chapter & Model Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Chapter Selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-white text-sm font-medium mb-2 block">Select Chapter</Label>
                       <Select defaultValue="all">
@@ -360,20 +475,6 @@ export default function EnhancedPostProductionPage() {
                           <SelectItem value="chapter-1">📖 Chapter 1</SelectItem>
                           <SelectItem value="chapter-2">📖 Chapter 2</SelectItem>
                           <SelectItem value="chapter-3">📖 Chapter 3</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-white text-sm font-medium mb-2 block">AI Model</Label>
-                      <Select defaultValue="seedance-lite">
-                        <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="seedance-lite">🎥 Seedance Lite (720p)</SelectItem>
-                          <SelectItem value="seedance-pro">🎥 Seedance Pro (1080p)</SelectItem>
-                          <SelectItem value="future-model">🔮 More Models Soon</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -487,7 +588,7 @@ export default function EnhancedPostProductionPage() {
         open={categoryDialogOpen}
         onOpenChange={setCategoryDialogOpen}
         onSave={handleCategorySave}
-        initialTags={['gen4', 'generated']}
+        initialTags={[]}
         imageUrl={pendingGeneration?.imageUrl}
       />
       

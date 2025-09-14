@@ -18,11 +18,13 @@ export function ModeBackground({ mode, children, className = '' }: ModeBackgroun
       className={`relative min-h-screen ${className}`}
       style={cssVars}
     >
-      {/* Background Image */}
+      {/* Background Image - Small banner showing only portion */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-no-repeat bg-center"
         style={{
           backgroundImage: `url('${background.imagePath}')`,
+          backgroundSize: '120% auto',
+          backgroundPosition: 'center 20%',
           filter: 'brightness(0.7) contrast(1.1)'
         }}
       />
@@ -48,11 +50,13 @@ export function ModeBackground({ mode, children, className = '' }: ModeBackgroun
 export function StoryModeBackground({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`relative ${className}`}>
-      {/* Mysterious forest creature background */}
+      {/* Mysterious forest creature background - Banner style */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-no-repeat bg-center"
         style={{
           backgroundImage: "url('/images/mode-backgrounds/story-mode.png')",
+          backgroundSize: '120% auto',
+          backgroundPosition: 'center 25%',
           filter: 'brightness(0.3) contrast(1.2) saturate(0.8)'
         }}
       />
@@ -67,11 +71,13 @@ export function StoryModeBackground({ children, className }: { children: React.R
 export function MusicVideoModeBackground({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`relative ${className}`}>
-      {/* Professional artist on film set */}
+      {/* Professional artist on film set - Banner style */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-no-repeat bg-center"
         style={{
           backgroundImage: "url('/images/mode-backgrounds/music-video-mode.png')",
+          backgroundSize: '120% auto',
+          backgroundPosition: 'center 30%',
           filter: 'brightness(0.6) contrast(1.1)'
         }}
       />
@@ -86,11 +92,13 @@ export function MusicVideoModeBackground({ children, className }: { children: Re
 export function CommercialModeBackground({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`relative ${className}`}>
-      {/* Professional business success */}
+      {/* Professional business success - Banner style */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-no-repeat bg-center"
         style={{
           backgroundImage: "url('/images/mode-backgrounds/commercial-mode.png')",
+          backgroundSize: '120% auto',
+          backgroundPosition: 'center 20%',
           filter: 'brightness(0.7) contrast(1.1) saturate(1.1)'
         }}
       />
@@ -105,11 +113,13 @@ export function CommercialModeBackground({ children, className }: { children: Re
 export function ChildrenBookModeBackground({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`relative ${className}`}>
-      {/* Creative girl with robot friend */}
+      {/* Creative girl with robot friend - Banner style */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-no-repeat bg-center"
         style={{
           backgroundImage: "url('/images/mode-backgrounds/children-book-mode.png')",
+          backgroundSize: '120% auto',
+          backgroundPosition: 'center 25%',
           filter: 'brightness(0.8) contrast(1.0) saturate(1.1)'
         }}
       />
