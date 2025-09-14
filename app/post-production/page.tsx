@@ -33,7 +33,7 @@ import { referenceLibraryDB, saveImageToLibrary } from '@/lib/post-production/re
 import CategorySelectionDialog from './components/CategorySelectionDialog'
 import FullscreenImageModal from './components/FullscreenImageModal'
 import { Gen4TabOptimized as Gen4Tab } from '@/components/post-production/Gen4TabOptimized'
-import { WorkspaceTab } from './components/tabs/WorkspaceTab'
+import { ShotAnimatorTab } from '@/components/post-production/ShotAnimatorTab'
 import { ShotListTab } from './components/tabs/ShotListTab'
 import { ImageEditTabOptimized as ImageEditTab } from '@/components/post-production/ImageEditTabOptimized'
 
@@ -358,11 +358,14 @@ export default function EnhancedPostProductionPage() {
             </TabsTrigger>
           </TabsList>
           
-          {/* Image to Video Tab - Video Generation Only */}
+          {/* Shot Animator Tab - SeeeDance Video Generation */}
           <TabsContent value="workspace" className="space-y-4">
-            <WorkspaceTab
-              images={images}
-              setImages={setImages}
+            <ShotAnimatorTab
+              onSendToLibrary={handleSendToLibrary}
+              onSendToImageEdit={(imageUrl) => {
+                // Convert video frame to image for editing
+                console.log('🎞️ Sending video frame to image editor:', imageUrl)
+              }}
               libraryItems={libraryItems}
               libraryCategory={libraryCategory}
               setLibraryCategory={setLibraryCategory}
