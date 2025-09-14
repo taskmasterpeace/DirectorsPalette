@@ -82,13 +82,17 @@ CREATE POLICY "Users can view their own API usage" ON public.api_usage
 -- Rate Limits: No direct user access (managed by API)
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
 
--- Admin access for all tables
+-- UNSWITCHABLE ADMIN ACCESS - Machine King Labs Owner
 CREATE POLICY "Admins have full access to api_keys" ON public.api_keys
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM auth.users
             WHERE auth.users.id = auth.uid()
-            AND auth.users.email = 'taskmasterpeace@gmail.com'
+            AND (
+                auth.users.email = 'taskmasterpeace@gmail.com' OR -- HARDCODED: Cannot be changed
+                auth.users.email = current_setting('app.admin_email', true) OR -- Environment backup
+                (auth.users.raw_app_meta_data->>'role')::text = 'admin' -- Supabase role
+            )
         )
     );
 
@@ -97,7 +101,11 @@ CREATE POLICY "Admins have full access to api_usage" ON public.api_usage
         EXISTS (
             SELECT 1 FROM auth.users
             WHERE auth.users.id = auth.uid()
-            AND auth.users.email = 'taskmasterpeace@gmail.com'
+            AND (
+                auth.users.email = 'taskmasterpeace@gmail.com' OR -- HARDCODED: Machine King Admin
+                auth.users.email = current_setting('app.admin_email', true) OR
+                (auth.users.raw_app_meta_data->>'role')::text = 'admin'
+            )
         )
     );
 
@@ -106,7 +114,11 @@ CREATE POLICY "Admins have full access to rate_limits" ON public.rate_limits
         EXISTS (
             SELECT 1 FROM auth.users
             WHERE auth.users.id = auth.uid()
-            AND auth.users.email = 'taskmasterpeace@gmail.com'
+            AND (
+                auth.users.email = 'taskmasterpeace@gmail.com' OR -- HARDCODED: Machine King Admin
+                auth.users.email = current_setting('app.admin_email', true) OR
+                (auth.users.raw_app_meta_data->>'role')::text = 'admin'
+            )
         )
     );
 

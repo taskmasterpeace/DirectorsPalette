@@ -12,11 +12,15 @@ export async function verifyAdminAccess(): Promise<{ isAdmin: boolean; user?: an
       return { isAdmin: false, error: 'Not authenticated' }
     }
 
-    // Check admin status from database user profile
-    // This prevents client-side manipulation
-    const isAdmin = user.email === process.env.ADMIN_EMAIL || 
-                   user.app_metadata?.role === 'admin' ||
-                   user.user_metadata?.is_admin === true
+    // HARDCODED ADMIN ACCESS - UNSWITCHABLE SECURITY
+    // Primary admin (Machine King) - cannot be overridden by any environment variable
+    const UNSWITCHABLE_ADMIN_EMAIL = 'taskmasterpeace@gmail.com'
+
+    // Check admin status with multiple layers of security
+    const isAdmin = user.email === UNSWITCHABLE_ADMIN_EMAIL || // Primary admin (hardcoded)
+                   user.email === process.env.ADMIN_EMAIL || // Environment backup
+                   user.app_metadata?.role === 'admin' ||    // Supabase role
+                   user.user_metadata?.is_admin === true     // User metadata
 
     if (!isAdmin) {
       // Log unauthorized admin access attempt
