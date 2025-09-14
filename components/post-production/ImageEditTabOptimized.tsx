@@ -323,8 +323,8 @@ export function ImageEditTabOptimized({
           <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
             <Tabs defaultValue="generated" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="generated">Generated Images</TabsTrigger>
-                <TabsTrigger value="library">Reference Library</TabsTrigger>
+                <TabsTrigger value="generated" className="text-xs lg:text-sm">📸 Images</TabsTrigger>
+                <TabsTrigger value="library" className="text-xs lg:text-sm">📚 Library</TabsTrigger>
               </TabsList>
               <TabsContent value="generated">
                 <UnifiedImageGallery

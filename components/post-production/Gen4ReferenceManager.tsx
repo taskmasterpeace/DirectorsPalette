@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Upload,
   Clipboard,
@@ -166,15 +165,9 @@ export function Gen4ReferenceManager({
   }
 
   return (
-    <Card className="bg-slate-900 border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-white">
-          {editingMode ? 'Input Image to Edit' : `Reference Images (Max ${maxImages})`}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-6">
         {/* Mobile-First Reference Image Layout */}
-        <div className="space-y-6 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
+        <div className="space-y-8 md:grid md:grid-cols-3 md:gap-6 md:space-y-0">
           {Array.from({ length: visibleSlots }, (_, index) => index).map((index) => {
             const image = gen4ReferenceImages[index]
             const isEmpty = !image
@@ -228,12 +221,12 @@ export function Gen4ReferenceManager({
                   )}
                 </div>
 
-                {/* Mobile-optimized action buttons */}
-                <div className="grid grid-cols-2 gap-3 md:flex md:flex-row md:gap-2">
+                {/* Clean icon-based action buttons */}
+                <div className="grid grid-cols-2 gap-4 md:flex md:flex-row md:gap-2">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="h-14 md:h-8 text-base md:text-xs font-medium md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800"
+                    className="h-16 md:h-8 md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800 flex items-center justify-center"
                     onClick={async () => {
                       try {
                         const clipboardItems = await navigator.clipboard.read()
@@ -254,13 +247,13 @@ export function Gen4ReferenceManager({
                       }
                     }}
                   >
-                    <Clipboard className="h-5 w-5 md:h-3 md:w-3 mr-2 md:mr-1" />
-                    Paste Image
+                    <Clipboard className="h-6 w-6 md:h-4 md:w-4" />
+                    <span className="ml-2 md:ml-1 text-sm md:text-xs">Paste</span>
                   </Button>
                   <Button
                     size="lg"
                     variant="outline"
-                    className="h-14 md:h-8 text-base md:text-xs font-medium md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800"
+                    className="h-16 md:h-8 md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800 flex items-center justify-center"
                     onClick={() => {
                       const input = document.createElement('input')
                       input.type = 'file'
@@ -274,8 +267,8 @@ export function Gen4ReferenceManager({
                       input.click()
                     }}
                   >
-                    <Upload className="h-5 w-5 md:h-3 md:w-3 mr-2 md:mr-1" />
-                    Browse Files
+                    <Upload className="h-6 w-6 md:h-4 md:w-4" />
+                    <span className="ml-2 md:ml-1 text-sm md:text-xs">Browse</span>
                   </Button>
                 </div>
                 
@@ -343,10 +336,9 @@ export function Gen4ReferenceManager({
           </div>
         )}
         
-        <p className="text-sm md:text-xs text-slate-400 text-center md:text-left">
+        <p className="text-sm md:text-xs text-slate-400 text-center md:text-left mt-8 mb-4">
           Tap image areas to upload or use the action buttons below each slot
         </p>
-      </CardContent>
-    </Card>
+    </div>
   )
 }

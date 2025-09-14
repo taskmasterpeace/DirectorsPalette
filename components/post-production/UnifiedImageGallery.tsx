@@ -247,7 +247,7 @@ export function UnifiedImageGallery({
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1 text-amber-400">
                 <Zap className="w-3 h-3" />
-                {getTotalCreditsUsed()} credits used
+                {getTotalCreditsUsed() || 0} credits used
               </div>
               <Button
                 size="sm"

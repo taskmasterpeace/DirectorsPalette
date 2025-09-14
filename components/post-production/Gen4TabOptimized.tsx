@@ -274,14 +274,14 @@ export function Gen4TabOptimized({
   }
 
   return (
-    <div className="w-full h-full space-y-4">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-900/50 border-b border-slate-700 rounded-t-lg">
+    <div className="w-full h-full">
+      {/* Mobile-Optimized Header */}
+      <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between px-2 lg:px-4 py-3 bg-slate-900/50 border-b border-slate-700 lg:rounded-t-lg">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-400" />
-          <h2 className="text-xl font-semibold text-white">Shot Creator</h2>
+          <h2 className="text-lg lg:text-xl font-semibold text-white">Shot Creator</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="w-full lg:w-auto">
           <ModelSelector
             selectedModel={gen4Settings.model || 'seedream-4'}
             onModelChange={(model) => setGen4Settings(prev => ({ ...prev, model }))}
@@ -291,14 +291,14 @@ export function Gen4TabOptimized({
         </div>
       </div>
 
-      {/* Optimized 3-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-4">
+      {/* Full-Width Mobile Layout */}
+      <div className="space-y-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:px-4 lg:space-y-0 pb-4">
         
         {/* LEFT COLUMN - Reference Images & Prompt */}
         <div className="lg:col-span-2 space-y-6">
           {/* Reference Images Management / Input Image for Editing */}
-          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50 p-6">
-            <div className="mb-4">
+          <div className="bg-slate-900/30 lg:rounded-lg lg:border border-slate-700/50 p-0 lg:p-6">
+            <div className="mb-4 px-2 pt-4 lg:px-0 lg:pt-0">
               <h3 className="text-white font-medium">
                 {isEditingMode ? 'Input Image to Edit' : `Reference Images (Max ${modelConfig.maxReferenceImages || 3})`}
               </h3>
@@ -318,7 +318,7 @@ export function Gen4TabOptimized({
           </div>
 
           {/* Prompt & Settings */}
-          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
+          <div className="bg-slate-900/30 lg:rounded-lg lg:border border-slate-700/50">
             <Gen4PromptSettings
               gen4Prompt={gen4Prompt}
               setGen4Prompt={setGen4Prompt}
@@ -346,11 +346,11 @@ export function Gen4TabOptimized({
         {/* RIGHT COLUMN - Generated Images & Library */}
         <div className="space-y-6">
           {/* Single Gallery - Generated Images + Reference Library */}
-          <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
+          <div className="bg-slate-900/30 lg:rounded-lg lg:border border-slate-700/50">
             <Tabs defaultValue="generated" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="generated">Generated Images</TabsTrigger>
-                <TabsTrigger value="library">Reference Library</TabsTrigger>
+                <TabsTrigger value="generated" className="text-xs lg:text-sm">📸 Images</TabsTrigger>
+                <TabsTrigger value="library" className="text-xs lg:text-sm">📚 Library</TabsTrigger>
               </TabsList>
               <TabsContent value="generated">
                 <UnifiedImageGallery
