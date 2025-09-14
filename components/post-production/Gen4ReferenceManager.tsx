@@ -173,53 +173,67 @@ export function Gen4ReferenceManager({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Reference Image Slots */}
-        <div className={`grid gap-4 grid-cols-1 sm:${visibleSlots === 1 ? 'grid-cols-1' : visibleSlots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {/* Mobile-First Reference Image Layout */}
+        <div className="space-y-6 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
           {Array.from({ length: visibleSlots }, (_, index) => index).map((index) => {
             const image = gen4ReferenceImages[index]
             const isEmpty = !image
-            
+
             return (
-              <div key={index} className="space-y-2">
-                <div 
-                  className={`relative border-2 border-dashed rounded-lg overflow-hidden ${
+              <div key={index} className="space-y-3">
+                {/* Mobile: Full-width image area, Desktop: Constrained */}
+                <div
+                  className={`relative rounded-xl overflow-hidden transition-all ${
                     isEmpty
-                      ? 'min-h-[180px] sm:min-h-[120px] aspect-square border-slate-600 bg-slate-800 hover:border-slate-500 hover:bg-slate-750 cursor-pointer transition-colors touch-manipulation'
-                      : 'border-purple-500 bg-purple-900/20'
+                      ? 'min-h-[240px] md:min-h-[160px] md:aspect-square bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 hover:border-slate-600 cursor-pointer touch-manipulation'
+                      : 'border-2 border-purple-500 bg-purple-900/20 shadow-lg shadow-purple-500/20'
                   }`}
+                  onClick={isEmpty ? () => {
+                    const input = document.createElement('input')
+                    input.type = 'file'
+                    input.accept = 'image/*'
+                    input.onchange = (e) => {
+                      const files = (e.target as HTMLInputElement).files
+                      if (files?.[0]) {
+                        handleGen4ImageUpload(files[0])
+                      }
+                    }
+                    input.click()
+                  } : undefined}
                 >
                   {image ? (
                     <>
                       <img
                         src={image.preview}
                         alt={`Reference ${index + 1}`}
-                        className="w-full h-auto object-contain"
+                        className="w-full h-full object-cover md:object-contain"
                       />
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                        className="absolute top-2 right-2 h-8 w-8 p-0 md:h-6 md:w-6"
                         onClick={() => removeGen4Image(image.id)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4 md:h-3 md:w-3" />
                       </Button>
                     </>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <Upload className="h-8 w-8 text-slate-500 mx-auto mb-2" />
-                        <p className="text-xs text-slate-400">Reference {index + 1}</p>
+                      <div className="text-center p-8">
+                        <Upload className="h-12 w-12 md:h-8 md:w-8 text-slate-500 mx-auto mb-3 md:mb-2" />
+                        <p className="text-sm md:text-xs text-slate-400 font-medium">Tap to add Reference {index + 1}</p>
+                        <p className="text-xs text-slate-500 mt-1 md:hidden">or use buttons below</p>
                       </div>
                     </div>
                   )}
                 </div>
-                
-                {/* Upload buttons */}
-                <div className="flex flex-col gap-2 sm:flex-row">
+
+                {/* Mobile-optimized action buttons */}
+                <div className="grid grid-cols-2 gap-3 md:flex md:flex-row md:gap-2">
                   <Button
-                    size="sm"
+                    size="lg"
                     variant="outline"
-                    className="flex-1 h-12 sm:h-8 text-base sm:text-xs"
+                    className="h-14 md:h-8 text-base md:text-xs font-medium md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800"
                     onClick={async () => {
                       try {
                         const clipboardItems = await navigator.clipboard.read()
@@ -240,13 +254,13 @@ export function Gen4ReferenceManager({
                       }
                     }}
                   >
-                    <Clipboard className="h-3 w-3 mr-1" />
-                    Paste
+                    <Clipboard className="h-5 w-5 md:h-3 md:w-3 mr-2 md:mr-1" />
+                    Paste Image
                   </Button>
                   <Button
-                    size="sm"
+                    size="lg"
                     variant="outline"
-                    className="flex-1 h-12 sm:h-8 text-base sm:text-xs"
+                    className="h-14 md:h-8 text-base md:text-xs font-medium md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800"
                     onClick={() => {
                       const input = document.createElement('input')
                       input.type = 'file'
@@ -260,8 +274,8 @@ export function Gen4ReferenceManager({
                       input.click()
                     }}
                   >
-                    <Upload className="h-3 w-3 mr-1" />
-                    Browse
+                    <Upload className="h-5 w-5 md:h-3 md:w-3 mr-2 md:mr-1" />
+                    Browse Files
                   </Button>
                 </div>
                 
@@ -329,8 +343,8 @@ export function Gen4ReferenceManager({
           </div>
         )}
         
-        <p className="text-xs text-slate-400">
-          Each reference slot has its own "Browse" and "Paste" buttons for targeted uploads
+        <p className="text-sm md:text-xs text-slate-400 text-center md:text-left">
+          Tap image areas to upload or use the action buttons below each slot
         </p>
       </CardContent>
     </Card>
