@@ -428,13 +428,13 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
       {/* Header with controls */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="space-y-4 lg:flex lg:items-center lg:justify-between lg:space-y-0">
             <CardTitle className="flex items-center gap-2">
               <List className="w-5 h-5 text-blue-500" />
-              Shot List Manager
+              <span className="text-base lg:text-lg">Shot List Manager</span>
               <Badge variant="outline">{allShots.length} total shots</Badge>
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 lg:flex lg:gap-2">
               {selectedShots.size > 0 && (
                 <>
                   <Button
@@ -460,8 +460,9 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                 variant="outline"
                 onClick={handleClearAll}
                 disabled={allShots.length === 0}
+                className="h-12 lg:h-9 text-sm lg:text-xs"
               >
-                <Trash2 className="w-4 h-4 mr-1" />
+                <Trash2 className="w-4 h-4 lg:w-3 lg:h-3 mr-2 lg:mr-1" />
                 Clear All
               </Button>
               <Button
@@ -475,9 +476,10 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                   setShowExportConfig(!showExportConfig)
                   console.log('🔍 setShowExportConfig called')
                 }}
+                className="h-12 lg:h-9 text-sm lg:text-xs"
               >
-                <Settings className="w-4 h-4 mr-1" />
-                Export Config
+                <Settings className="w-4 h-4 lg:w-3 lg:h-3 mr-2 lg:mr-1" />
+                Export
               </Button>
             </div>
           </div>
