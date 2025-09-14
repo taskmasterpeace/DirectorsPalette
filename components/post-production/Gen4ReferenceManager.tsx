@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Upload,
   Clipboard,
@@ -166,13 +165,7 @@ export function Gen4ReferenceManager({
   }
 
   return (
-    <div className="bg-slate-900 border-slate-700 rounded-lg md:border md:p-6 p-4 -mx-4 md:mx-0">
-      <div className="mb-4">
-        <h3 className="text-white text-lg font-medium">
-          {editingMode ? 'Input Image to Edit' : `Reference Images (Max ${maxImages})`}
-        </h3>
-      </div>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Mobile-First Reference Image Layout */}
         <div className="space-y-8 md:grid md:grid-cols-3 md:gap-6 md:space-y-0">
           {Array.from({ length: visibleSlots }, (_, index) => index).map((index) => {
@@ -346,7 +339,6 @@ export function Gen4ReferenceManager({
         <p className="text-sm md:text-xs text-slate-400 text-center md:text-left mt-8 mb-4">
           Tap image areas to upload or use the action buttons below each slot
         </p>
-      </div>
     </div>
   )
 }
