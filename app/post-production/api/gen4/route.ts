@@ -4,6 +4,7 @@ import { calculateUserCredits, getModelInfo } from '@/lib/credits/model-costs';
 import { parseDynamicPrompt } from '@/lib/dynamic-prompting';
 import { parseWildCardPrompt } from '@/lib/wildcards/parser';
 import { withApiAuth, addCorsHeaders, addSecurityHeaders } from '@/lib/middleware/api-middleware';
+import { downloadAndSaveImage, type ImageMetadata } from '@/lib/storage/image-persistence';
 // import { WildCardStorage } from '@/lib/wildcards/storage'; // Disabled for server-side
 
 // Initialize Supabase client for auth verification
@@ -280,15 +281,68 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
     if (result.status === "succeeded") {
       // Collect images from this generation with prompt mapping
       const images = Array.isArray(result.output) ? result.output : [result.output];
-      images.forEach((imageUrl: string) => {
-        allGeneratedImages.push({
-          url: imageUrl,
-          prompt: currentPrompt,
-          variationIndex: promptIndex + 1,
-          originalPrompt: prompt
-        });
-      });
+
       console.log(`✅ Generated ${images.length} image(s) for prompt ${promptIndex + 1}`);
+      console.log('📥 Starting automatic download and permanent storage...');
+
+      // Download and save each image to permanent storage
+      for (const imageUrl of images) {
+        try {
+          const imageMetadata: ImageMetadata = {
+            prompt: currentPrompt,
+            model: model,
+            source: 'shot-creator',
+            settings: {
+              aspectRatio: aspect_ratio || '16:9',
+              resolution: resolution || '1080p',
+              seed: seed
+            },
+            creditsUsed: calculateUserCredits(model, 1),
+            originalPrompt: prompt,
+            variationIndex: promptIndex + 1
+          };
+
+          // Download from Replicate and save to Supabase Storage
+          const downloadResult = await downloadAndSaveImage(imageUrl, userId, imageMetadata);
+
+          if (downloadResult.success && downloadResult.permanentUrl) {
+            // Use permanent URL instead of temporary Replicate URL
+            allGeneratedImages.push({
+              url: downloadResult.permanentUrl, // PERMANENT URL
+              prompt: currentPrompt,
+              variationIndex: promptIndex + 1,
+              originalPrompt: prompt,
+              isPermanent: true, // Flag to indicate this is permanent storage
+              temporaryUrl: imageUrl, // Keep reference to original for debugging
+              storagePath: downloadResult.storagePath,
+              fileSize: downloadResult.fileSize
+            });
+            console.log('✅ Image permanently saved:', downloadResult.permanentUrl);
+          } else {
+            // Fallback to temporary URL with warning
+            console.warn('⚠️ Failed to save permanently, using temporary URL:', downloadResult.error);
+            allGeneratedImages.push({
+              url: imageUrl, // Temporary fallback
+              prompt: currentPrompt,
+              variationIndex: promptIndex + 1,
+              originalPrompt: prompt,
+              isPermanent: false, // Flag as temporary
+              error: downloadResult.error
+            });
+          }
+        } catch (error) {
+          console.error('❌ Image persistence failed for:', imageUrl, error);
+          // Fallback to temporary URL
+          allGeneratedImages.push({
+            url: imageUrl,
+            prompt: currentPrompt,
+            variationIndex: promptIndex + 1,
+            originalPrompt: prompt,
+            isPermanent: false,
+            error: error instanceof Error ? error.message : 'Storage failed'
+          });
+        }
+      }
     } else {
       console.error(`❌ Generation failed for prompt ${promptIndex + 1}:`, result.error || result.status);
     }

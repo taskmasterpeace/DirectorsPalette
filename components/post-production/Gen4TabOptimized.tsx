@@ -232,9 +232,9 @@ export function Gen4TabOptimized({
         
         setGen4Generations(prev => [newGeneration, ...prev])
         
-        // Save each image to unified gallery with specific prompt
+        // Save each image to unified gallery with specific prompt and persistence info
         addImage({
-          url: imageData.url,
+          url: imageData.url, // Now contains permanent URL
           prompt: imageData.prompt, // Use expanded prompt instead of template
           source: 'shot-creator',
           model: gen4Settings.model || 'seedream-4',
@@ -243,6 +243,15 @@ export function Gen4TabOptimized({
             resolution: gen4Settings.resolution,
             seed: gen4Settings.seed
           },
+          creditsUsed: imageData.creditsUsed || 9, // Default fallback
+
+          // NEW: Persistence metadata from API response
+          isPermanent: imageData.isPermanent,
+          temporaryUrl: imageData.temporaryUrl,
+          storagePath: imageData.storagePath,
+          fileSize: imageData.fileSize,
+          error: imageData.error,
+
           metadata: {
             createdAt: Date.now() + index,
             creditsUsed: result.creditsUsed || Math.ceil((gen4Settings.maxImages || 1) * 0.03 * 33)

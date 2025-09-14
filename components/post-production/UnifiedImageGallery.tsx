@@ -344,11 +344,30 @@ export function UnifiedImageGallery({
                       onClick={() => setFullscreenImage(image)}
                     />
                     
-                    {/* Source badge - Icon only in corner */}
-                    <div className="absolute top-2 left-2">
+                    {/* Source badge and persistence status */}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1">
                       <Badge className={cn("text-white p-1", getSourceColor(image.source))} title={image.source.replace('-', ' ')}>
                         {getSourceIcon(image.source)}
                       </Badge>
+
+                      {/* Persistence status indicator */}
+                      {image.persistence?.isPermanent ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-green-900/90 text-green-300 border-green-500/50 px-1 py-0.5"
+                          title="Permanently stored - will never expire"
+                        >
+                          ✅
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-red-900/90 text-red-300 border-red-500/50 px-1 py-0.5"
+                          title={`Temporary - may expire soon${image.persistence?.error ? `: ${image.persistence.error}` : ''}`}
+                        >
+                          ⏰
+                        </Badge>
+                      )}
                     </div>
                     
                     {/* Prompt tooltip on hover */}

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 
 interface GeneratedImage {
   id: string
-  url: string
+  url: string // Now stores permanent Supabase Storage URL
   prompt: string
   source: 'shot-editor' | 'shot-creator' | 'shot-animator'
   originalImage?: string // For edited images, store the original
@@ -20,6 +20,16 @@ interface GeneratedImage {
     processingTime?: number
   }
   tags: string[]
+
+  // NEW: Persistence metadata
+  persistence: {
+    isPermanent: boolean // True if stored in Supabase Storage
+    temporaryUrl?: string // Original Replicate URL for reference
+    storagePath?: string // Supabase Storage path
+    fileSize?: number // File size in bytes
+    downloadedAt?: string // When image was downloaded and saved
+    error?: string // Any persistence errors
+  }
 }
 
 interface UnifiedGalleryState {
@@ -28,7 +38,14 @@ interface UnifiedGalleryState {
   fullscreenImage: GeneratedImage | null
   
   // Actions
-  addImage: (image: Omit<GeneratedImage, 'id' | 'metadata'> & { creditsUsed: number }) => void
+  addImage: (image: Omit<GeneratedImage, 'id' | 'metadata'> & {
+    creditsUsed: number
+    isPermanent?: boolean
+    temporaryUrl?: string
+    storagePath?: string
+    fileSize?: number
+    error?: string
+  }) => void
   removeImage: (imageId: string) => void
   setSelectedImage: (imageId: string | null) => void
   setFullscreenImage: (image: GeneratedImage | null) => void
@@ -58,12 +75,35 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
             createdAt: new Date().toISOString(),
             creditsUsed: imageData.creditsUsed,
             processingTime: imageData.metadata?.processingTime
+          },
+          persistence: {
+            isPermanent: imageData.isPermanent ?? false,
+            temporaryUrl: imageData.temporaryUrl,
+            storagePath: imageData.storagePath,
+            fileSize: imageData.fileSize,
+            downloadedAt: imageData.isPermanent ? new Date().toISOString() : undefined,
+            error: imageData.error
           }
         }
-        
+
         set((state) => ({
           images: [newImage, ...state.images] // Add to beginning for newest first
         }))
+
+        // Log persistence status for monitoring
+        if (newImage.persistence.isPermanent) {
+          console.log('✅ Gallery: Added permanently stored image', {
+            id: newImage.id,
+            url: newImage.url,
+            size: newImage.persistence.fileSize
+          });
+        } else {
+          console.warn('⚠️ Gallery: Added temporary image (will expire)', {
+            id: newImage.id,
+            temporaryUrl: newImage.url,
+            error: newImage.persistence.error
+          });
+        }
       },
       
       removeImage: (imageId) => {
