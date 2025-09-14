@@ -87,7 +87,7 @@ export async function saveImageToStorage(
 ): Promise<ImageDownloadResult> {
   try {
     const bucketName = 'user-gallery-images'
-    const imageId = `gallery_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const imageId = crypto.randomUUID() // Generate proper PostgreSQL UUID
     const fileExtension = getFileExtension(imageBlob.type)
     const fileName = `${imageId}.${fileExtension}`
     const filePath = `users/${userId}/gallery/${fileName}`
