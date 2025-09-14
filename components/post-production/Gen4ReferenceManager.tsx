@@ -174,7 +174,7 @@ export function Gen4ReferenceManager({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Reference Image Slots */}
-        <div className={`grid gap-4 ${visibleSlots === 1 ? 'grid-cols-1' : visibleSlots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        <div className={`grid gap-4 grid-cols-1 sm:${visibleSlots === 1 ? 'grid-cols-1' : visibleSlots === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {Array.from({ length: visibleSlots }, (_, index) => index).map((index) => {
             const image = gen4ReferenceImages[index]
             const isEmpty = !image
@@ -183,8 +183,8 @@ export function Gen4ReferenceManager({
               <div key={index} className="space-y-2">
                 <div 
                   className={`relative border-2 border-dashed rounded-lg overflow-hidden ${
-                    isEmpty 
-                      ? 'min-h-[120px] aspect-square border-slate-600 bg-slate-800 hover:border-slate-500 hover:bg-slate-750 cursor-pointer transition-colors' 
+                    isEmpty
+                      ? 'min-h-[180px] sm:min-h-[120px] aspect-square border-slate-600 bg-slate-800 hover:border-slate-500 hover:bg-slate-750 cursor-pointer transition-colors touch-manipulation'
                       : 'border-purple-500 bg-purple-900/20'
                   }`}
                 >
@@ -215,11 +215,11 @@ export function Gen4ReferenceManager({
                 </div>
                 
                 {/* Upload buttons */}
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 text-xs"
+                    className="flex-1 h-12 sm:h-8 text-base sm:text-xs"
                     onClick={async () => {
                       try {
                         const clipboardItems = await navigator.clipboard.read()
@@ -245,8 +245,8 @@ export function Gen4ReferenceManager({
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline" 
-                    className="flex-1 text-xs"
+                    variant="outline"
+                    className="flex-1 h-12 sm:h-8 text-base sm:text-xs"
                     onClick={() => {
                       const input = document.createElement('input')
                       input.type = 'file'
