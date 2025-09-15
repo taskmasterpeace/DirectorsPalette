@@ -220,7 +220,10 @@ export function ShotAnimatorTab({
     try {
       setIsGenerating(true)
 
-      const newGeneration: VideoGeneration = {
+      // Declare newGeneration outside try block for error handling access
+      let newGeneration: VideoGeneration
+
+      newGeneration = {
         id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         prompt: prompt.trim(),
         model: selectedModel.id,
