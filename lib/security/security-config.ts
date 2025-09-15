@@ -89,18 +89,19 @@ export const SECURITY_HEADERS = {
   // Referrer policy
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 
-  // Content Security Policy
+  // Content Security Policy (relaxed for authentication)
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // NextJS requires unsafe-inline/eval
-    "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com", // Allow Google OAuth
+    "style-src 'self' 'unsafe-inline' https://*.googleapis.com", // Allow Google Fonts
     "img-src 'self' data: https: blob:",
-    "font-src 'self' data:",
-    "connect-src 'self' https://api.openai.com https://api.replicate.com https://*.supabase.co",
+    "font-src 'self' data: https://*.googleapis.com https://*.gstatic.com", // Allow Google Fonts
+    "connect-src 'self' https://api.openai.com https://api.replicate.com https://*.supabase.co https://*.google.com https://accounts.google.com",
     "media-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self' https://accounts.google.com", // Allow Google OAuth forms
+    "frame-src 'self' https://accounts.google.com" // Allow Google OAuth frames
   ].join('; '),
 
   // Permissions Policy (formerly Feature Policy)
