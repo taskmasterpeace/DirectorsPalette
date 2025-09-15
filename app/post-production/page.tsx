@@ -102,6 +102,42 @@ export default function EnhancedPostProductionPage() {
     }
   }, [toast])
 
+  // Handle sending content to library
+  const handleSendToLibrary = useCallback(async (imageUrl: string) => {
+    try {
+      console.log('📚 Sending to library:', imageUrl)
+
+      // For videos, extract first frame or save video reference
+      const savedId = await saveImageToLibrary(
+        imageUrl,
+        ['video', 'generated'], // Default tags
+        'Generated video content', // Default prompt
+        'shot-animator', // Source
+        { aspectRatio: '16:9', resolution: '720p' }, // Default settings
+        'unorganized', // Default category
+        undefined // No reference tag
+      )
+
+      console.log('✅ Content saved to library with ID:', savedId)
+
+      toast({
+        title: "Saved to Library",
+        description: "Content successfully added to reference library"
+      })
+
+      // Reload library to show new item
+      await loadLibraryItems()
+
+    } catch (error) {
+      console.error('❌ Failed to save to library:', error)
+      toast({
+        title: "Save Failed",
+        description: "Failed to save content to library",
+        variant: "destructive"
+      })
+    }
+  }, [toast, loadLibraryItems])
+
   // Check for transferred shots and load library on mount
   useEffect(() => {
     const transferredShots = retrieveTransferredShots()
