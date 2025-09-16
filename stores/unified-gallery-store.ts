@@ -5,7 +5,7 @@ interface GeneratedImage {
   id: string
   url: string // Now stores permanent Supabase Storage URL
   prompt: string
-  source: 'shot-editor' | 'shot-creator' | 'shot-animator'
+  source: 'shot-creator' | 'shot-animator' | 'layout-annotation'
   originalImage?: string // For edited images, store the original
   editInstructions?: string // For edited images, store the instructions used
   model: string
@@ -20,6 +20,15 @@ interface GeneratedImage {
     processingTime?: number
   }
   tags: string[]
+
+  // NEW: Chain metadata for pipeline generation
+  chain?: {
+    chainId: string
+    stepNumber: number
+    totalSteps: number
+    stepPrompt: string
+    isFinal: boolean
+  }
 
   // NEW: Persistence metadata
   persistence: {
@@ -46,7 +55,7 @@ interface UnifiedGalleryState {
     fileSize?: number
     error?: string
   }) => void
-  removeImage: (imageId: string) => void
+  removeImage: (imageIdOrUrl: string) => void
   setSelectedImage: (imageId: string | null) => void
   setFullscreenImage: (image: GeneratedImage | null) => void
   clearAllImages: () => void
@@ -54,7 +63,9 @@ interface UnifiedGalleryState {
   // Filtering
   getImagesBySource: (source: GeneratedImage['source']) => GeneratedImage[]
   getImagesByTag: (tag: string) => GeneratedImage[]
-  
+  getChainImages: (chainId: string) => GeneratedImage[]
+  getUniqueChains: () => Array<{chainId: string; totalSteps: number; images: GeneratedImage[]}>
+
   // Utilities
   getTotalImages: () => number
   getTotalCreditsUsed: () => number
@@ -74,7 +85,7 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
           metadata: {
             createdAt: new Date().toISOString(),
             creditsUsed: imageData.creditsUsed,
-            processingTime: imageData.metadata?.processingTime
+            processingTime: (imageData as any).processingTime
           },
           persistence: {
             isPermanent: imageData.isPermanent ?? false,
@@ -106,11 +117,13 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
         }
       },
       
-      removeImage: (imageId) => {
+      removeImage: (imageIdOrUrl) => {
         set((state) => ({
-          images: state.images.filter(img => img.id !== imageId),
-          selectedImage: state.selectedImage === imageId ? null : state.selectedImage,
-          fullscreenImage: state.fullscreenImage?.id === imageId ? null : state.fullscreenImage
+          images: state.images.filter(img =>
+            img.id !== imageIdOrUrl && img.url !== imageIdOrUrl
+          ),
+          selectedImage: state.selectedImage === imageIdOrUrl ? null : state.selectedImage,
+          fullscreenImage: (state.fullscreenImage?.id === imageIdOrUrl || state.fullscreenImage?.url === imageIdOrUrl) ? null : state.fullscreenImage
         }))
       },
       
@@ -133,7 +146,42 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
       getImagesByTag: (tag) => {
         return get().images.filter(img => img.tags.includes(tag))
       },
-      
+
+      getChainImages: (chainId) => {
+        return get().images
+          .filter(img => img.chain?.chainId === chainId)
+          .sort((a, b) => (a.chain?.stepNumber || 0) - (b.chain?.stepNumber || 0))
+      },
+
+      getUniqueChains: () => {
+        const chains = new Map<string, {chainId: string; totalSteps: number; images: GeneratedImage[]}>()
+
+        get().images.forEach(img => {
+          if (img.chain) {
+            if (!chains.has(img.chain.chainId)) {
+              chains.set(img.chain.chainId, {
+                chainId: img.chain.chainId,
+                totalSteps: img.chain.totalSteps,
+                images: []
+              })
+            }
+            chains.get(img.chain.chainId)!.images.push(img)
+          }
+        })
+
+        // Sort images within each chain by step number
+        chains.forEach(chain => {
+          chain.images.sort((a, b) => (a.chain?.stepNumber || 0) - (b.chain?.stepNumber || 0))
+        })
+
+        return Array.from(chains.values()).sort((a, b) => {
+          // Sort chains by the creation time of their first image
+          const aFirstImage = a.images[0]
+          const bFirstImage = b.images[0]
+          return new Date(bFirstImage.metadata.createdAt).getTime() - new Date(aFirstImage.metadata.createdAt).getTime()
+        })
+      },
+
       getTotalImages: () => {
         return get().images.length
       },

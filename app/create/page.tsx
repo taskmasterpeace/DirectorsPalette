@@ -21,6 +21,7 @@ import {
 import { ActiveArtistIndicator } from "@/components/shared/ActiveArtistIndicator"
 import { useSessionManagement } from "@/hooks/useSessionManagement"
 import { useAppStore } from "@/stores/app-store"
+import { UniversalCreditGuard } from "@/components/ui/UniversalCreditGuard"
 
 // Dynamically import ProjectManager to avoid SSR issues
 const ProjectManager = dynamic(
@@ -71,7 +72,11 @@ export default function Home() {
 
   return (
     <ClientOnly>
-      <div className="min-h-screen relative">
+      <UniversalCreditGuard
+        minCreditsRequired={15}
+        operation="generate content"
+      >
+        <div className="min-h-screen relative">
         {/* Global Mode Background */}
         <div 
           className="fixed inset-0 bg-no-repeat bg-center -z-10"
@@ -114,6 +119,7 @@ export default function Home() {
           <ActiveArtistIndicator />
         </div>
       </div>
+      </UniversalCreditGuard>
     </ClientOnly>
   )
 }

@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { calculateUserCredits, getModelInfo } from '@/lib/credits/model-costs';
 import { parseDynamicPrompt } from '@/lib/dynamic-prompting';
 import { parseWildCardPrompt } from '@/lib/wildcards/parser';
+import { parsePipelinePrompt } from '@/lib/pipeline-prompting';
 import { withApiAuth, addCorsHeaders, addSecurityHeaders } from '@/lib/middleware/api-middleware';
+import { withApiKeyValidation } from '@/lib/security/simple-api-key';
 import { downloadAndSaveImage, type ImageMetadata } from '@/lib/storage/image-persistence';
 // import { WildCardStorage } from '@/lib/wildcards/storage'; // Disabled for server-side
 
@@ -39,6 +41,7 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
     }
 
     const userId = user.id;
+    const requestBody = await request.json();
     const {
       prompt,
       aspect_ratio,
@@ -50,7 +53,10 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       max_images,
       custom_width,
       custom_height,
-      sequential_generation
+      sequential_generation,
+      _isPipelineStep,
+      _chainId,
+      _stepNumber
     }: {
       prompt: string;
       aspect_ratio: string;
@@ -58,12 +64,15 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       reference_tags: string[];
       reference_images: string[];
       seed?: number;
-      model?: 'gen4-image' | 'gen4-image-turbo' | 'nano-banana' | 'seedream-4';
+      model?: 'gen4-image' | 'gen4-image-turbo' | 'nano-banana' | 'seedream-4' | 'qwen-image';
       max_images?: number;
       custom_width?: number;
       custom_height?: number;
       sequential_generation?: boolean;
-    } = await request.json();
+      _isPipelineStep?: boolean;
+      _chainId?: string;
+      _stepNumber?: number;
+    } = requestBody;
 
     if (!prompt) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
@@ -76,7 +85,27 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       );
     }
 
-    // Parse dynamic prompts (bracket notation) AND wild cards  
+    // If it's a pipeline step, skip pipeline detection and just generate normally
+    if (_isPipelineStep) {
+      console.log(`🔗 Pipeline step ${_stepNumber} for chain ${_chainId}: "${prompt}"`);
+      // Continue with normal generation logic below
+    } else {
+      // Check for pipeline syntax (| operators) in user input
+      const pipelineResult = parsePipelinePrompt(prompt, []);
+
+      if (pipelineResult.isPipeline && pipelineResult.isValid) {
+        // Return pipeline info for frontend to handle
+        return NextResponse.json({
+          isPipeline: true,
+          pipelineResult,
+          message: "Pipeline detected - frontend will handle sequential execution",
+          steps: pipelineResult.steps.length,
+          estimatedCredits: pipelineResult.estimatedImages * calculateUserCredits(model, 1)
+        });
+      }
+    }
+
+    // Parse dynamic prompts (bracket notation) AND wild cards for non-pipeline prompts
     let promptResult = parseDynamicPrompt(prompt);
     let isDynamicPrompt = promptResult.hasBrackets && promptResult.isValid;
     
@@ -145,8 +174,8 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
         .from('user_credits')
         .insert({
           user_id: userId,
-          current_points: 2500,
-          monthly_allocation: 2500,
+          current_points: 10,
+          monthly_allocation: 10,
           tier: 'pro',
           total_purchased_points: 0
         });
@@ -157,7 +186,7 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       }
       
       // Set initial credits after creation
-      const userCredits = { current_points: 2500 };
+      const userCredits = { current_points: 10 };
     }
 
     if (userCredits.current_points < creditsNeeded) {
@@ -213,46 +242,106 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
         }
       };
       modelEndpoint = 'bytedance/seedream-4';
-    } else {
-      // Gen4 format (backward compatibility)
+    } else if (model === 'qwen-image') {
+      // Qwen-Image format (text generation model)
       body = {
         input: {
           prompt: currentPrompt,
           seed: seed || undefined,
-          aspect_ratio: aspect_ratio || "16:9", 
+          guidance: 3, // Image generation guidance (0-10)
+          aspect_ratio: aspect_ratio || "16:9",
+          num_inference_steps: 30, // Denoising steps
+          negative_prompt: "" // Optional negative prompt
+        }
+      };
+      modelEndpoint = 'qwen/qwen-image';
+    } else {
+      // Gen4 format - validate aspect ratio
+      const validGen4AspectRatios = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'];
+      let gen4AspectRatio = aspect_ratio || '16:9';
+
+      // Map invalid aspect ratios to closest valid ones for Gen 4
+      if (!validGen4AspectRatios.includes(gen4AspectRatio)) {
+        if (gen4AspectRatio === '3:2') gen4AspectRatio = '4:3';
+        else if (gen4AspectRatio === '2:3') gen4AspectRatio = '3:4';
+        else if (gen4AspectRatio === 'match_input_image') gen4AspectRatio = '16:9';
+        else gen4AspectRatio = '16:9'; // Default fallback
+      }
+
+      body = {
+        input: {
+          prompt: currentPrompt,
+          seed: seed || undefined,
+          aspect_ratio: gen4AspectRatio,
           resolution: resolution || "720p",
           reference_images: reference_images,
           reference_tags: reference_tags,
         }
       };
-      modelEndpoint = model === 'gen4-image-turbo' 
+      modelEndpoint = model === 'gen4-image-turbo'
         ? 'runwayml/gen4-image-turbo'
         : 'runwayml/gen4-image';
     }
       
-    const generateResponse = await fetch(
-      `https://api.replicate.com/v1/models/${modelEndpoint}/predictions`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Prefer: "wait",
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    // Retry logic for API calls
+    let generateResponse;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-    if (!generateResponse.ok) {
-      const errorText = await generateResponse.text();
-      console.error(
-        `🔴 Gen 4 Generation Failed: Status ${generateResponse.status}`,
-        errorText
-      );
-      return NextResponse.json(
-        { error: "Failed to create prediction" },
-        { status: generateResponse.status }
-      );
+    while (retryCount < maxRetries) {
+      try {
+        generateResponse = await fetch(
+          `https://api.replicate.com/v1/models/${modelEndpoint}/predictions`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              Prefer: "wait",
+            },
+            body: JSON.stringify(body),
+          }
+        );
+
+        if (generateResponse.ok) {
+          break; // Success, exit retry loop
+        }
+
+        const errorText = await generateResponse.text();
+
+        // Check if it's a temporary error worth retrying
+        if (generateResponse.status === 500 || generateResponse.status === 502 || generateResponse.status === 503) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`⚠️ Temporary error (${generateResponse.status}), retrying... (${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount)); // Exponential backoff
+            continue;
+          }
+        }
+
+        // For non-retryable errors, log and skip this prompt
+        console.error(
+          `🔴 Gen 4 Generation Failed: Status ${generateResponse.status}`,
+          errorText
+        );
+
+        // Skip to next prompt instead of returning error for entire request
+        continue;
+      } catch (networkError) {
+        retryCount++;
+        if (retryCount < maxRetries) {
+          console.log(`⚠️ Network error, retrying... (${retryCount}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+          continue;
+        }
+        console.error('❌ Network error after retries:', networkError);
+        continue; // Skip to next prompt
+      }
+    }
+
+    if (!generateResponse || !generateResponse.ok) {
+      console.error(`❌ Failed to generate after ${maxRetries} retries, skipping prompt ${promptIndex + 1}`);
+      continue; // Skip to next prompt
     }
 
     const prediction = await generateResponse.json();
@@ -276,6 +365,22 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       }
       
       result = await pollResponse.json();
+    }
+
+    // Handle different completion statuses
+    if (result.status === "failed" || result.status === "canceled") {
+      // Log the specific error
+      const errorMessage = result.error || result.logs || "Unknown error";
+      console.error(`❌ Generation failed for prompt ${promptIndex + 1}: ${errorMessage}`);
+
+      // If it's a "Prediction interrupted" error, we should continue to next prompt
+      if (errorMessage.includes("Prediction interrupted")) {
+        console.log('⚠️ Replicate API interrupted - this is a temporary issue, continuing...');
+        continue; // Skip to next prompt
+      }
+
+      // For other errors, also continue but log them
+      continue;
     }
 
     if (result.status === "succeeded") {
@@ -351,9 +456,14 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
 
     // Check if any images were generated successfully
     if (allGeneratedImages.length === 0) {
+      console.log('⚠️ No images were generated successfully. This may be due to temporary Replicate API issues.');
       return NextResponse.json(
-        { error: "No images generated successfully" },
-        { status: 500 }
+        {
+          error: "Image generation temporarily unavailable. Please try again in a few moments.",
+          details: "The AI service is experiencing temporary issues. Your credits have not been deducted.",
+          retry: true
+        },
+        { status: 503 }  // Service Unavailable
       );
     }
 
@@ -412,9 +522,10 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
   }
 }
 
+
 // Temporarily use direct export for internal frontend calls
 // TODO: Implement proper API key system for external access
-export const POST = handleGen4Request
+export const POST = withApiKeyValidation(handleGen4Request)
 
 // Handle preflight requests for CORS
 export async function OPTIONS(request: NextRequest) {

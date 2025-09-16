@@ -10,12 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { 
-  Sparkles, 
-  Zap, 
+import {
+  Sparkles,
+  Zap,
   Leaf,
   Info,
-  Edit3
+  Edit3,
+  Palette
 } from 'lucide-react'
 import { getAvailableModels, getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
@@ -53,6 +54,7 @@ export function ModelSelector({
       case 'seedream-4': return Leaf
       case 'gen4-image': return Zap
       case 'gen4-image-turbo': return Zap
+      case 'qwen-image': return Palette
       case 'qwen-image-edit': return Edit3
       default: return Sparkles
     }

@@ -4,12 +4,12 @@
  */
 
 export type ModelType = 'generation' | 'editing'
-export type ModelId = 'nano-banana' | 'seedream-4' | 'gen4-image' | 'gen4-image-turbo' | 'qwen-image-edit'
+export type ModelId = 'nano-banana' | 'seedream-4' | 'gen4-image' | 'gen4-image-turbo' | 'qwen-image-edit' | 'qwen-image'
 
 export interface ModelParameter {
   id: string
   label: string
-  type: 'select' | 'number' | 'boolean' | 'slider'
+  type: 'select' | 'number' | 'boolean' | 'slider' | 'string'
   options?: { value: string; label: string }[]
   min?: number
   max?: number
@@ -37,6 +37,23 @@ export interface ModelConfig {
 
 export const MODEL_PARAMETERS: Record<string, ModelParameter> = {
   aspectRatio: {
+    id: 'aspectRatio',
+    label: 'Aspect Ratio',
+    type: 'select',
+    default: '16:9',
+    options: [
+      { value: '16:9', label: '16:9 Landscape' },
+      { value: '9:16', label: '9:16 Portrait' },
+      { value: '1:1', label: '1:1 Square' },
+      { value: '4:3', label: '4:3 Classic' },
+      { value: '3:4', label: '3:4 Portrait' },
+      { value: '21:9', label: '21:9 Ultrawide' },
+      { value: '3:2', label: '3:2 Photo' },
+      { value: '2:3', label: '2:3 Photo Portrait' },
+      { value: 'match_input_image', label: 'Match Input Image' }
+    ]
+  },
+  gen4AspectRatio: {
     id: 'aspectRatio',
     label: 'Aspect Ratio',
     type: 'select',
@@ -136,6 +153,30 @@ export const MODEL_PARAMETERS: Record<string, ModelParameter> = {
     type: 'boolean',
     default: true,
     description: 'Enable faster processing'
+  },
+  qwenGuidance: {
+    id: 'guidance',
+    label: 'Guidance',
+    type: 'slider',
+    min: 0,
+    max: 10,
+    default: 3,
+    description: 'Image generation guidance (0-10)'
+  },
+  qwenSteps: {
+    id: 'num_inference_steps',
+    label: 'Inference Steps',
+    type: 'slider',
+    min: 10,
+    max: 50,
+    default: 30,
+    description: 'Number of denoising steps (10-50)'
+  },
+  negativePrompt: {
+    id: 'negative_prompt',
+    label: 'Negative Prompt',
+    type: 'string',
+    description: 'Things to avoid in the image'
   }
 }
 
@@ -193,9 +234,9 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     textColor: 'text-blue-300',
     endpoint: 'runwayml/gen4-image',
     costPerImage: 0.075,
-    supportedParameters: ['aspectRatio', 'resolution', 'seed'],
+    supportedParameters: ['gen4AspectRatio', 'resolution', 'seed'],
     parameters: {
-      aspectRatio: MODEL_PARAMETERS.aspectRatio,
+      aspectRatio: MODEL_PARAMETERS.gen4AspectRatio,
       resolution: MODEL_PARAMETERS.resolution,
       seed: MODEL_PARAMETERS.seed
     },
@@ -213,9 +254,9 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     textColor: 'text-purple-300',
     endpoint: 'runwayml/gen4-image-turbo',
     costPerImage: 0.03,
-    supportedParameters: ['aspectRatio', 'resolution', 'seed'],
+    supportedParameters: ['gen4AspectRatio', 'resolution', 'seed'],
     parameters: {
-      aspectRatio: MODEL_PARAMETERS.aspectRatio,
+      aspectRatio: MODEL_PARAMETERS.gen4AspectRatio,
       resolution: MODEL_PARAMETERS.resolution,
       seed: MODEL_PARAMETERS.seed
     },
@@ -243,6 +284,28 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     },
     maxReferenceImages: 1,
     requiresInputImage: true
+  },
+  'qwen-image': {
+    id: 'qwen-image',
+    name: 'qwen-image',
+    displayName: 'Qwen Image',
+    type: 'generation',
+    icon: '🎨',
+    description: 'Advanced text rendering & complex image generation with exceptional detail',
+    badge: 'Text+',
+    badgeColor: 'bg-orange-600',
+    textColor: 'text-orange-300',
+    endpoint: 'qwen/qwen-image',
+    costPerImage: 0.04,
+    supportedParameters: ['seed', 'aspectRatio', 'qwenGuidance', 'qwenSteps', 'negativePrompt'],
+    parameters: {
+      seed: MODEL_PARAMETERS.seed,
+      aspectRatio: MODEL_PARAMETERS.aspectRatio,
+      guidance: MODEL_PARAMETERS.qwenGuidance,
+      num_inference_steps: MODEL_PARAMETERS.qwenSteps,
+      negative_prompt: MODEL_PARAMETERS.negativePrompt
+    },
+    maxReferenceImages: 0
   }
 }
 

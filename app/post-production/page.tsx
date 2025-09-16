@@ -33,9 +33,9 @@ import { referenceLibraryDB, saveImageToLibrary } from '@/lib/post-production/re
 import CategorySelectionDialog from './components/CategorySelectionDialog'
 import FullscreenImageModal from './components/FullscreenImageModal'
 import { Gen4TabOptimized as Gen4Tab } from '@/components/post-production/Gen4TabOptimized'
-import { ShotAnimatorTab } from '@/components/post-production/ShotAnimatorTab'
+import { ShotAnimatorTab } from '@/components/post-production/shot-animator'
 import { ShotListTab } from './components/tabs/ShotListTab'
-import { ImageEditTabOptimized as ImageEditTab } from '@/components/post-production/ImageEditTabOptimized'
+import { UniversalCreditGuard } from '@/components/ui/UniversalCreditGuard'
 
 export default function EnhancedPostProductionPage() {
   const { toast } = useToast()
@@ -240,19 +240,6 @@ export default function EnhancedPostProductionPage() {
     }
   }
 
-  // Send generation to Image Edit tab
-  const sendToImageEdit = (imageUrl: string) => {
-    // Store the image URL in localStorage for the Image Edit tab to pick up
-    localStorage.setItem('directors-palette-image-edit-input', imageUrl)
-    
-    // Switch to Image Edit tab
-    setActiveTab('image-edit')
-    
-    toast({
-      title: 'Sent to Image Edit',
-      description: 'Image has been loaded in the Image Edit tab',
-    })
-  }
   
   // Send generation to Layout & Annotation tab
   const sendToLayoutAnnotation = (imageUrl: string) => {
@@ -299,7 +286,11 @@ export default function EnhancedPostProductionPage() {
   }
   
   return (
-    <div className="container mx-auto max-w-none w-[95%] p-6 sm:p-4">
+    <UniversalCreditGuard
+      minCreditsRequired={15}
+      operation="generate images and videos"
+    >
+      <div className="container mx-auto max-w-none w-[95%] p-6 sm:p-4">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -367,14 +358,10 @@ export default function EnhancedPostProductionPage() {
           </div>
 
           {/* Desktop: Original Tab Layout */}
-          <TabsList className="hidden sm:grid grid-cols-6 w-full max-w-none min-h-[48px] h-auto">
+          <TabsList className="hidden sm:grid grid-cols-5 w-full max-w-none min-h-[48px] h-auto">
             <TabsTrigger value="shot-list" className="flex items-center gap-2 min-h-[44px]">
               <List className="w-4 h-4" />
               <span className="hidden lg:inline">Shot List</span>
-            </TabsTrigger>
-            <TabsTrigger value="image-edit" className="flex items-center gap-2 min-h-[44px]">
-              <Film className="w-4 h-4" />
-              <span className="hidden lg:inline">Shot Editor</span>
             </TabsTrigger>
             <TabsTrigger value="gen4" className="flex items-center gap-2 min-h-[44px]">
               <Sparkles className="w-4 h-4" />
@@ -423,25 +410,6 @@ export default function EnhancedPostProductionPage() {
             <ShotListTab />
           </TabsContent>
 
-          {/* Image Edit Tab - Qwen-Edit Integration */}
-          <TabsContent value="image-edit" className="space-y-4">
-            <ImageEditTab 
-              onSendToWorkspace={sendGenerationToWorkspace}
-              libraryItems={libraryItems}
-              libraryCategory={libraryCategory}
-              setLibraryCategory={setLibraryCategory}
-              libraryLoading={libraryLoading}
-              onFullscreenImage={setFullscreenImage}
-              onCategoryChange={async (itemId: string, newCategory: string) => {
-                // TODO: Implement category change functionality
-                toast({
-                  title: "Category Changed",
-                  description: `Item moved to ${newCategory}`
-                })
-                loadLibraryItems()
-              }}
-            />
-          </TabsContent>
 
           {/* Gen4 Tab - Clean Component with Paste Buttons */}
           <TabsContent value="gen4" className="space-y-4">
@@ -468,7 +436,6 @@ export default function EnhancedPostProductionPage() {
                 console.log('🔴 SHOT GENERATED:', shotId, imageUrl)
                 setGeneratedShotIds(prev => new Set([...prev, shotId]))
               }}
-              onSendToImageEdit={sendToImageEdit}
               onSendToLayoutAnnotation={sendToLayoutAnnotation}
               onSendToReferenceLibrary={sendToReferenceLibrary}
               onCategoryChange={async (itemId: string, newCategory: string) => {
@@ -677,5 +644,6 @@ export default function EnhancedPostProductionPage() {
         }}
       />
     </div>
+    </UniversalCreditGuard>
   )
 }

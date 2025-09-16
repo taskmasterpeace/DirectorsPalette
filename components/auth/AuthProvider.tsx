@@ -36,9 +36,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Load session on mount
   useEffect(() => {
     const loadSession = async () => {
-      const currentSession = await universalGetSession()
-      setSession(currentSession)
-      setIsLoading(false)
+      try {
+        console.log('🔄 AuthProvider: Loading session...')
+        const currentSession = await universalGetSession()
+        console.log('✅ AuthProvider: Session loaded:', currentSession)
+        setSession(currentSession)
+      } catch (error) {
+        console.error('❌ AuthProvider: Error loading session:', error)
+        // Set default session on error
+        setSession({
+          user: null,
+          isAuthenticated: false,
+          isAdmin: false
+        })
+      } finally {
+        // Always set loading to false
+        console.log('✅ AuthProvider: Setting isLoading to false')
+        setIsLoading(false)
+      }
     }
     loadSession()
   }, [])

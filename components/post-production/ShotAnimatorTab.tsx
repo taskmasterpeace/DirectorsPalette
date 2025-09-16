@@ -32,6 +32,10 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { UnifiedImageGallery } from './UnifiedImageGallery'
 import { Gen4ReferenceLibrary } from './Gen4ReferenceLibrary'
+import { CreditInsufficiencyModal } from '@/components/ui/CreditInsufficiencyModal'
+import { useCreditValidation, useRealTimeCostCalculator, validateCreditsWithRedirect } from '@/lib/credits/credit-validation'
+import type { AlternativeOption } from '@/lib/credits/credit-validation'
+import { useRouter, usePathname } from 'next/navigation'
 
 // SeeeDance Model Configuration
 interface SeeeDanceModel {
@@ -80,17 +84,18 @@ const RESOLUTION_OPTIONS = [
 const DURATION_OPTIONS = [
   { value: 3, label: '3 seconds', credits: 3 },
   { value: 5, label: '5 seconds', credits: 5 },
-  { value: 8, label: '8 seconds', credits: 8 },
   { value: 10, label: '10 seconds', credits: 10 },
   { value: 12, label: '12 seconds', credits: 12 }
 ]
 
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9 Landscape', description: 'Standard widescreen' },
-  { value: '9:16', label: '9:16 Portrait', description: 'Mobile/TikTok' },
+  { value: '9:16', label: '9:16 Portrait', description: 'Mobile/TikTok/Vertical' },
   { value: '1:1', label: '1:1 Square', description: 'Instagram/Social' },
   { value: '4:3', label: '4:3 Traditional', description: 'Classic TV' },
-  { value: '21:9', label: '21:9 Cinematic', description: 'Ultra-wide' }
+  { value: '3:4', label: '3:4 Portrait', description: 'Tall portrait' },
+  { value: '21:9', label: '21:9 Cinematic', description: 'Ultra-wide cinema' },
+  { value: '9:21', label: '9:21 Ultra Portrait', description: 'Extreme vertical' }
 ]
 
 interface VideoGeneration {
@@ -135,14 +140,35 @@ export function ShotAnimatorTab({
   const [selectedModel, setSelectedModel] = useState<SeeeDanceModel>(SEEDANCE_MODELS[0])
   const [prompt, setPrompt] = useState('')
   const [inputImages, setInputImages] = useState<File[]>([])
+  const [lastFrameImages, setLastFrameImages] = useState<File[]>([])
+  const [referenceImages, setReferenceImages] = useState<File[]>([])
   const [duration, setDuration] = useState(5)
   const [resolution, setResolution] = useState('720p')
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [cameraFixed, setCameraFixed] = useState(false)
+  const [seed, setSeed] = useState<number | undefined>(undefined)
   const [generations, setGenerations] = useState<VideoGeneration[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
 
+  // Credit validation state
+  const [showCreditModal, setShowCreditModal] = useState(false)
+  const [creditCheckResult, setCreditCheckResult] = useState<{
+    required: number
+    available: number
+    alternatives: AlternativeOption[]
+  } | null>(null)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { checkCredits } = useCreditValidation()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Real-time cost calculation
+  const currentCost = useRealTimeCostCalculator({
+    duration,
+    resolution,
+    model: selectedModel.id
+  })
 
   // Handle file upload for input images
   const handleFileUpload = useCallback((files: FileList | null) => {
@@ -217,11 +243,40 @@ export function ShotAnimatorTab({
       return
     }
 
+    // Check credits before proceeding - with automatic redirect for zero credits
+    const creditValidation = await validateCreditsWithRedirect(
+      {
+        operation: 'video generation',
+        baseCredits: 15,
+        duration,
+        resolution,
+        model: selectedModel.id
+      },
+      router,
+      pathname
+    )
+
+    // If creditValidation is null, it means user was redirected to purchase page
+    if (!creditValidation) {
+      return
+    }
+
+    // If user has some credits but not enough, show alternatives modal
+    if (!creditValidation.canProceed) {
+      setCreditCheckResult({
+        required: creditValidation.required,
+        available: creditValidation.available,
+        alternatives: creditValidation.alternatives || []
+      })
+      setShowCreditModal(true)
+      return
+    }
+
+    // Declare newGeneration outside try block for error handling access
+    let newGeneration: VideoGeneration | undefined
+
     try {
       setIsGenerating(true)
-
-      // Declare newGeneration outside try block for error handling access
-      let newGeneration: VideoGeneration
 
       newGeneration = {
         id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -253,6 +308,19 @@ export function ShotAnimatorTab({
         formData.append('input_image', inputImages[0])
       }
 
+      if (lastFrameImages.length > 0) {
+        formData.append('last_frame_image', lastFrameImages[0])
+      }
+
+      // Add reference images (up to 4)
+      referenceImages.slice(0, 4).forEach((image, index) => {
+        formData.append(`reference_image_${index}`, image)
+      })
+
+      if (seed !== undefined) {
+        formData.append('seed', seed.toString())
+      }
+
       console.log('🎬 Starting SeeeDance video generation...', {
         model: selectedModel.id,
         duration: duration,
@@ -264,7 +332,8 @@ export function ShotAnimatorTab({
       const response = await fetch('/api/video/seedance', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-API-Key': process.env.NEXT_PUBLIC_DIRECTORS_PALETTE_API_KEY || 'dp_beta_2025_machineking_secure_api_key_v1'
         },
         body: formData
       })
@@ -334,9 +403,40 @@ export function ShotAnimatorTab({
     } finally {
       setIsGenerating(false)
     }
-  }, [prompt, selectedModel, duration, resolution, aspectRatio, cameraFixed, inputImages, user, getToken, addImage, toast])
+  }, [prompt, selectedModel, duration, resolution, aspectRatio, cameraFixed, inputImages, user, getToken, addImage, toast, router, pathname])
 
-  // Calculate total credits for current settings
+  // Credit modal handlers
+  const handlePurchaseCredits = useCallback((packageId: string) => {
+    // TODO: Implement credit purchase flow
+    console.log('Purchase credits:', packageId)
+    setShowCreditModal(false)
+    toast({
+      title: "Credit Purchase",
+      description: "Credit purchase flow coming soon!",
+      variant: "default"
+    })
+  }, [toast])
+
+  const handleUseAlternative = useCallback((settings: Record<string, any>) => {
+    // Apply alternative settings
+    if (settings.duration) setDuration(settings.duration)
+    if (settings.resolution) setResolution(settings.resolution)
+
+    setShowCreditModal(false)
+
+    toast({
+      title: "Settings Updated",
+      description: "Video settings adjusted to fit your credits",
+      variant: "default"
+    })
+
+    // Auto-generate with new settings
+    setTimeout(() => {
+      generateVideo()
+    }, 500)
+  }, [generateVideo, toast])
+
+  // Calculate total credits for current settings (deprecated - now using currentCost)
   const resolutionMultiplier = resolution === '1080p' ? 2 : resolution === '720p' ? 1.5 : 1
   const totalCredits = Math.ceil(selectedModel.creditsPerSecond * duration * resolutionMultiplier)
 
@@ -389,6 +489,7 @@ export function ShotAnimatorTab({
               <CardTitle className="text-white flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-400" />
                 Input Images {inputImages.length > 0 && `(${inputImages.length})`}
+                {lastFrameImages.length > 0 && <Badge variant="secondary">+ Final Frame</Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -429,24 +530,73 @@ export function ShotAnimatorTab({
               </div>
 
               {/* Upload Controls */}
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 sm:h-9"
+                  className="h-12 sm:h-9"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Browse Files
+                  Start Frame
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 sm:h-9"
+                  className="h-12 sm:h-9 bg-purple-900/20 border-purple-500/50 hover:bg-purple-900/40"
+                  onClick={() => {
+                    const input = document.createElement('input')
+                    input.type = 'file'
+                    input.accept = 'image/*'
+                    input.onchange = (e) => {
+                      const files = (e.target as HTMLInputElement).files
+                      if (files) {
+                        Array.from(files).forEach((file) => {
+                          if (file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024) {
+                            setLastFrameImages(prev => [...prev, file])
+                          }
+                        })
+                      }
+                    }
+                    input.click()
+                  }}
+                >
+                  <Film className="w-4 h-4 mr-2" />
+                  Final Frame
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 sm:h-9"
                   onClick={handlePasteImage}
                 >
                   <Clipboard className="w-4 h-4 mr-2" />
                   Paste Image
                 </Button>
               </div>
+
+              {/* Show uploaded images */}
+              {lastFrameImages.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-purple-300 mb-2">📽️ Final Frame Image:</p>
+                  <div className="flex gap-2">
+                    {lastFrameImages.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt="Final frame"
+                          className="w-16 h-16 object-cover rounded border border-purple-500/50"
+                        />
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setLastFrameImages(prev => prev.filter((_, i) => i !== index))}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <input
                 ref={fileInputRef}
@@ -479,7 +629,7 @@ export function ShotAnimatorTab({
                 />
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>{prompt.length}/3000 characters</span>
-                  <span>{totalCredits} credits for {duration[0]}s video</span>
+                  <span>{currentCost} credits for {duration}s video</span>
                 </div>
               </div>
 
@@ -613,7 +763,7 @@ export function ShotAnimatorTab({
                   </div>
                   <div className="flex justify-between">
                     <span>Estimated Credits:</span>
-                    <span className="text-amber-400">{totalCredits} credits</span>
+                    <span className="text-amber-400">{currentCost} credits</span>
                   </div>
                   {inputImages.length > 0 && (
                     <div className="text-blue-400 mt-2">
@@ -637,7 +787,7 @@ export function ShotAnimatorTab({
                 ) : (
                   <>
                     <Play className="w-4 h-4 mr-2" />
-                    Generate Video ({totalCredits} credits)
+                    Generate Video ({currentCost} credits)
                   </>
                 )}
               </Button>
@@ -742,6 +892,20 @@ export function ShotAnimatorTab({
           </div>
         </div>
       </div>
+
+      {/* Credit Insufficiency Modal */}
+      {creditCheckResult && (
+        <CreditInsufficiencyModal
+          isOpen={showCreditModal}
+          onClose={() => setShowCreditModal(false)}
+          required={creditCheckResult.required}
+          available={creditCheckResult.available}
+          operation="Video Generation"
+          alternatives={creditCheckResult.alternatives}
+          onPurchase={handlePurchaseCredits}
+          onUseAlternative={handleUseAlternative}
+        />
+      )}
     </div>
   )
 }

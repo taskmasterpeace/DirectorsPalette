@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { addCorsHeaders, addSecurityHeaders } from '@/lib/middleware/api-middleware'
+import { withApiKeyValidation } from '@/lib/security/simple-api-key'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,6 +16,9 @@ interface SeeeDanceRequest {
   aspect_ratio: string
   camera_fixed: boolean
   input_image?: File
+  last_frame_image?: File
+  reference_images?: File[]
+  seed?: number
 }
 
 interface SeeeDanceResponse {
@@ -31,7 +35,7 @@ interface SeeeDanceResponse {
   }
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<SeeeDanceResponse>> {
+async function handleSeeeDanceRequest(request: NextRequest): Promise<NextResponse<SeeeDanceResponse>> {
   try {
     // Check required environment variables
     if (!process.env.REPLICATE_API_TOKEN) {
@@ -71,6 +75,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<SeeeDance
     const aspectRatio = formData.get('aspect_ratio') as string
     const cameraFixed = formData.get('camera_fixed') === 'true'
     const inputImageFile = formData.get('input_image') as File | null
+    const lastFrameImageFile = formData.get('last_frame_image') as File | null
+    const seed = formData.get('seed') ? parseInt(formData.get('seed') as string) : undefined
+
+    // Handle reference images (multiple files)
+    const referenceImageFiles: File[] = []
+    for (let i = 0; i < 4; i++) {
+      const refImage = formData.get(`reference_image_${i}`) as File | null
+      if (refImage) referenceImageFiles.push(refImage)
+    }
 
     // Validate inputs
     if (!prompt || prompt.length < 5) {
@@ -136,7 +149,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<SeeeDance
     let inputImageUrl: string | undefined
     if (inputImageFile) {
       try {
-        // Upload input image to temporary storage
         const arrayBuffer = await inputImageFile.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
         const base64 = buffer.toString('base64')
@@ -151,19 +163,57 @@ export async function POST(request: NextRequest): Promise<NextResponse<SeeeDance
       }
     }
 
+    // Process last frame image if provided
+    let lastFrameImageUrl: string | undefined
+    if (lastFrameImageFile) {
+      try {
+        const arrayBuffer = await lastFrameImageFile.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const base64 = buffer.toString('base64')
+        lastFrameImageUrl = `data:${lastFrameImageFile.type};base64,${base64}`
+        console.log('🎬 Last frame image processed:', lastFrameImageFile.name, lastFrameImageFile.size, 'bytes')
+      } catch (error) {
+        console.error('❌ Last frame image processing failed:', error)
+        return NextResponse.json(
+          { success: false, error: 'Failed to process last frame image' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Process reference images if provided
+    const referenceImageUrls: string[] = []
+    for (const refImageFile of referenceImageFiles) {
+      try {
+        const arrayBuffer = await refImageFile.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const base64 = buffer.toString('base64')
+        referenceImageUrls.push(`data:${refImageFile.type};base64,${base64}`)
+        console.log('📎 Reference image processed:', refImageFile.name, refImageFile.size, 'bytes')
+      } catch (error) {
+        console.error('❌ Reference image processing failed:', error)
+        return NextResponse.json(
+          { success: false, error: 'Failed to process reference image' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Prepare SeeeDance API request
     const replicateEndpoint = model === 'seedance-lite'
       ? 'bytedance/seedance-1-lite'
       : 'bytedance/seedance-1-lite' // Fallback to lite for now since Pro has limited access
 
     const requestBody = {
-      version: "latest", // Use latest model version
       input: {
         prompt: prompt.trim(),
         duration: duration,
         aspect_ratio: aspectRatio,
         camera_fixed: cameraFixed,
-        ...(inputImageUrl && { image: inputImageUrl })
+        ...(inputImageUrl && { image: inputImageUrl }),
+        ...(lastFrameImageUrl && { last_frame_image: lastFrameImageUrl }),
+        ...(referenceImageUrls.length > 0 && { reference_images: referenceImageUrls }),
+        ...(seed && { seed: seed })
       }
     }
 
@@ -309,6 +359,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<SeeeDance
     return addSecurityHeaders(addCorsHeaders(errorResponse))
   }
 }
+
+// Export with API key validation
+export const POST = withApiKeyValidation(handleSeeeDanceRequest)
 
 // Handle preflight requests for CORS
 export async function OPTIONS(request: NextRequest) {

@@ -103,11 +103,31 @@ export function ModelParameterController({
                 className="flex-1"
               />
               <div className="flex items-center gap-1 text-xs text-slate-500 min-w-0">
-                <span>"{parameter.min}"</span>
-                <span>{parameter.description}</span>
-                <span>"{parameter.max}"</span>
+                <span>{parameter.min}</span>
+                <span>-</span>
+                <span>{parameter.max}</span>
               </div>
             </div>
+            {parameter.description && (
+              <p className="text-xs text-slate-400 mt-1">{parameter.description}</p>
+            )}
+          </div>
+        )
+
+      case 'string':
+        return (
+          <div key={parameterId}>
+            <Label className="text-white text-sm">{parameter.label}</Label>
+            <Input
+              type="text"
+              value={settings[parameterId as keyof Gen4Settings] as string || ''}
+              onChange={(e) => updateSetting(parameterId, e.target.value)}
+              placeholder={parameter.description || 'Optional'}
+              className="bg-slate-800 border-slate-600 text-white"
+            />
+            {parameter.description && (
+              <p className="text-xs text-slate-400 mt-1">{parameter.description}</p>
+            )}
           </div>
         )
 
@@ -137,9 +157,10 @@ export function ModelParameterController({
   }
 
   // Group parameters into logical sections
-  const basicParameters = ['aspectRatio', 'resolution', 'seedreamResolution']
+  const basicParameters = ['aspectRatio', 'resolution', 'seedreamResolution', 'gen4AspectRatio']
   const advancedParameters = ['seed', 'maxImages', 'customWidth', 'customHeight']
   const editingParameters = ['outputFormat', 'outputQuality', 'goFast']
+  const qwenParameters = ['guidance', 'num_inference_steps', 'negative_prompt']
   const specialParameters = ['sequentialGeneration']
 
   return (
@@ -166,11 +187,26 @@ export function ModelParameterController({
         </div>
       )}
 
+      {/* Qwen-Image Parameters */}
+      {modelId === 'qwen-image' && (
+        <div className="space-y-4 border-t border-slate-700 pt-4">
+          <Label className="text-white text-sm font-medium">Generation Settings</Label>
+          <div className="space-y-3">
+            {qwenParameters.map(renderParameter)}
+            {renderParameter('seed')}
+          </div>
+        </div>
+      )}
+
       {/* Editing Parameters (for Qwen Edit) - Compact horizontal layout */}
       {modelId === 'qwen-image-edit' && (
         <div className="border-t border-slate-700 pt-3">
           <div className="grid grid-cols-3 gap-3">
-            {editingParameters.map(renderParameter)}
+            {editingParameters.map(renderParameter)
+            }
+          </div>
+          <div className="mt-3">
+            {renderParameter('seed')}
           </div>
         </div>
       )}

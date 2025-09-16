@@ -24,10 +24,15 @@ const MODEL_COSTS: Record<string, ModelCostConfig> = {
     apiCost: 0.20,       // 25% markup as documented
     perImage: true 
   },
-  'gen4-image-turbo': { 
+  'gen4-image-turbo': {
     credits: 20,          // From existing design doc
-    apiCost: 0.15,       // 33% markup as documented  
-    perImage: true 
+    apiCost: 0.15,       // 33% markup as documented
+    perImage: true
+  },
+  'qwen-image': {
+    credits: 12,          // User pays 12 credits
+    apiCost: 0.04,       // We pay ~$0.04 - 3x markup = 200% profit
+    perImage: true
   }
 }
 

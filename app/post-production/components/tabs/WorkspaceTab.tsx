@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
-import { UnifiedImageGallery } from '@/components/post-production/UnifiedImageGallery'
+import { UnifiedImageGallery } from '@/components/post-production/image-gallery'
 import { Gen4ReferenceLibrary } from '@/components/post-production/Gen4ReferenceLibrary'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'

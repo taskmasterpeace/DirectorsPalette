@@ -32,7 +32,9 @@ import { EnhancedPresetManager } from '@/components/shared/EnhancedPresetManager
 import { getPresetsForTool, type Preset } from '@/lib/presets/preset-categories'
 import { calculateUserCredits } from '@/lib/credits/model-costs'
 import { DynamicPromptInput } from './DynamicPromptInput'
+import { PipelinePromptInput } from './PipelinePromptInput'
 import { parseDynamicPrompt } from '@/lib/dynamic-prompting'
+import { parsePipelinePrompt, type PipelineResult } from '@/lib/pipeline-prompting'
 import { ModelParameterController } from './ModelParameterController'
 import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
@@ -64,6 +66,7 @@ export function Gen4PromptSettings({
   const [editingPreset, setEditingPreset] = useState<{key: string, name: string, prompt: string} | null>(null)
   const [showEnhancedPresets, setShowEnhancedPresets] = useState(false)
   const [dynamicPrompts, setDynamicPrompts] = useState<string[]>([])
+  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const { addToQueue, getQueuedCount, getProcessingCount, clearStuckProcessing, clearAll } = useGenerationQueueStore()
   
   // Clear stuck processing jobs on mount
@@ -78,7 +81,10 @@ export function Gen4PromptSettings({
       'character-consistency': 'Maintain this exact character appearance but place them in a different scene or outfit, preserve facial features and body proportions precisely',
       'scene-angle-change': 'Show this exact scene from a different camera angle - low angle, high angle, or side perspective while keeping all elements the same',
       'remove-background-clean': 'Remove the entire background, make it transparent with clean edges, preserve the main subject perfectly for compositing',
-      'add-green-screen': 'Replace the background with a solid, even green screen for chroma keying, keep original subject and lighting intact'
+      'add-green-screen': 'Replace the background with a solid, even green screen for chroma keying, keep original subject and lighting intact',
+      'pipeline-headshot': 'professional studio lighting | remove green screen background | add modern office background',
+      'pipeline-product': 'enhance product lighting | remove background completely | add white studio background',
+      'pipeline-character': 'improve character lighting | isolate character cleanly | place in [forest, city, beach] environment'
     }
     
     // Save the new presets immediately
@@ -198,17 +204,16 @@ export function Gen4PromptSettings({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Dynamic Prompt Input */}
+          {/* Pipeline Prompt Input */}
           <div>
-            <DynamicPromptInput
+            <PipelinePromptInput
               prompt={gen4Prompt}
               onPromptChange={setGen4Prompt}
-              onDynamicPromptsChange={setDynamicPrompts}
+              onPipelineChange={setPipelineResult}
               creditsPerImage={calculateUserCredits(gen4Settings.model || 'nano-banana', 1)}
-              maxImages={5}
-              placeholder={isEditingMode 
+              placeholder={isEditingMode
                 ? "Describe how to edit the image... e.g., 'Change the background to a sunset'"
-                : "Describe the image... Use [option1, option2] or _wildcard_ for variations (Ctrl+Enter to generate)"
+                : "Describe the image... Use [option1, option2], _wildcard_, or | for pipeline steps"
               }
               disabled={gen4Processing}
               userId="7cf1a35d-e572-4e39-b4cd-a38d8f10c6d2" // TODO: Get from auth context

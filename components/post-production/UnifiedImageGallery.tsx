@@ -44,41 +44,66 @@ export function UnifiedImageGallery({
   className 
 }: UnifiedImageGalleryProps) {
   const { toast } = useToast()
-  const { 
-    images, 
-    removeImage, 
-    setFullscreenImage, 
+  const {
+    images,
+    removeImage,
+    setFullscreenImage,
     fullscreenImage,
     getTotalImages,
-    getTotalCreditsUsed 
+    getTotalCreditsUsed,
+    getUniqueChains
   } = useUnifiedGalleryStore()
   
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'chains'>('grid')
   const IMAGES_PER_PAGE = 8
   
+  // Get chain data for chains view
+  const chains = useMemo(() => getUniqueChains(), [getUniqueChains])
+
   // Filter and pagination logic
-  const { filteredImages, paginatedImages, totalPages } = useMemo(() => {
-    // Filter by search query
-    const filtered = searchQuery.trim() === '' 
-      ? images 
-      : images.filter(image => 
-          image.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          image.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          image.source.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    
-    // Pagination
-    const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
-    const endIndex = startIndex + IMAGES_PER_PAGE
-    
-    return {
-      filteredImages: filtered,
-      paginatedImages: filtered.slice(startIndex, endIndex),
-      totalPages: Math.ceil(filtered.length / IMAGES_PER_PAGE)
+  const { filteredImages, paginatedImages, totalPages, filteredChains } = useMemo(() => {
+    if (viewMode === 'chains') {
+      // Chain view logic
+      const filtered = searchQuery.trim() === ''
+        ? chains
+        : chains.filter(chain =>
+            chain.images.some(image =>
+              image.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              image.chain?.stepPrompt.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          )
+
+      return {
+        filteredImages: [],
+        paginatedImages: [],
+        totalPages: 1,
+        filteredChains: filtered
+      }
+    } else {
+      // Grid view logic (existing)
+      const filtered = searchQuery.trim() === ''
+        ? images
+        : images.filter(image =>
+            image.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            image.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            image.source.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+
+      // Pagination
+      const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
+      const endIndex = startIndex + IMAGES_PER_PAGE
+
+      return {
+        filteredImages: filtered,
+        paginatedImages: filtered.slice(startIndex, endIndex),
+        totalPages: Math.ceil(filtered.length / IMAGES_PER_PAGE),
+        filteredChains: []
+      }
     }
-  }, [images, currentPage, searchQuery])
+  }, [images, chains, currentPage, searchQuery, viewMode])
 
   const handleCopyImageUrl = async (imageUrl: string) => {
     try {
@@ -257,6 +282,26 @@ export function UnifiedImageGallery({
               >
                 Clear Selection
               </Button>
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1">
+                <Button
+                  size="sm"
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('grid')}
+                  className="h-6 px-2 text-xs"
+                >
+                  Grid
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'chains' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('chains')}
+                  className="h-6 px-2 text-xs"
+                >
+                  <Zap className="w-3 h-3 mr-1" />
+                  Chains
+                </Button>
+              </div>
             </div>
           </CardTitle>
           
@@ -285,13 +330,17 @@ export function UnifiedImageGallery({
             </div>
             {searchQuery.trim() && (
               <div className="mt-2 text-sm text-purple-300">
-                Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"
+                {viewMode === 'chains' ? (
+                  <>Found {filteredChains.length} chain{filteredChains.length === 1 ? '' : 's'} matching "{searchQuery}"</>
+                ) : (
+                  <>Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"</>
+                )}
               </div>
             )}
           </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {/* Pagination Controls - Only for grid view */}
+          {viewMode === 'grid' && totalPages > 1 && (
             <div className="flex items-center justify-between mb-4">
               <Button
                 size="sm"
@@ -331,24 +380,167 @@ export function UnifiedImageGallery({
           )}
           
           <ScrollArea className="h-[600px]">
-            {/* 2x4 Grid - 8 Images Per Page */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {paginatedImages.map((image) => (
+            {viewMode === 'chains' ? (
+              // Chain View
+              <div className="space-y-6">
+                {filteredChains.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">
+                    <Zap className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No pipeline chains found</p>
+                    <p className="text-sm">Use | in prompts to create image-to-image chains</p>
+                  </div>
+                ) : (
+                  filteredChains.map((chain) => (
+                    <Card key={chain.chainId} className="bg-slate-800/30 border-purple-500/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-white flex items-center gap-2 text-lg">
+                          <Zap className="w-5 h-5 text-purple-400" />
+                          Pipeline Chain: {chain.totalSteps} Steps
+                          <Badge variant="outline" className="text-purple-300 border-purple-400">
+                            {chain.images.length}/{chain.totalSteps} completed
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {chain.images.map((image) => (
+                            <div key={image.id} className="space-y-2">
+                              {/* Chain Step Header */}
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-medium">
+                                  {image.chain?.stepNumber}
+                                </div>
+                                <div className="flex-1 text-xs text-slate-300">
+                                  Step {image.chain?.stepNumber}: {image.chain?.stepPrompt.substring(0, 30)}...
+                                  {image.chain?.isFinal && (
+                                    <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
+                                      FINAL
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Chain Step Image */}
+                              <div className="relative group">
+                                {image.metadata?.isVideo || image.url.includes('.mp4') || image.tags?.includes('video') ? (
+                                  <video
+                                    src={image.url}
+                                    className="w-full h-32 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                                    onClick={() => setFullscreenImage(image)}
+                                    controls={false}
+                                    muted
+                                    preload="metadata"
+                                  />
+                                ) : (
+                                  <img
+                                    src={image.url}
+                                    alt={image.chain?.stepPrompt || image.prompt}
+                                    className="w-full h-32 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                                    onClick={() => setFullscreenImage(image)}
+                                  />
+                                )}
+
+                                {/* Source badge and persistence status */}
+                                <div className="absolute top-1 left-1 flex flex-col gap-1">
+                                  <Badge className={cn("text-white p-1 text-xs", getSourceColor(image.source))}>
+                                    {getSourceIcon(image.source)}
+                                  </Badge>
+                                  {image.persistence?.isPermanent ? (
+                                    <Badge variant="outline" className="text-xs bg-green-900/90 text-green-300 border-green-500/50 px-1 py-0.5">
+                                      ✅
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs bg-red-900/90 text-red-300 border-red-500/50 px-1 py-0.5">
+                                      ⏰
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Chain step actions */}
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setFullscreenImage(image)}
+                                      className="h-6 w-6 p-0 bg-black/50 border-slate-500 hover:bg-black/70"
+                                    >
+                                      <ZoomIn className="w-3 h-3 text-white" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Chain Step Info */}
+                              <div className="text-xs text-slate-400">
+                                {new Date(image.metadata.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            ) : (
+              // Grid View - Existing
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {paginatedImages.map((image) => (
                 <div key={image.id} className="space-y-2">
-                  {/* Image - Now unobstructed */}
+                  {/* Media - Image or Video */}
                   <div className="relative group">
-                    <img
-                      src={image.url}
-                      alt={image.prompt.slice(0, 50)}
-                      className="w-full h-48 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
-                      onClick={() => setFullscreenImage(image)}
-                    />
+                    {image.tags?.includes('generating') ? (
+                      // Placeholder for generating images
+                      <div className="w-full h-48 rounded border border-slate-600 bg-slate-800 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                          <div className="text-slate-400 text-sm">
+                            {image.tags?.includes('generating') ? 'Generating...' : 'Queued'}
+                          </div>
+                          {image.chain && (
+                            <div className="text-xs text-purple-400 mt-1">
+                              Step {image.chain.stepNumber}/{image.chain.totalSteps}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : image.metadata?.isVideo || image.url.includes('.mp4') || image.tags?.includes('video') ? (
+                      <video
+                        src={image.url}
+                        className="w-full h-48 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                        onClick={() => setFullscreenImage(image)}
+                        onMouseEnter={(e) => e.currentTarget.style.cursor = 'zoom-in'}
+                        controls={false}
+                        muted
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={image.url}
+                        alt={image.prompt.slice(0, 50)}
+                        className="w-full h-48 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                        onClick={() => setFullscreenImage(image)}
+                        onMouseEnter={(e) => e.currentTarget.style.cursor = 'zoom-in'}
+                      />
+                    )}
                     
                     {/* Source badge and persistence status */}
                     <div className="absolute top-2 left-2 flex flex-col gap-1">
                       <Badge className={cn("text-white p-1", getSourceColor(image.source))} title={image.source.replace('-', ' ')}>
                         {getSourceIcon(image.source)}
                       </Badge>
+
+                      {/* Chain indicator */}
+                      {image.chain && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-purple-900/90 text-purple-300 border-purple-500/50 px-1 py-0.5"
+                          title={`Pipeline chain - Step ${image.chain.stepNumber}/${image.chain.totalSteps}`}
+                        >
+                          ⚡{image.chain.stepNumber}/{image.chain.totalSteps}
+                        </Badge>
+                      )}
 
                       {/* Persistence status indicator */}
                       {image.persistence?.isPermanent ? (
@@ -464,7 +656,8 @@ export function UnifiedImageGallery({
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </ScrollArea>
 
           {/* Bulk actions */}
@@ -494,12 +687,24 @@ export function UnifiedImageGallery({
           onClick={() => setFullscreenImage(null)}
         >
           <div className="relative w-full h-full flex items-center justify-center">
-            <img
-              src={fullscreenImage.url}
-              alt={fullscreenImage.prompt}
-              className="max-w-full max-h-full object-contain"
-              style={{ width: 'auto', height: 'auto' }}
-            />
+            {fullscreenImage.metadata?.isVideo || fullscreenImage.url.includes('.mp4') || fullscreenImage.tags?.includes('video') ? (
+              <video
+                src={fullscreenImage.url}
+                className="max-w-full max-h-full object-contain"
+                style={{ width: 'auto', height: 'auto' }}
+                controls
+                autoPlay
+                muted
+                loop
+              />
+            ) : (
+              <img
+                src={fullscreenImage.url}
+                alt={fullscreenImage.prompt}
+                className="max-w-full max-h-full object-contain"
+                style={{ width: 'auto', height: 'auto' }}
+              />
+            )}
 
             {/* Navigation arrows - only show if multiple images */}
             {images.length > 1 && (
