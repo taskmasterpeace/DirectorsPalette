@@ -120,61 +120,70 @@ export function ImageCard({
         </div>
       </div>
 
-      {/* Action buttons - Professional grid layout */}
+      {/* Action buttons - Visible bar with icons and labels */}
       {showActions && (
-        <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-          <div className="bg-black/85 backdrop-blur-sm rounded-lg p-2">
+        <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          <div className="bg-gradient-to-t from-black/95 via-black/85 to-transparent pt-6 pb-2 px-2">
             {onSendTo ? (
-              // 2x3 Grid layout for all 6 buttons
-              <div className="grid grid-cols-3 gap-1.5">
-                {/* Top row - Send to buttons */}
+              // Full button bar with all options
+              <div className="flex items-center justify-center gap-1">
+                {/* Send to buttons group */}
                 <button
                   onClick={() => onSendTo('shot-creator')}
-                  className="p-2 rounded-md hover:bg-purple-600/40 text-purple-400 hover:text-purple-300 transition-all flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-purple-600/30 text-white/90 hover:text-purple-300 transition-all min-w-[50px]"
                   title="Send to Shot Creator"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Creator</span>
                 </button>
 
                 <button
                   onClick={() => onSendTo('shot-animator')}
-                  className="p-2 rounded-md hover:bg-orange-600/40 text-orange-400 hover:text-orange-300 transition-all flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-orange-600/30 text-white/90 hover:text-orange-300 transition-all min-w-[50px]"
                   title="Send to Shot Animator"
                 >
-                  <Film className="w-4 h-4" />
+                  <Film className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Animate</span>
                 </button>
 
                 <button
                   onClick={() => onSendTo('layout-annotation')}
-                  className="p-2 rounded-md hover:bg-green-600/40 text-green-400 hover:text-green-300 transition-all flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-green-600/30 text-white/90 hover:text-green-300 transition-all min-w-[50px]"
                   title="Send to Layout & Annotation"
                 >
-                  <Layout className="w-4 h-4" />
+                  <Layout className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Layout</span>
                 </button>
 
-                {/* Bottom row - Utility buttons */}
+                {/* Separator */}
+                <div className="w-px h-8 bg-slate-600/50" />
+
+                {/* Utility buttons */}
                 <button
                   onClick={onCopy}
-                  className="p-2 rounded-md hover:bg-slate-600/40 text-slate-400 hover:text-slate-300 transition-all flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-slate-600/30 text-white/90 hover:text-slate-300 transition-all min-w-[40px]"
                   title="Copy prompt"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Copy</span>
                 </button>
 
                 <button
                   onClick={onDownload}
-                  className="p-2 rounded-md hover:bg-teal-600/40 text-teal-400 hover:text-teal-300 transition-all flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-teal-600/30 text-white/90 hover:text-teal-300 transition-all min-w-[40px]"
                   title="Download image"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Save</span>
                 </button>
 
                 <button
                   onClick={onDelete}
-                  className="p-2 rounded-md hover:bg-red-600/40 text-red-400 hover:text-red-300 transition-all flex items-center justify-center"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-red-600/30 text-white/90 hover:text-red-300 transition-all min-w-[40px]"
                   title="Delete image"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Delete</span>
                 </button>
               </div>
             ) : (
@@ -182,26 +191,29 @@ export function ImageCard({
               <div className="flex items-center justify-center gap-1.5">
                 <button
                   onClick={onCopy}
-                  className="p-2 rounded-md hover:bg-slate-600/40 text-slate-400 hover:text-slate-300 transition-all"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-slate-600/30 text-white/90 hover:text-slate-300 transition-all min-w-[40px]"
                   title="Copy prompt"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Copy</span>
                 </button>
 
                 <button
                   onClick={onDownload}
-                  className="p-2 rounded-md hover:bg-teal-600/40 text-teal-400 hover:text-teal-300 transition-all"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-teal-600/30 text-white/90 hover:text-teal-300 transition-all min-w-[40px]"
                   title="Download image"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Save</span>
                 </button>
 
                 <button
                   onClick={onDelete}
-                  className="p-2 rounded-md hover:bg-red-600/40 text-red-400 hover:text-red-300 transition-all"
+                  className="flex flex-col items-center gap-0.5 p-1.5 rounded hover:bg-red-600/30 text-white/90 hover:text-red-300 transition-all min-w-[40px]"
                   title="Delete image"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">Delete</span>
                 </button>
               </div>
             )}
