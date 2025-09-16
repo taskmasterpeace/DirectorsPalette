@@ -321,7 +321,6 @@ export function ShotAnimatorTab({
         formData.append('seed', seed.toString())
       }
 
-      console.log('🎬 Starting SeeeDance video generation...', {
         model: selectedModel.id,
         duration: duration,
         resolution,

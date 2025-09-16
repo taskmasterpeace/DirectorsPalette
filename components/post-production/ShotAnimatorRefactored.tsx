@@ -179,7 +179,6 @@ export function ShotAnimatorRefactored({
         formData.append('seed', seed.toString())
       }
 
-      console.log('🎬 Starting SeeeDance video generation with final frame support...', {
         model: selectedModel.id,
         hasStartFrame: startFrameImages.length > 0,
         hasFinalFrame: finalFrameImages.length > 0,

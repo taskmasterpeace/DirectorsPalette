@@ -85,7 +85,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     
     // Save initial state
     saveState()
-    console.log('✅ ENHANCED CANVAS - Initialized with live preview support')
   }, [])
 
   // Update object count
@@ -195,7 +194,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     const x = (e.clientX - rect.left) / zoom
     const y = (e.clientY - rect.top) / zoom
 
-    console.log(`🎯 MOUSE DOWN - ${tool} tool at (${Math.round(x)}, ${Math.round(y)})`)
 
     if (tool === 'text') {
       setTextPosition({ x, y })
@@ -254,7 +252,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     const x = (e.clientX - rect.left) / zoom
     const y = (e.clientY - rect.top) / zoom
 
-    console.log(`🎯 MOUSE UP - ${tool} tool from (${Math.round(startPoint.x)}, ${Math.round(startPoint.y)}) to (${Math.round(x)}, ${Math.round(y)})`)
 
     // Clear preview canvas
     previewCtx.clearRect(0, 0, 800, 450)
@@ -269,25 +266,21 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       const width = x - startPoint.x
       const height = y - startPoint.y
       ctx.strokeRect(startPoint.x, startPoint.y, width, height)
-      console.log('✅ RECTANGLE - Created with live preview')
       
     } else if (tool === 'circle') {
       const radius = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2))
       ctx.beginPath()
       ctx.arc(startPoint.x, startPoint.y, radius, 0, 2 * Math.PI)
       ctx.stroke()
-      console.log('✅ CIRCLE - Created with live preview')
       
     } else if (tool === 'line') {
       ctx.beginPath()
       ctx.moveTo(startPoint.x, startPoint.y)
       ctx.lineTo(x, y)
       ctx.stroke()
-      console.log('✅ LINE - Created with live preview')
       
     } else if (tool === 'arrow') {
       drawArrow(ctx, startPoint.x, startPoint.y, x, y)
-      console.log('✅ ARROW - Created with live preview')
     }
 
     if (tool !== 'select') {
@@ -338,7 +331,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     setPendingText('')
     setTextPosition(null)
     
-    console.log('✅ TEXT - Added successfully:', pendingText)
   }, [pendingText, textPosition, color, brushSize, saveState])
 
   const importImage = useCallback((imageUrl: string) => {
@@ -381,7 +373,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       }])
 
       saveState()
-      console.log('✅ IMAGE IMPORTED - Successfully loaded and displayed')
     }
     img.onerror = () => {
       console.error('❌ IMAGE IMPORT FAILED - Could not load image:', imageUrl)
@@ -395,7 +386,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       const imageData = history[newIndex]
       ctxRef.current?.putImageData(imageData, 0, 0)
       setHistoryIndex(newIndex)
-      console.log('↩️ UNDO - Performed successfully')
     }
   }, [history, historyIndex])
 
@@ -405,7 +395,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       const imageData = history[newIndex]
       ctxRef.current?.putImageData(imageData, 0, 0)
       setHistoryIndex(newIndex)
-      console.log('↪️ REDO - Performed successfully')
     }
   }, [history, historyIndex])
 
@@ -422,7 +411,6 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     setObjects([])
     setImages([])
     saveState()
-    console.log('🧹 CLEAR - Canvas cleared successfully')
   }, [saveState])
 
   const exportCanvas = useCallback((format: string = 'png') => {

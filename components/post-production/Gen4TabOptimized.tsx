@@ -134,12 +134,11 @@ export function Gen4TabOptimized({
         })
       })
 
-      // Reset UI immediately - non-blocking
-      setGen4Processing(false)
+      // DON'T reset processing state here - let pipeline complete first
+      // setGen4Processing(false) - REMOVED - this was causing infinite loops
 
       for (let i = 0; i < steps.length; i++) {
         const stepPrompt = steps[i]
-        console.log(`🔄 Executing pipeline step ${i + 1}/${steps.length}: "${stepPrompt}"`)
 
         toast({
           title: `Step ${i + 1}/${steps.length}`,
@@ -192,8 +191,9 @@ export function Gen4TabOptimized({
         currentInputImage = stepImage.url
 
         // Remove the placeholder for this step
+        const currentChainId = chainId // Ensure chainId is captured in closure
         const placeholders = getImagesByTag('generating').filter(img =>
-          img.chain?.chainId === chainId && img.chain?.stepNumber === i + 1
+          img.chain?.chainId === currentChainId && img.chain?.stepNumber === i + 1
         )
         placeholders.forEach(placeholder => {
           removeImage(placeholder.id)
@@ -221,7 +221,6 @@ export function Gen4TabOptimized({
           }
         })
 
-        console.log(`✅ Step ${i + 1} completed: ${stepImage.url}`)
       }
 
       toast({
@@ -229,12 +228,16 @@ export function Gen4TabOptimized({
         description: `All ${steps.length} steps executed successfully`,
       })
 
+      // Reset processing state after successful pipeline completion
+      setGen4Processing(false)
+
     } catch (error) {
       console.error('❌ Pipeline execution failed:', error)
 
       // Clean up any remaining placeholders for this chain
+      const currentChainId = chainId // Ensure chainId is captured in closure
       const remainingPlaceholders = getImagesByTag('generating').filter(img =>
-        img.chain?.chainId === chainId
+        img.chain?.chainId === currentChainId
       )
       remainingPlaceholders.forEach(placeholder => {
         removeImage(placeholder.id)
@@ -245,10 +248,18 @@ export function Gen4TabOptimized({
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive"
       })
+
+      // Reset processing state after failed pipeline
+      setGen4Processing(false)
     }
   }
 
   const handleGen4Generate = async () => {
+    // Prevent multiple simultaneous generations
+    if (gen4Processing) {
+      return
+    }
+
     if (!gen4Prompt.trim() || gen4ReferenceImages.length === 0) {
       toast({
         title: "Cannot Generate",
@@ -262,48 +273,74 @@ export function Gen4TabOptimized({
     
     try {
       const token = await getToken()
-      console.log('🔍 Frontend token check:', token ? `Got token (${token.length} chars)` : 'No token')
       if (!token) {
-        console.log('❌ Frontend: No authentication token available')
         throw new Error("Authentication required")
       }
 
       // Upload reference images
       const referenceUrls = await Promise.all(
-        gen4ReferenceImages.map(async (img) => {
+        gen4ReferenceImages.map(async (img, index) => {
+          if (!img.file) {
+            throw new Error(`Reference image ${index + 1} has no file data`)
+          }
+
           const formData = new FormData()
           formData.append('file', img.file)
-          const uploadRes = await fetch('/api/upload-media', {
-            method: 'POST',
-            body: formData
-          })
-          if (!uploadRes.ok) {
-            throw new Error(`Failed to upload reference image`)
+
+          // Create an AbortController for timeout handling
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+          try {
+            const uploadRes = await fetch('/api/upload-media', {
+              method: 'POST',
+              body: formData,
+              signal: controller.signal
+            })
+
+            clearTimeout(timeoutId) // Clear timeout on successful response
+
+            if (!uploadRes.ok) {
+              const errorText = await uploadRes.text()
+              console.error(`❌ Upload failed for image ${index + 1} (${uploadRes.status}):`, errorText)
+              throw new Error(`Failed to upload reference image ${index + 1}: ${uploadRes.status} - ${errorText}`)
+            }
+
+            const { url } = await uploadRes.json()
+            return url
+          } catch (error) {
+            clearTimeout(timeoutId) // Clear timeout on error
+            if (error.name === 'AbortError') {
+              console.error(`❌ Upload timeout for image ${index + 1}`)
+              throw new Error(`Upload timeout for reference image ${index + 1}`)
+            }
+            throw error // Re-throw other errors
           }
-          const { url } = await uploadRes.json()
-          return url
         })
       )
       
       // Generate with Gen4
-      console.log('🚀 Making API call with token:', token.substring(0, 20) + '...')
       const headers = new Headers()
       headers.set('Content-Type', 'application/json')
       headers.set('Authorization', `Bearer ${token}`)
-      console.log('🔍 Headers being sent:', Object.fromEntries(headers.entries()))
       
+      // Create AbortController for main generation timeout
+      const genController = new AbortController()
+      const genTimeoutId = setTimeout(() => genController.abort(), 120000) // 2 minute timeout for generation
+
       const response = await fetch('/post-production/api/gen4', {
         method: 'POST',
         headers: headers,
+        signal: genController.signal,
         body: JSON.stringify({
           prompt: filterPrompt(gen4Prompt),
           aspect_ratio: gen4ReferenceImages[0]?.detectedAspectRatio || gen4Settings.aspectRatio,
           resolution: gen4Settings.resolution,
           seed: gen4Settings.seed,
           reference_images: referenceUrls,
-          reference_tags: gen4ReferenceImages.map((img, index) => 
-            img.tags.length > 0 && img.tags[0].length >= 3 && img.tags[0].length <= 15 
-              ? img.tags[0] 
+          reference_tags: gen4ReferenceImages.map((img, index) =>
+            img.tags.length > 0 && img.tags[0].length >= 3 && img.tags[0].length <= 15
+              ? img.tags[0]
               : `ref${index + 1}`
           ),
           model: gen4Settings.model || 'seedream-4',
@@ -314,6 +351,8 @@ export function Gen4TabOptimized({
           sequential_generation: gen4Settings.sequentialGeneration || false
         })
       })
+
+      clearTimeout(genTimeoutId) // Clear timeout on successful response
       
       if (!response.ok) {
         const errorData = await response.json()
@@ -339,11 +378,9 @@ export function Gen4TabOptimized({
       }
       
       const result = await response.json()
-      console.log('🔍 API Response:', result)
 
       // Check if this is a pipeline response
       if (result.isPipeline) {
-        console.log('🔗 Pipeline detected - starting sequential execution')
 
         // Execute pipeline steps sequentially
         await executePipelineSteps(result.pipelineResult, referenceUrls[0], token)
@@ -352,8 +389,6 @@ export function Gen4TabOptimized({
       
       // Handle multi-image response with expanded prompts
       const images = result.images || (result.imageUrl ? [result.imageUrl] : [])
-      console.log('🔍 Extracted images:', images)
-      console.log('🔍 Number of images:', images.length)
       const imageCount = images.length
       
       // Handle both old format (strings) and new format (objects with prompt)
@@ -425,11 +460,21 @@ export function Gen4TabOptimized({
       })
     } catch (error) {
       console.error('Gen4 generation error:', error)
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      })
+
+      // Handle timeout errors specifically
+      if (error.name === 'AbortError') {
+        toast({
+          title: "Generation Timeout",
+          description: "The generation request timed out. Please try again.",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Generation Failed",
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+          variant: "destructive"
+        })
+      }
     } finally {
       setGen4Processing(false)
     }

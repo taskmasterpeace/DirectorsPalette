@@ -71,7 +71,7 @@ export function ChainView({
             {/* Chain Images */}
             <div className="grid grid-cols-4 gap-3">
               {chain.images.map((image, index) => (
-                <div key={image.url} className="relative">
+                <div key={image.id} className="relative">
                   {/* Step Number Badge */}
                   <div className="absolute -top-2 -left-2 z-10">
                     <Badge className="bg-purple-600 text-white text-xs">

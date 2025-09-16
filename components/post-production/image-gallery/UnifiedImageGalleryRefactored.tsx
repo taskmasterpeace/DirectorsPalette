@@ -99,7 +99,7 @@ export function UnifiedImageGalleryRefactored({
         <div className="grid grid-cols-4 gap-3">
           {images.slice(0, 8).map((image) => (
             <ImageCard
-              key={image.url}
+              key={image.id}
               image={image}
               isSelected={selectedImages.includes(image.url)}
               onSelect={() => handleImageSelect(image.url)}
@@ -155,7 +155,7 @@ export function UnifiedImageGalleryRefactored({
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {paginatedImages.map((image) => (
                   <ImageCard
-                    key={image.url}
+                    key={image.id}
                     image={image}
                     isSelected={selectedImages.includes(image.url)}
                     onSelect={() => handleImageSelect(image.url)}

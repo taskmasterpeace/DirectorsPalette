@@ -94,13 +94,14 @@ IndexedDB stores:
 
 **MANDATORY TESTING PROTOCOL - NO EXCEPTIONS:**
 
-1. **Always open Playwright after any changes**
-2. **Test every feature you just implemented**
-3. **Navigate through complete user workflows** 
-4. **Verify functionality works as expected**
+1. **Always open Playwright after any changes - ALWAYS, NO EXCEPTIONS**
+2. **Test every feature you just implemented - ACTUALLY CLICK BUTTONS AND TEST**
+3. **Navigate through complete user workflows - DON'T JUST LOOK, INTERACT**
+4. **Verify functionality works as expected - TEST THE ACTUAL FUNCTIONALITY**
 5. **Document any issues found during testing**
 6. **Fix issues BEFORE committing/deploying**
 
+**NEVER ASSUME ANYTHING WORKS WITHOUT ACTUALLY TESTING IT IN PLAYWRIGHT FIRST!**
 **NO COMMITS OR DEPLOYMENTS WITHOUT BROWSER TESTING FIRST!**
 
 ### 🏗️ **ULTRA-THIN ARCHITECTURE STANDARDS**

@@ -61,7 +61,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
   // Initialize Fabric.js canvas with enhanced error handling and logging
   useEffect(() => {
-    console.log('🔧 CANVAS INIT - Starting canvas initialization...', { 
       canvasElement: !!canvasRef.current, 
       existingCanvas: !!fabricCanvasRef.current,
       dimensions: { canvasWidth, canvasHeight }
@@ -73,12 +72,10 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
     }
 
     if (fabricCanvasRef.current) {
-      console.log('⚠️ CANVAS INIT - Canvas already exists, skipping')
       return
     }
 
     try {
-      console.log('🎨 CANVAS INIT - Creating Fabric.js Canvas...')
       
       // Create Fabric.js canvas with explicit configuration
       const canvas = new Canvas(canvasRef.current, {
@@ -93,7 +90,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
       fabricCanvasRef.current = canvas
 
-      console.log('✅ CANVAS INIT - Fabric.js Canvas created successfully!', {
         width: canvas.getWidth(),
         height: canvas.getHeight(),
         backgroundColor: canvas.backgroundColor,
@@ -102,33 +98,27 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
       // Force initial render to make sure canvas is visible
       canvas.renderAll()
-      console.log('🎨 CANVAS INIT - Initial render complete')
 
       // Set up event handlers with comprehensive logging
       canvas.on('object:added', (e) => {
-        console.log('📦 CANVAS EVENT - Object added:', e.target?.type)
         saveState()
       })
       
       canvas.on('object:modified', (e) => {
-        console.log('✏️ CANVAS EVENT - Object modified:', e.target?.type)
         saveState()
       })
       
       canvas.on('object:removed', (e) => {
-        console.log('🗑️ CANVAS EVENT - Object removed:', e.target?.type)
         saveState()
       })
       
       canvas.on('path:created', (e) => {
-        console.log('🖊️ CANVAS EVENT - Path created')
         saveState()
       })
       
       // Enhanced mouse event handlers with detailed logging
       canvas.on('mouse:down', (e) => {
         const tool = canvasState.tool
-        console.log('🖱️ CANVAS EVENT - Mouse down:', { 
           tool, 
           pointer: e.pointer,
           target: e.target?.type 
@@ -138,14 +128,12 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       
       canvas.on('mouse:move', (e) => {
         if (drawingStateRef.current.isDrawing) {
-          console.log('🖱️ CANVAS EVENT - Mouse move (drawing):', { pointer: e.pointer })
         }
         handleMouseMove(e)
       })
       
       canvas.on('mouse:up', (e) => {
         const tool = canvasState.tool
-        console.log('🖱️ CANVAS EVENT - Mouse up:', { 
           tool, 
           pointer: e.pointer,
           wasDrawing: drawingStateRef.current.isDrawing 
@@ -155,7 +143,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
       // Save initial state
       saveState()
-      console.log('💾 CANVAS INIT - Initial state saved')
 
     } catch (error) {
       console.error('💥 CANVAS INIT - Canvas initialization failed:', error)
@@ -163,12 +150,10 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
     }
 
     return () => {
-      console.log('🧹 CANVAS CLEANUP - Disposing canvas...')
       if (fabricCanvasRef.current) {
         try {
           fabricCanvasRef.current.dispose()
           fabricCanvasRef.current = null
-          console.log('✅ CANVAS CLEANUP - Canvas disposed successfully')
         } catch (error) {
           console.error('💥 CANVAS CLEANUP - Error during dispose:', error)
         }
@@ -180,11 +165,9 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
   useEffect(() => {
     const canvas = fabricCanvasRef.current
     if (!canvas) {
-      console.log('⚠️ CANVAS UPDATE - No canvas available for property updates')
       return
     }
 
-    console.log('🔄 CANVAS UPDATE - Updating properties:', {
       tool: canvasState.tool,
       color: canvasState.color,
       brushSize: canvasState.brushSize,
@@ -193,20 +176,17 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
     // Update canvas size if needed
     if (canvas.getWidth() !== canvasWidth || canvas.getHeight() !== canvasHeight) {
-      console.log('📐 CANVAS UPDATE - Updating dimensions:', { canvasWidth, canvasHeight })
       canvas.setDimensions({ width: canvasWidth, height: canvasHeight })
     }
 
     // Update background color
     canvas.backgroundColor = backgroundColor
-    console.log('🎨 CANVAS UPDATE - Background color set to:', backgroundColor)
     
     // Update drawing mode based on tool
     const isDrawingMode = canvasState.tool === 'brush'
     canvas.isDrawingMode = isDrawingMode
     canvas.selection = canvasState.tool === 'select'
     
-    console.log('🛠️ CANVAS UPDATE - Tool mode:', { 
       tool: canvasState.tool, 
       isDrawingMode, 
       selection: canvas.selection 
@@ -217,7 +197,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       brush.width = canvasState.brushSize
       brush.color = canvasState.color
       canvas.freeDrawingBrush = brush
-      console.log('🖌️ CANVAS UPDATE - Brush configured:', { 
         width: brush.width, 
         color: brush.color 
       })
@@ -225,18 +204,15 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
     // Update zoom
     canvas.setZoom(canvasState.zoom)
-    console.log('🔍 CANVAS UPDATE - Zoom set to:', canvasState.zoom)
     
     // Force render after all updates
     canvas.renderAll()
-    console.log('🎨 CANVAS UPDATE - Render complete')
     
   }, [canvasState.tool, canvasState.brushSize, canvasState.color, canvasState.zoom, canvasWidth, canvasHeight, backgroundColor])
 
   // Handle incoming images
   useEffect(() => {
     if (incomingImages.length > 0) {
-      console.log('🖼️ CANVAS IMAGES - Processing incoming images:', incomingImages.length)
       incomingImages.forEach(addImage)
       onImagesProcessed()
     }
@@ -278,12 +254,10 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       return
     }
 
-    console.log('🖼️ ADD IMAGE - Loading image:', imageUrl)
     
     FabricImage.fromURL(imageUrl, {
       crossOrigin: 'anonymous'
     }).then((img) => {
-      console.log('✅ ADD IMAGE - Image loaded successfully:', { 
         width: img.width, 
         height: img.height 
       })
@@ -308,7 +282,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       canvas.add(img)
       canvas.setActiveObject(img)
       canvas.renderAll()
-      console.log('🎨 ADD IMAGE - Image added to canvas and rendered')
     }).catch((error) => {
       console.error('💥 ADD IMAGE - Error loading image:', error)
     })
@@ -317,16 +290,13 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
   const handleMouseDown = useCallback((e: TPointerEvent) => {
     const canvas = fabricCanvasRef.current
     if (!canvas || !e.pointer) {
-      console.log('⚠️ MOUSE DOWN - Missing canvas or pointer')
       return
     }
 
     const tool = canvasState.tool
-    console.log(`🎯 MOUSE DOWN - ${tool} tool activated at:`, e.pointer)
 
     try {
       if (tool === 'rectangle') {
-        console.log('📦 MOUSE DOWN - Creating rectangle')
         const rect = new Rect({
           left: e.pointer.x,
           top: e.pointer.y,
@@ -339,10 +309,8 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
         })
         canvas.add(rect)
         canvas.setActiveObject(rect)
-        console.log('✅ MOUSE DOWN - Rectangle created and added')
         
       } else if (tool === 'circle') {
-        console.log('⭕ MOUSE DOWN - Creating circle')
         const circle = new Circle({
           left: e.pointer.x,
           top: e.pointer.y,
@@ -354,20 +322,16 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
         })
         canvas.add(circle)
         canvas.setActiveObject(circle)
-        console.log('✅ MOUSE DOWN - Circle created and added')
         
       } else if (tool === 'line') {
-        console.log('📏 MOUSE DOWN - Starting line drawing')
         drawingStateRef.current.isDrawing = true
         drawingStateRef.current.startPoint = { x: e.pointer.x, y: e.pointer.y }
         
       } else if (tool === 'arrow') {
-        console.log('➡️ MOUSE DOWN - Starting arrow drawing')
         drawingStateRef.current.isDrawing = true
         drawingStateRef.current.startPoint = { x: e.pointer.x, y: e.pointer.y }
         
       } else if (tool === 'text') {
-        console.log('📝 MOUSE DOWN - Creating text')
         const text = new IText('Click to edit', {
           left: e.pointer.x,
           top: e.pointer.y,
@@ -379,7 +343,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
         canvas.add(text)
         canvas.setActiveObject(text)
         text.enterEditing()
-        console.log('✅ MOUSE DOWN - Text created and editing started')
       }
       
       canvas.renderAll()
@@ -399,7 +362,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
   const handleMouseUp = useCallback((e: TPointerEvent) => {
     const canvas = fabricCanvasRef.current
     if (!canvas || !e.pointer) {
-      console.log('⚠️ MOUSE UP - Missing canvas or pointer')
       return
     }
 
@@ -408,21 +370,17 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       const endPoint = { x: e.pointer.x, y: e.pointer.y }
       const tool = canvasState.tool
 
-      console.log(`🎯 MOUSE UP - Completing ${tool} drawing:`, { startPoint, endPoint })
 
       try {
         if (tool === 'line') {
-          console.log('📏 MOUSE UP - Creating line')
           const line = new Line([startPoint.x, startPoint.y, endPoint.x, endPoint.y], {
             stroke: canvasState.color,
             strokeWidth: canvasState.brushSize,
             opacity: canvasState.opacity
           })
           canvas.add(line)
-          console.log('✅ MOUSE UP - Line created and added')
           
         } else if (tool === 'arrow') {
-          console.log('➡️ MOUSE UP - Creating arrow')
           // Create arrow as a group of line + arrowhead
           const line = new Line([startPoint.x, startPoint.y, endPoint.x, endPoint.y], {
             stroke: canvasState.color,
@@ -452,13 +410,11 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
           
           canvas.add(line)
           canvas.add(arrowHead)
-          console.log('✅ MOUSE UP - Arrow created and added')
         }
         
         drawingStateRef.current.isDrawing = false
         drawingStateRef.current.startPoint = null
         canvas.renderAll()
-        console.log('🎨 MOUSE UP - Drawing complete, canvas rendered')
         
       } catch (error) {
         console.error('💥 MOUSE UP - Error completing drawing:', error)
@@ -468,7 +424,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
-      console.log('↩️ UNDO - Performing undo operation')
       isRedoingRef.current = true
       historyIndexRef.current--
       const previousState = historyRef.current[historyIndexRef.current]
@@ -477,14 +432,12 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
         fabricCanvasRef.current?.renderAll()
         isRedoingRef.current = false
         onStateChange({ historyIndex: historyIndexRef.current })
-        console.log('✅ UNDO - Undo operation complete')
       })
     }
   }, [onStateChange])
 
   const redo = useCallback(() => {
     if (historyIndexRef.current < historyRef.current.length - 1) {
-      console.log('↪️ REDO - Performing redo operation')
       isRedoingRef.current = true
       historyIndexRef.current++
       const nextState = historyRef.current[historyIndexRef.current]
@@ -493,20 +446,17 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
         fabricCanvasRef.current?.renderAll()
         isRedoingRef.current = false
         onStateChange({ historyIndex: historyIndexRef.current })
-        console.log('✅ REDO - Redo operation complete')
       })
     }
   }, [onStateChange])
 
   const clear = useCallback(() => {
-    console.log('🧹 CLEAR - Clearing canvas')
     fabricCanvasRef.current?.clear()
     fabricCanvasRef.current?.set({ backgroundColor: backgroundColor })
     fabricCanvasRef.current?.renderAll()
     historyRef.current = []
     historyIndexRef.current = -1
     saveState()
-    console.log('✅ CLEAR - Canvas cleared successfully')
   }, [saveState, backgroundColor])
 
   const exportCanvas = useCallback((format: string = 'png') => {
@@ -515,14 +465,12 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       return ''
     }
     
-    console.log('💾 EXPORT - Exporting canvas as:', format)
     const multiplier = format === 'png' ? 2 : 1 // Higher resolution for PNG
     const dataUrl = fabricCanvasRef.current.toDataURL({
       format: format === 'jpg' ? 'jpeg' : format,
       quality: 0.9,
       multiplier
     })
-    console.log('✅ EXPORT - Canvas exported successfully')
     return dataUrl
   }, [])
 

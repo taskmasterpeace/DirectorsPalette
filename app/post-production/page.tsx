@@ -50,7 +50,7 @@ export default function EnhancedPostProductionPage() {
     aspectRatio: '16:9',
     resolution: '2K', // Default to 2K for Seedream-4
     seed: undefined,
-    model: 'seedream-4', // Default to Seedream-4
+    model: 'nano-banana', // Default to Nano Banana
     maxImages: 1, // Default single image
     sequentialGeneration: false
   })

@@ -113,8 +113,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
   })
 
   // Group shots by chapter/section
-  console.log('🔍 Grouping Debug - groupBy:', groupBy)
-  console.log('🔍 Grouping Debug - filteredShots sample:', filteredShots.slice(0, 2).map(s => ({
     id: s.id,
     sourceChapter: s.sourceChapter,
     sourceSection: s.sourceSection,
@@ -128,7 +126,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
         shot.sourceChapter || 'Unknown Chapter' : 
         shot.sourceSection || 'Unknown Section'
       
-      console.log(`🔍 Shot "${shot.id}" -> Group "${groupKey}"`)
       
       const existingGroup = groups.find(g => g.groupName === groupKey)
       if (existingGroup) {
@@ -139,7 +136,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
       return groups
     }, [] as { groupName: string; shots: typeof filteredShots }[])
     
-  console.log('🔍 Grouping Debug - final groups:', groupedShots.map(g => ({ name: g.groupName, count: g.shots.length })))
 
   const handleSelectShot = (shotId: string) => {
     const newSelection = new Set(selectedShots)
@@ -259,11 +255,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
   }
 
   const handleExportWithFormatting = async () => {
-    console.log('🚀 EXPORT FUNCTION CALLED')
-    console.log('🔍 Export Debug - selectedShots:', selectedShots.size)
-    console.log('🔍 Export Debug - filteredShots:', filteredShots.length)
-    console.log('🔍 Export Debug - exportPrefix:', exportPrefix)
-    console.log('🔍 Export Debug - exportSuffix:', exportSuffix)
     
     // Validate export configuration
     const validation = validateExportConfig({
@@ -286,11 +277,8 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
     const selectedShotsData = filteredShots.filter(shot => selectedShots.has(shot.id))
     const shotsToExport = selectedShotsData.length > 0 ? selectedShotsData : filteredShots
 
-    console.log('🔍 Export Debug - shotsToExport:', shotsToExport.length)
-    console.log('🔍 Export Debug - shotsToExport sample:', shotsToExport.slice(0, 2))
 
     if (shotsToExport.length === 0) {
-      console.log('❌ No shots to export')
       toast({
         title: "No Shots to Export",
         description: "No shots available for export. Generate shots in Story or Music Video mode first.",
@@ -299,30 +287,24 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
       return
     }
     
-    console.log('✅ Proceeding with export of', shotsToExport.length, 'shots')
 
     // Apply prefix/suffix formatting
     const formattedShots = shotsToExport.map((shot, index) => {
-      console.log(`🔍 Formatting shot ${index + 1}:`, shot.description.substring(0, 50) + '...')
       
       let formatted = shot.description
       
       if (exportPrefix.trim()) {
-        console.log('🔍 Adding prefix:', exportPrefix.trim())
         formatted = `${exportPrefix.trim()} ${formatted}`
       }
       
       if (exportSuffix.trim()) {
-        console.log('🔍 Adding suffix:', exportSuffix.trim())
         formatted = `${formatted} ${exportSuffix.trim()}`
       }
       
       const final = `${index + 1}. ${formatted}`
-      console.log('🔍 Final formatted shot:', final.substring(0, 100) + '...')
       return final
     }).join('\n\n')
     
-    console.log('🔍 Total formatted output length:', formattedShots.length)
 
     try {
       // Try modern clipboard API first
@@ -469,12 +451,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
                 size="sm"
                 variant="outline"
                 onClick={(e) => {
-                  console.log('🔴 BUTTON CLICKED - Export Config Toggle')
-                  console.log('🔍 Current showExportConfig:', showExportConfig)
-                  console.log('🔍 Event object:', e)
-                  console.log('🔍 Will set to:', !showExportConfig)
                   setShowExportConfig(!showExportConfig)
-                  console.log('🔍 setShowExportConfig called')
                 }}
                 className="h-12 lg:h-9 text-sm lg:text-xs"
               >
@@ -513,12 +490,7 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
             </div>
             <Button
               onClick={(e) => {
-                console.log('🔴 BUTTON CLICKED - Export All Shots')
-                console.log('🔍 Button disabled state:', filteredShots.length === 0)
-                console.log('🔍 Event object:', e)
-                console.log('🔍 About to call handleExportWithFormatting')
                 handleExportWithFormatting()
-                  .then(() => console.log('✅ Export function completed'))
                   .catch(error => console.error('❌ Export function failed:', error))
               }}
               disabled={filteredShots.length === 0}
