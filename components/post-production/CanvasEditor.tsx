@@ -61,10 +61,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
   // Initialize Fabric.js canvas with enhanced error handling and logging
   useEffect(() => {
-      canvasElement: !!canvasRef.current, 
-      existingCanvas: !!fabricCanvasRef.current,
-      dimensions: { canvasWidth, canvasHeight }
-    })
 
     if (!canvasRef.current) {
       console.error('❌ CANVAS INIT - No canvas element found!')
@@ -90,12 +86,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
 
       fabricCanvasRef.current = canvas
 
-        width: canvas.getWidth(),
-        height: canvas.getHeight(),
-        backgroundColor: canvas.backgroundColor,
-        canvasElement: canvas.getElement()
-      })
-
       // Force initial render to make sure canvas is visible
       canvas.renderAll()
 
@@ -119,10 +109,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       // Enhanced mouse event handlers with detailed logging
       canvas.on('mouse:down', (e) => {
         const tool = canvasState.tool
-          tool, 
-          pointer: e.pointer,
-          target: e.target?.type 
-        })
         handleMouseDown(e)
       })
       
@@ -134,10 +120,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       
       canvas.on('mouse:up', (e) => {
         const tool = canvasState.tool
-          tool, 
-          pointer: e.pointer,
-          wasDrawing: drawingStateRef.current.isDrawing 
-        })
         handleMouseUp(e)
       })
 
@@ -168,12 +150,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
       return
     }
 
-      tool: canvasState.tool,
-      color: canvasState.color,
-      brushSize: canvasState.brushSize,
-      zoom: canvasState.zoom
-    })
-
     // Update canvas size if needed
     if (canvas.getWidth() !== canvasWidth || canvas.getHeight() !== canvasHeight) {
       canvas.setDimensions({ width: canvasWidth, height: canvasHeight })
@@ -186,20 +162,12 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
     const isDrawingMode = canvasState.tool === 'brush'
     canvas.isDrawingMode = isDrawingMode
     canvas.selection = canvasState.tool === 'select'
-    
-      tool: canvasState.tool, 
-      isDrawingMode, 
-      selection: canvas.selection 
-    })
 
     if (canvasState.tool === 'brush') {
       const brush = new PencilBrush(canvas)
       brush.width = canvasState.brushSize
       brush.color = canvasState.color
       canvas.freeDrawingBrush = brush
-        width: brush.width, 
-        color: brush.color 
-      })
     }
 
     // Update zoom
@@ -258,10 +226,6 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
     FabricImage.fromURL(imageUrl, {
       crossOrigin: 'anonymous'
     }).then((img) => {
-        width: img.width, 
-        height: img.height 
-      })
-      
       // Scale image to fit canvas while preserving aspect ratio
       const canvasWidth = canvas.getWidth()
       const canvasHeight = canvas.getHeight()

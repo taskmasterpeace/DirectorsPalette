@@ -321,13 +321,6 @@ export function ShotAnimatorTab({
         formData.append('seed', seed.toString())
       }
 
-        model: selectedModel.id,
-        duration: duration,
-        resolution,
-        aspectRatio,
-        hasInputImage: inputImages.length > 0
-      })
-
       const response = await fetch('/api/video/seedance', {
         method: 'POST',
         headers: {

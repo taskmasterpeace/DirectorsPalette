@@ -113,11 +113,6 @@ export function ShotListManager({ className = '' }: ShotListManagerProps) {
   })
 
   // Group shots by chapter/section
-    id: s.id,
-    sourceChapter: s.sourceChapter,
-    sourceSection: s.sourceSection,
-    projectType: s.projectType
-  })))
   
   const groupedShots = groupBy === 'none' ? 
     [{ groupName: 'All Shots', shots: filteredShots }] :

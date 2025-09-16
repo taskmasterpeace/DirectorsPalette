@@ -179,12 +179,6 @@ export function ShotAnimatorRefactored({
         formData.append('seed', seed.toString())
       }
 
-        model: selectedModel.id,
-        hasStartFrame: startFrameImages.length > 0,
-        hasFinalFrame: finalFrameImages.length > 0,
-        referenceCount: referenceImages.length
-      })
-
       const response = await fetch('/api/video/seedance', {
         method: 'POST',
         headers: {
