@@ -120,70 +120,91 @@ export function ImageCard({
         </div>
       </div>
 
-      {/* Action buttons - Clean floating bar */}
+      {/* Action buttons - Professional grid layout */}
       {showActions && (
         <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-          <div className="bg-black/80 backdrop-blur-sm rounded-lg p-1.5 flex items-center justify-center gap-1">
-            {onSendTo && (
-              <>
-                {/* Send to buttons group */}
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => onSendTo('shot-creator')}
-                    className="p-1.5 rounded hover:bg-purple-600/40 text-purple-400 hover:text-purple-300 transition-all"
-                    title="Send to Shot Creator"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                  </button>
+          <div className="bg-black/85 backdrop-blur-sm rounded-lg p-2">
+            {onSendTo ? (
+              // 2x3 Grid layout for all 6 buttons
+              <div className="grid grid-cols-3 gap-1.5">
+                {/* Top row - Send to buttons */}
+                <button
+                  onClick={() => onSendTo('shot-creator')}
+                  className="p-2 rounded-md hover:bg-purple-600/40 text-purple-400 hover:text-purple-300 transition-all flex items-center justify-center"
+                  title="Send to Shot Creator"
+                >
+                  <Sparkles className="w-4 h-4" />
+                </button>
 
-                  <button
-                    onClick={() => onSendTo('shot-animator')}
-                    className="p-1.5 rounded hover:bg-orange-600/40 text-orange-400 hover:text-orange-300 transition-all"
-                    title="Send to Shot Animator"
-                  >
-                    <Film className="w-4 h-4" />
-                  </button>
+                <button
+                  onClick={() => onSendTo('shot-animator')}
+                  className="p-2 rounded-md hover:bg-orange-600/40 text-orange-400 hover:text-orange-300 transition-all flex items-center justify-center"
+                  title="Send to Shot Animator"
+                >
+                  <Film className="w-4 h-4" />
+                </button>
 
-                  <button
-                    onClick={() => onSendTo('layout-annotation')}
-                    className="p-1.5 rounded hover:bg-green-600/40 text-green-400 hover:text-green-300 transition-all"
-                    title="Send to Layout & Annotation"
-                  >
-                    <Layout className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => onSendTo('layout-annotation')}
+                  className="p-2 rounded-md hover:bg-green-600/40 text-green-400 hover:text-green-300 transition-all flex items-center justify-center"
+                  title="Send to Layout & Annotation"
+                >
+                  <Layout className="w-4 h-4" />
+                </button>
 
-                {/* Separator */}
-                <div className="w-px h-5 bg-slate-600/50" />
-              </>
+                {/* Bottom row - Utility buttons */}
+                <button
+                  onClick={onCopy}
+                  className="p-2 rounded-md hover:bg-slate-600/40 text-slate-400 hover:text-slate-300 transition-all flex items-center justify-center"
+                  title="Copy prompt"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={onDownload}
+                  className="p-2 rounded-md hover:bg-teal-600/40 text-teal-400 hover:text-teal-300 transition-all flex items-center justify-center"
+                  title="Download image"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={onDelete}
+                  className="p-2 rounded-md hover:bg-red-600/40 text-red-400 hover:text-red-300 transition-all flex items-center justify-center"
+                  title="Delete image"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              // Fallback horizontal layout for utility buttons only (when no sendTo function)
+              <div className="flex items-center justify-center gap-1.5">
+                <button
+                  onClick={onCopy}
+                  className="p-2 rounded-md hover:bg-slate-600/40 text-slate-400 hover:text-slate-300 transition-all"
+                  title="Copy prompt"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={onDownload}
+                  className="p-2 rounded-md hover:bg-teal-600/40 text-teal-400 hover:text-teal-300 transition-all"
+                  title="Download image"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={onDelete}
+                  className="p-2 rounded-md hover:bg-red-600/40 text-red-400 hover:text-red-300 transition-all"
+                  title="Delete image"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             )}
-
-            {/* Utility buttons group */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={onCopy}
-                className="p-1.5 rounded hover:bg-slate-600/40 text-slate-400 hover:text-slate-300 transition-all"
-                title="Copy prompt"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={onDownload}
-                className="p-1.5 rounded hover:bg-teal-600/40 text-teal-400 hover:text-teal-300 transition-all"
-                title="Download image"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={onDelete}
-                className="p-1.5 rounded hover:bg-red-600/40 text-red-400 hover:text-red-300 transition-all"
-                title="Delete image"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </div>
       )}
