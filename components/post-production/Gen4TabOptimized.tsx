@@ -21,7 +21,6 @@ import { Gen4PromptSettings } from './Gen4PromptSettings'
 // Removed Gen4GenerationHistory - using UnifiedImageGallery only
 import { Gen4ReferenceLibrary } from './Gen4ReferenceLibrary'
 import { ModelSelector } from './ModelSelector'
-import { SeedreamSettings } from './SeedreamSettings'
 import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
 interface Gen4TabOptimizedProps {
@@ -539,15 +538,7 @@ export function Gen4TabOptimized({
             />
           </div>
 
-          {/* Seedream-4 Specific Settings */}
-          {gen4Settings.model === 'seedream-4' && (
-            <div className="bg-slate-900/30 rounded-lg border border-slate-700/50">
-              <SeedreamSettings
-                settings={gen4Settings}
-                onSettingsChange={setGen4Settings}
-              />
-            </div>
-          )}
+          {/* Model-specific settings handled inline */}
         </div>
 
         {/* RIGHT COLUMN - Generated Images & Library */}

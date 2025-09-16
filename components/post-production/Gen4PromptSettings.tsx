@@ -35,7 +35,6 @@ import { DynamicPromptInput } from './DynamicPromptInput'
 import { PipelinePromptInput } from './PipelinePromptInput'
 import { parseDynamicPrompt } from '@/lib/dynamic-prompting'
 import { parsePipelinePrompt, type PipelineResult } from '@/lib/pipeline-prompting'
-import { ModelParameterController } from './ModelParameterController'
 import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 
 interface Gen4PromptSettingsProps {
@@ -414,11 +413,7 @@ export function Gen4PromptSettings({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ModelParameterController
-              modelId={(gen4Settings.model || 'nano-banana') as ModelId}
-              settings={gen4Settings}
-              onSettingsChange={setGen4Settings}
-            />
+            {/* Model parameters handled inline in main component */}
           </CardContent>
         </Card>
       )}
