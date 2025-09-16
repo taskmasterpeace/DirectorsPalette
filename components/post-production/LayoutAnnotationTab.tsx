@@ -1,17 +1,14 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import type { ChangeEvent } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { 
   Layout, 
   Save, 
-  Share, 
   RotateCcw, 
-  Download,
-  Upload,
-  Layers
+  Upload
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { SimpleWorkingCanvas } from './SimpleWorkingCanvas'
@@ -90,27 +87,15 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
   const canvasRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Cleanup effect to prevent file chooser modals from blocking navigation
-  useEffect(() => {
-    const cleanup = () => {
-      // Clear any file chooser dialogs that might be lingering
-      const fileInputs = document.querySelectorAll('input[type="file"]')
-      fileInputs.forEach(input => {
-        if (input instanceof HTMLInputElement) {
-          input.value = ''
-          input.blur()
-        }
-      })
-      
-      // Clear any modal overlays
-      const modals = document.querySelectorAll('[role="dialog"], .modal, .modal-backdrop')
-      modals.forEach(modal => modal.remove())
-    }
+  const handleImportClick = useCallback(() => {
+    const node = fileInputRef.current
+    if (!node) return
 
-    // Run cleanup on mount and when component unmounts
-    cleanup()
-    
-    return cleanup
+    if (typeof node.showPicker === 'function') {
+      node.showPicker()
+    } else {
+      node.click()
+    }
   }, [])
 
   const updateCanvasState = useCallback((updates: Partial<CanvasState>) => {
@@ -133,8 +118,8 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
   const handleReceiveImage = useCallback((imageUrl: string) => {
     setIncomingImages(prev => [...prev, imageUrl])
     toast({
-      title: "Image Received",
-      description: "Image added to canvas workspace"
+      title: 'Image received',
+      description: 'Image queued for the canvas.'
     })
   }, [toast])
 
@@ -160,22 +145,35 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
     }
   }, [toast])
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      handleReceiveImage(url)
-      
-      // Import image directly to canvas
-      if (canvasRef.current?.importImage) {
-        canvasRef.current.importImage(url)
-        toast({
-          title: "Image Imported",
-          description: "Image loaded onto canvas successfully"
-        })
-      }
+  useEffect(() => {
+    if (incomingImages.length === 0) return
+
+    const canvasApi = canvasRef.current
+    if (!canvasApi?.importImage) {
+      const timer = window.setTimeout(() => {
+        setIncomingImages(prev => [...prev])
+      }, 100)
+      return () => window.clearTimeout(timer)
     }
-  }, [handleReceiveImage, toast])
+
+    const queue = [...incomingImages]
+    setIncomingImages([])
+    queue.forEach((url) => {
+      canvasApi.importImage(url)
+    })
+  }, [incomingImages])
+
+  const handleFileUpload = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const url = URL.createObjectURL(file)
+    handleReceiveImage(url)
+
+    // allow selecting the same file twice in a row
+    event.target.value = ''
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }, [handleReceiveImage])
 
   const handleSaveCanvas = useCallback(() => {
     if (canvasRef.current?.exportCanvas) {
@@ -202,15 +200,12 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               size="sm"
-              onClick={() => {
-                // Temporarily disabled to fix navigation blocking
-                console.log('Import Image clicked - functionality temporarily disabled')
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white opacity-50"
-              disabled
+              type="button"
+              onClick={handleImportClick}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               <Upload className="w-4 h-4 mr-1" />
-              Import Image (Disabled)
+              Import image
             </Button>
             
             <Button
@@ -241,10 +236,8 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
             </Button>
 
             <div className="text-sm text-green-200">
-              Zoom: {Math.round(canvasState.zoom * 100)}% | 
-              Tool: {canvasState.tool} | 
-              Layers: {canvasState.layers.filter(l => l.visible).length}/{canvasState.layers.length} |
-              ✨ Live Preview Enabled
+              Zoom: {Math.round(canvasState.zoom * 100)}% | Tool: {canvasState.tool} |
+              Layers: {canvasState.layers.filter(layer => layer.visible).length}/{canvasState.layers.length} visible
             </div>
           </div>
         </CardContent>
@@ -304,8 +297,6 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
         </div>
       </div>
 
-      {/* Hidden File Input - Temporarily disabled to fix navigation blocking */}
-      {/* 
       <input
         ref={fileInputRef}
         type="file"
@@ -313,7 +304,6 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
         onChange={handleFileUpload}
         className="hidden"
       />
-      */}
     </div>
   )
 }

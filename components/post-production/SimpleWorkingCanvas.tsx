@@ -60,32 +60,34 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
   const [textPosition, setTextPosition] = useState<{ x: number; y: number } | null>(null)
   const [pendingText, setPendingText] = useState('')
 
-  // Initialize canvas
+  // Initialize canvas and sync dimensions with props
   useEffect(() => {
     const canvas = canvasRef.current
     const previewCanvas = previewCanvasRef.current
     if (!canvas || !previewCanvas) return
 
-    // Set canvas size dynamically
     canvas.width = canvasWidth
     canvas.height = canvasHeight
     previewCanvas.width = canvasWidth
     previewCanvas.height = canvasHeight
-    
+
     const ctx = canvas.getContext('2d')
     const previewCtx = previewCanvas.getContext('2d')
     if (!ctx || !previewCtx) return
 
-    // Set white background
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    
     ctxRef.current = ctx
     previewCtxRef.current = previewCtx
-    
-    // Save initial state
-    saveState()
-  }, [])
+
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height)
+
+    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    setHistory([snapshot])
+    setHistoryIndex(0)
+    setImages([])
+    setObjects([])
+  }, [canvasWidth, canvasHeight, backgroundColor])
 
   // Update object count
   useEffect(() => {
@@ -99,18 +101,16 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     const imageData = ctxRef.current?.getImageData(0, 0, canvas.width, canvas.height)
     if (!imageData) return
 
-    // Clear forward history
     const newHistory = history.slice(0, historyIndex + 1)
     newHistory.push(imageData)
-    
-    // Limit history size
+
     if (newHistory.length > 20) {
       newHistory.shift()
-    } else {
-      setHistoryIndex(newHistory.length - 1)
     }
-    
+
+    const nextIndex = newHistory.length - 1
     setHistory(newHistory)
+    setHistoryIndex(nextIndex)
   }, [history, historyIndex])
 
   const drawArrow = useCallback((ctx: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) => {
@@ -137,7 +137,7 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     if (!previewCtx || !startPoint || !currentPoint) return
 
     // Clear preview canvas
-    previewCtx.clearRect(0, 0, 800, 450)
+    previewCtx.clearRect(0, 0, previewCtx.canvas.width, previewCtx.canvas.height)
 
     // Set drawing properties
     previewCtx.strokeStyle = color
@@ -176,14 +176,14 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     if (!ctx || !canvas) return
 
     // Clear and set white background
-    ctx.fillStyle = '#ffffff'
+    ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     // Redraw all images
     images.forEach(imageData => {
       ctx.drawImage(imageData.img, imageData.x, imageData.y, imageData.width, imageData.height)
     })
-  }, [images])
+  }, [backgroundColor, images])
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -254,7 +254,7 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
 
 
     // Clear preview canvas
-    previewCtx.clearRect(0, 0, 800, 450)
+    previewCtx.clearRect(0, 0, previewCtx.canvas.width, previewCtx.canvas.height)
 
     // Set drawing properties
     ctx.strokeStyle = color
@@ -342,8 +342,8 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       if (!canvas || !ctx) return
 
       // Calculate dimensions to fit image maintaining aspect ratio
-      const maxWidth = 400
-      const maxHeight = 300
+      const maxWidth = canvas.width * 0.85
+      const maxHeight = canvas.height * 0.85
       let { width, height } = img
       
       if (width > maxWidth) {
@@ -356,8 +356,8 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       }
 
       // Position image at center of canvas
-      const x = (800 - width) / 2
-      const y = (450 - height) / 2
+      const x = (canvas.width - width) / 2
+      const y = (canvas.height - height) / 2
 
       // Draw image
       ctx.drawImage(img, x, y, width, height)
@@ -375,7 +375,7 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       saveState()
     }
     img.onerror = () => {
-      console.error('❌ IMAGE IMPORT FAILED - Could not load image:', imageUrl)
+      console.error('[SimpleWorkingCanvas] failed to load image:', imageUrl)
     }
     img.src = imageUrl
   }, [saveState])
@@ -404,14 +404,14 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     const previewCtx = previewCtxRef.current
     if (!canvas || !ctx || !previewCtx) return
 
-    ctx.fillStyle = '#ffffff'
+    ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     previewCtx.clearRect(0, 0, canvas.width, canvas.height)
     
     setObjects([])
     setImages([])
     saveState()
-  }, [saveState])
+  }, [backgroundColor, saveState])
 
   const exportCanvas = useCallback((format: string = 'png') => {
     const canvas = canvasRef.current
