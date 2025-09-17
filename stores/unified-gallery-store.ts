@@ -9,6 +9,7 @@ interface GeneratedImage {
   originalImage?: string // For edited images, store the original
   editInstructions?: string // For edited images, store the instructions used
   model: string
+  reference?: string // NEW: @reference tag for easier referencing (e.g. "@hero", "@villain")
   settings: {
     aspectRatio: string
     resolution: string
@@ -45,7 +46,7 @@ interface UnifiedGalleryState {
   images: GeneratedImage[]
   selectedImage: string | null
   fullscreenImage: GeneratedImage | null
-  
+
   // Actions
   addImage: (image: Omit<GeneratedImage, 'id' | 'metadata'> & {
     creditsUsed: number
@@ -59,12 +60,15 @@ interface UnifiedGalleryState {
   setSelectedImage: (imageId: string | null) => void
   setFullscreenImage: (image: GeneratedImage | null) => void
   clearAllImages: () => void
-  
+  updateImageReference: (imageId: string, reference: string) => void
+
   // Filtering
   getImagesBySource: (source: GeneratedImage['source']) => GeneratedImage[]
   getImagesByTag: (tag: string) => GeneratedImage[]
   getChainImages: (chainId: string) => GeneratedImage[]
   getUniqueChains: () => Array<{chainId: string; totalSteps: number; images: GeneratedImage[]}>
+  getImageByReference: (reference: string) => GeneratedImage | undefined
+  getAllReferences: () => string[]
 
   // Utilities
   getTotalImages: () => number
@@ -138,11 +142,21 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
       clearAllImages: () => {
         set({ images: [], selectedImage: null, fullscreenImage: null })
       },
-      
+
+      updateImageReference: (imageId, reference) => {
+        set((state) => ({
+          images: state.images.map(img =>
+            img.id === imageId
+              ? { ...img, reference: reference.startsWith('@') ? reference : `@${reference}` }
+              : img
+          )
+        }))
+      },
+
       getImagesBySource: (source) => {
         return get().images.filter(img => img.source === source)
       },
-      
+
       getImagesByTag: (tag) => {
         return get().images.filter(img => img.tags.includes(tag))
       },
@@ -182,10 +196,22 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
         })
       },
 
+      getImageByReference: (reference) => {
+        const searchRef = reference.startsWith('@') ? reference : `@${reference}`
+        return get().images.find(img => img.reference === searchRef)
+      },
+
+      getAllReferences: () => {
+        const refs = get().images
+          .filter(img => img.reference)
+          .map(img => img.reference!)
+        return [...new Set(refs)] // Return unique references
+      },
+
       getTotalImages: () => {
         return get().images.length
       },
-      
+
       getTotalCreditsUsed: () => {
         return get().images.reduce((total, img) => total + img.metadata.creditsUsed, 0)
       }

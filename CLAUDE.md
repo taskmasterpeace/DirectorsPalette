@@ -4,254 +4,175 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Director's Palette (ImgPromptGen) is a Next.js 15 application for generating AI image prompts for story and music video production. It allows users to break down stories or music videos into shot lists with director-specific styles.
+Director's Palette is a professional-grade AI creative platform for generating production-ready shot lists for stories, music videos, and commercials. It integrates multiple AI models and provides director-specific styling capabilities.
 
-**📖 For comprehensive platform documentation, see**: `DIRECTORS-PALETTE-PRODUCTION-AUDIT-REPORT.md`  
-*Complete technical audit with component grades, system analysis, and production readiness assessment.*
+**📖 Platform Documentation**: See `DIRECTORS-PALETTE-PRODUCTION-AUDIT-REPORT.md` for comprehensive technical audit and component grades.
 
 ## Tech Stack
 
 - **Framework**: Next.js 15.2.4 with App Router
-- **Language**: TypeScript 5
+- **Language**: TypeScript 5 with strict typing
 - **UI**: React 19 + Tailwind CSS 4 + shadcn/ui components
-- **State Management**: React hooks + localStorage for session persistence
-- **Database**: IndexedDB (via custom wrapper in `lib/indexeddb.ts`)
-- **Styling**: Tailwind CSS with custom animations
-- **AI Integration**: AI SDK with OpenAI provider
+- **State Management**: Zustand stores with persistence (`stores/` directory)
+- **Database**: IndexedDB for browser storage + Supabase for authentication
+- **AI Integration**: OpenAI via AI SDK, Replicate for image generation
+- **Testing**: Vitest for unit/integration tests, Playwright for E2E
 
 ## Development Commands
 
 ```bash
-# Install dependencies
+# Install and run
 npm install
+npm run dev         # Development server on port 3000
 
-# Run development server
-npm run dev
+# Testing - MANDATORY before commits
+npm run test        # Run Vitest unit tests
+npm run test:unit   # Unit tests only
+npm run test:integration  # Integration tests
+npx playwright test # E2E browser tests (port 3009)
 
-# Build for production
-npm run build
-
-# Start production server
-npm run start
-
-# Run linting
-npm run lint
+# Build and quality checks
+npm run build       # Production build
+npm run lint        # ESLint checks
 ```
 
-## Architecture Overview
+## Critical Architecture Patterns
 
-### Directory Structure
+### State Management Architecture
 
-- **`/app`**: Next.js App Router pages and server actions
-  - `page.tsx`: Main application page with story/music video modes
-  - `actions-*.ts`: Server-side AI generation logic
-  - `artist-bank/`, `director-library/`, `projects/`: Feature pages
-  
-- **`/components`**: React components
-  - `ui/`: shadcn/ui base components
-  - Feature components: `artist-*.tsx`, `director-*.tsx`, `music-video-config.tsx`, etc.
-  
-- **`/lib`**: Core business logic and utilities
-  - `*-db.ts`: IndexedDB database operations
-  - `*-types.ts`: TypeScript type definitions
-  - `curated-directors.ts`, `directors-defaults.ts`: Default director data
-  - `prompts-mv.ts`: AI prompt templates
+The application uses **Zustand stores** for centralized state management:
 
-### Key Features
+- `stores/app-store.ts` - Main application state and mode switching
+- `stores/story-store.ts` - Story mode state and shot management
+- `stores/music-video-store.ts` - Music video workflow state
+- `stores/post-production-store.ts` - Image generation and gallery
+- `stores/unified-gallery-store.ts` - Cross-mode gallery management
 
-1. **Triple Mode Operation**: Story mode, Music Video mode, and Commercial mode with separate workflows
-2. **Director Styles**: Curated and custom director profiles for stylized generation
-3. **Artist Bank**: Artist profile management with persistence
-4. **Shot Generation**: AI-powered shot list generation with director-specific styling
-5. **Image Editing**: Qwen-Edit AI integration for professional image editing and modification
-6. **Template Systems**: Comprehensive template management for stories, music videos, and commercials
-7. **Session Persistence**: Auto-saves state to localStorage
+### Server Actions
 
-### Server Actions Pattern
+All AI operations use Next.js server actions in `app/actions.ts`:
+- `generateBreakdown` - Story/commercial breakdown
+- `generateFullMusicVideoBreakdown` - Music video structure
+- `generateDirectorStyleDetails` - Custom director styles
+- `generateAdditionalChapterShots` - Additional shots generation
 
-The app uses Next.js server actions (in `app/actions-*.ts`) for AI operations:
-- `generateBreakdown`: Story breakdown generation
-- `generateFullMusicVideoBreakdown`: Music video structure generation
-- `generateDirectorStyleDetails`: Custom director style generation
-- `generateAdditionalChapterShots`/`generateAdditionalMusicVideoShots`: Additional shot generation
+### Component Architecture Standards
 
-### Database Schema
+**MANDATORY: Maximum 200 lines per component file**
 
-IndexedDB stores:
-- **Film Directors**: `{ id, name, description, visualLanguage, cameraStyle, colorPalette, ... }`
-- **Music Video Directors**: `{ id, name, description, visualHallmarks, narrativeStyle, genres, ... }`
-- **Artist Profiles**: `{ id, artist_name, genres, visual_style, themes, ... }`
+When refactoring large components:
+1. Extract types to `*Types.ts` files
+2. Extract hooks to `*Hooks.ts` files
+3. Break UI into focused sub-components
+4. Create thin orchestrator components
 
-### State Management
+Example pattern:
+```
+ComplexComponent.tsx (800 lines) becomes:
+├── ComplexComponentTypes.ts (50 lines)
+├── ComplexComponentHooks.ts (100 lines)
+├── ComplexComponentHeader.tsx (150 lines)
+├── ComplexComponentContent.tsx (150 lines)
+└── ComplexComponent.tsx (100 lines - orchestrator)
+```
 
-- Component state via React hooks
-- Session persistence via localStorage (`dsvb:session:v3`)
-- Cross-component communication via custom events (`dsvb:mode-change`)
+### Testing Requirements
+
+**NEVER deploy without testing:**
+
+1. **Unit Tests**: Run `npm run test` after changes
+2. **Browser Testing**: Always test with Playwright (`npx playwright test`)
+3. **Manual Testing**: Verify functionality in development server
+4. **Build Verification**: Ensure `npm run build` succeeds
+
+## Key Features & Components
+
+### Shot Creator System
+- **Location**: `components/post-production/`
+- **Models**: Supports 5 AI models with dynamic parameter controls
+- **Gallery**: 8 images per page with search functionality
+- **Wild Cards**: Dynamic prompt expansion system (`_location_` → "mystical forest")
+
+### Genre System (600+ genres)
+- **Component**: `components/GenreCommandMulti.tsx`
+- **Data**: `lib/music_genres.json` - Complete taxonomy
+- **Architecture**: 3-tier hierarchy (Primary → Subgenres → Microgenres)
+
+### Mode-Specific Workflows
+
+1. **Story Mode**: Text → Character extraction → Director styling → Shot list
+2. **Music Video Mode**: Lyrics + Artist → Video concept → Section breakdown
+3. **Commercial Mode**: Brief → Template selection → Shot generation
+4. **Children's Book Mode**: Story → Page-by-page illustrations
 
 ## Critical Development Rules
 
-### 🚨 **NEVER DEPLOY WITHOUT TESTING**
+### 🚨 MANDATORY Testing Protocol
 
-**MANDATORY TESTING PROTOCOL - NO EXCEPTIONS:**
+1. Always run tests before committing: `npm run test`
+2. Test in Playwright for UI changes: `npx playwright test`
+3. Verify functionality manually in browser
+4. Run `npm run build` to ensure production readiness
+5. Fix all issues before committing
 
-1. **Always open Playwright after any changes - ALWAYS, NO EXCEPTIONS**
-2. **Test every feature you just implemented - ACTUALLY CLICK BUTTONS AND TEST**
-3. **Navigate through complete user workflows - DON'T JUST LOOK, INTERACT**
-4. **Verify functionality works as expected - TEST THE ACTUAL FUNCTIONALITY**
-5. **Document any issues found during testing**
-6. **Fix issues BEFORE committing/deploying**
+### ⚠️ Known Issues & Limitations
 
-**NEVER ASSUME ANYTHING WORKS WITHOUT ACTUALLY TESTING IT IN PLAYWRIGHT FIRST!**
-**NO COMMITS OR DEPLOYMENTS WITHOUT BROWSER TESTING FIRST!**
+- **Build Config**: TypeScript errors currently ignored (`next.config.mjs`)
+- **No Rate Limiting**: AI calls need rate limiting implementation
+- **Browser Storage**: Heavy reliance on IndexedDB/localStorage
+- **Component Size**: Some components exceed 200 lines (need refactoring)
 
-### 🏗️ **ULTRA-THIN ARCHITECTURE STANDARDS**
+### 🔒 Security Considerations
 
-**MANDATORY COMPONENT ARCHITECTURE - ENFORCE STRICTLY:**
+- Never commit API keys or secrets
+- Use environment variables for all sensitive data
+- Validate all user inputs before AI processing
+- Sanitize outputs from AI before display
 
-#### **File Size Limits (HARD LIMITS)**
-- **Maximum 200 lines** per component file (excluding types)
-- **Maximum 100 lines** per hook file
-- **Maximum 50 lines** per type definition file
-- **Any file exceeding limits MUST be broken down immediately**
+## Environment Setup
 
-#### **Component Breakdown Rules**
-When any file approaches 150+ lines:
+Required environment variables in `.env.local`:
+```env
+# AI Generation
+OPENAI_API_KEY=sk-...
 
-1. **Extract Types First**: Move interfaces/types to separate `*Types.ts` files
-2. **Extract Logic**: Move hooks and utilities to separate `*Hooks.ts` files  
-3. **Extract UI Sections**: Break UI into focused sub-components
-4. **Create Orchestrator**: Main component becomes thin orchestrator that imports focused pieces
-5. **Test Immediately**: Use Playwright to verify no functionality lost
+# Image Generation (optional)
+REPLICATE_API_TOKEN=r8_...
 
-#### **Proven Breakdown Patterns (Use These Templates)**
-
-**Pattern 1: Complex Form/Manager**
-```
-// Original: ComplexManager.tsx (800+ lines)
-// Becomes:
-├── ComplexManagerTypes.ts (~50 lines)
-├── ComplexManagerHooks.ts (~100 lines)  
-├── ComplexManagerControls.tsx (~120 lines)
-├── ComplexManagerDisplay.tsx (~150 lines)
-├── ComplexManagerProperties.tsx (~120 lines)
-└── ComplexManagerRefactored.tsx (~100 lines) // Main orchestrator
+# Authentication
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
-**Pattern 2: Multi-Section Component**
-```
-// Original: MultiSection.tsx (600+ lines)
-// Becomes:
-├── MultiSectionTypes.ts (~40 lines)
-├── MultiSectionHeader.tsx (~80 lines)
-├── MultiSectionFilters.tsx (~100 lines)
-├── MultiSectionContent.tsx (~150 lines)
-└── MultiSectionRefactored.tsx (~80 lines) // Main orchestrator
-```
+## Quick Reference
 
-#### **Component Quality Checklist**
+### Common File Locations
+- **Server Actions**: `app/actions.ts`
+- **Zustand Stores**: `stores/*.ts`
+- **UI Components**: `components/ui/`
+- **Feature Components**: `components/`
+- **Database Operations**: `lib/*-db.ts`
+- **Type Definitions**: `lib/*-types.ts`
+- **AI Prompts**: `lib/prompts-*.ts`
 
-**Before Creating Any Component:**
-- [ ] Single responsibility - does ONE thing well
-- [ ] Clear, descriptive name that explains purpose
-- [ ] Props interface defined with TypeScript
-- [ ] Maximum 200 lines (hard limit)
-- [ ] No business logic mixed with presentation logic
-- [ ] Testable in isolation
+### Testing Specific Features
+```bash
+# Test story workflow
+npm run test __tests__/functionality/story-workflow.test.ts
 
-**Before Committing:**
-- [ ] Run `npm run build` - must pass
-- [ ] Test with Playwright - full functionality verified
-- [ ] No console errors in browser
-- [ ] File size under limits
-- [ ] All imports resolve correctly
-- [ ] TypeScript compilation clean
+# Test music video generation
+npm run test __tests__/integration/music-video-generation.test.ts
 
-#### **Anti-Patterns to Avoid (NEVER DO THESE)**
+# Test export system
+npm run test __tests__/functionality/export-system.test.ts
 
-❌ **Monolithic Components**
-- Files over 200 lines
-- Multiple responsibilities in one component
-- Complex nested rendering logic
-
-❌ **Tight Coupling**
-- Components that can't work independently
-- Direct state mutations between components
-- Hardcoded dependencies
-
-❌ **Copy-Paste Development**
-- Duplicating logic instead of extracting shared utilities
-- Similar components not sharing common interfaces
-- Repeated patterns not abstracted into reusable pieces
-
-#### **Refactoring Decision Tree**
-
-```
-File > 150 lines?
-├─ YES → Extract types, hooks, and sub-components
-│   ├─ Create focused pieces (50-100 lines each)
-│   ├─ Build thin orchestrator (< 100 lines)
-│   ├─ Test with Playwright immediately
-│   └─ Verify build passes
-└─ NO → Continue development, monitor file size
+# Run E2E tests with UI
+npx playwright test --ui
 ```
 
-#### **Ultra-Thin Success Examples (Reference These)**
+### Performance Optimization
 
-**✅ ShotListManager Transformation:**
-- **Before**: 977 lines (monolithic nightmare)
-- **After**: 4 focused components (80-200 lines each)
-- **Result**: Maintainable, testable, scalable
-
-**✅ EnhancedLayoutPlanner Transformation:**
-- **Before**: 797 lines (massive complexity)
-- **After**: 6 specialized components (50-150 lines each)  
-- **Result**: Clean separation, easy to modify
-
-#### **Enforcement Guidelines**
-
-**During Development:**
-1. **Monitor file sizes** continuously during development
-2. **Extract early** - don't wait until files are huge
-3. **Test after every extraction** with Playwright
-4. **Keep orchestrators thin** - they should just coordinate, not implement
-
-**During Code Review:**
-1. **Reject any PR** with files over 200 lines
-2. **Require breakdown plan** for files approaching limits
-3. **Verify Playwright testing** was performed
-4. **Check build passes** with ultra-thin structure
-
-### ⚠️ Most Critical Problems
-
-1. **Monolithic Main Component**: `app/page.tsx` is 1200+ lines with 20+ useState hooks - needs immediate refactoring
-2. **No State Management**: All state lives in components with no centralized store (Redux/Zustand needed)
-3. **Scattered Server Actions**: Actions spread across 5 files (`actions*.ts`) - consolidate into organized modules
-4. **No Configuration System**: Hardcoded prompts, magic strings, no environment configs
-5. **No Error Boundaries**: Missing proper error handling and recovery mechanisms
-
-### Code Quality Issues
-
-- **Performance**: No code splitting, everything loads at once
-- **Maintainability**: Complex functions doing too much, no clear separation of concerns
-- **Documentation**: No inline comments for complex logic, no API documentation
-- **Testing**: No test suite or testing framework
-- **Security**: No rate limiting on AI calls, client-side data could be lost
-
-### Refactoring Priorities
-
-When modifying this codebase, prioritize:
-
-1. **Break up `page.tsx`**: Extract into smaller components and custom hooks
-2. **Implement State Management**: Add Zustand or Redux for centralized state
-3. **Create Config System**: Extract all prompts and magic values to configuration files
-4. **Consolidate Actions**: Organize server actions by domain with clear interfaces
-5. **Add Error Handling**: Implement error boundaries and consistent error management
-
-### Current Limitations
-
-- **Build Configuration**: ESLint and TypeScript errors are ignored during builds (`next.config.mjs`)
-- **No Test Suite**: Currently no test files or testing framework configured
-- **AI Integration**: Requires OpenAI API key configuration for server actions
-- **Image Editing**: Requires Replicate API token for Qwen-Edit image editing functionality
-- **Browser Storage**: Heavy reliance on IndexedDB and localStorage for data persistence
-- **No Caching Strategy**: Could lead to performance issues with larger datasets
+- Use `useMemo` and `useCallback` for expensive operations
+- Implement virtual scrolling for large lists
+- Lazy load heavy components with dynamic imports
+- Monitor bundle size with `npm run build`

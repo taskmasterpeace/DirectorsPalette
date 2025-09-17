@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
-import { 
-  ZoomIn, 
-  Trash2, 
-  Copy, 
-  Download, 
-  Sparkles, 
-  Film, 
-  Edit, 
+import {
+  ZoomIn,
+  Trash2,
+  Copy,
+  Download,
+  Sparkles,
+  Film,
+  Edit,
   X,
   ImageIcon,
   Calendar,
@@ -22,11 +22,21 @@ import {
   FileText,
   Search,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag,
+  Save,
+  Check
 } from 'lucide-react'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface UnifiedImageGalleryProps {
   currentTab: 'shot-editor' | 'shot-creator' | 'shot-animator'
@@ -51,13 +61,20 @@ export function UnifiedImageGallery({
     fullscreenImage,
     getTotalImages,
     getTotalCreditsUsed,
-    getUniqueChains
+    getUniqueChains,
+    updateImageReference,
+    getImageByReference,
+    getAllReferences
   } = useUnifiedGalleryStore()
   
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'chains'>('grid')
+  const [editingReference, setEditingReference] = useState<string | null>(null)
+  const [referenceInput, setReferenceInput] = useState('')
+  const [showReferenceDialog, setShowReferenceDialog] = useState(false)
+  const [selectedImageForReference, setSelectedImageForReference] = useState<string | null>(null)
   const IMAGES_PER_PAGE = 8
   
   // Get chain data for chains view
@@ -86,11 +103,18 @@ export function UnifiedImageGallery({
       // Grid view logic (existing)
       const filtered = searchQuery.trim() === ''
         ? images
-        : images.filter(image =>
-            image.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            image.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            image.source.toLowerCase().includes(searchQuery.toLowerCase())
-          )
+        : images.filter(image => {
+            const query = searchQuery.toLowerCase()
+            // Check if searching by reference
+            if (query.startsWith('@')) {
+              return image.reference?.toLowerCase().includes(query)
+            }
+            // Regular search
+            return image.prompt.toLowerCase().includes(query) ||
+                   image.model?.toLowerCase().includes(query) ||
+                   image.source.toLowerCase().includes(query) ||
+                   image.reference?.toLowerCase().includes(query)
+          })
 
       // Pagination
       const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
@@ -143,6 +167,24 @@ export function UnifiedImageGallery({
       title: "Image Deleted",
       description: "Image removed from gallery"
     })
+  }
+
+  const handleUpdateReference = (imageId: string, reference: string) => {
+    updateImageReference(imageId, reference)
+    toast({
+      title: "Reference Updated",
+      description: `Reference set to ${reference}`
+    })
+    setEditingReference(null)
+    setReferenceInput('')
+    setShowReferenceDialog(false)
+    setSelectedImageForReference(null)
+  }
+
+  const handleOpenReferenceDialog = (imageId: string, currentReference?: string) => {
+    setSelectedImageForReference(imageId)
+    setReferenceInput(currentReference?.replace('@', '') || '')
+    setShowReferenceDialog(true)
   }
 
   const handleSendToTab = (imageUrl: string, targetTab: string) => {
@@ -319,7 +361,7 @@ export function UnifiedImageGallery({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-purple-400" />
               <Input
-                placeholder="Search by prompt, model, or source..."
+                placeholder="Search by prompt, @reference, model, or source..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value)
@@ -328,15 +370,23 @@ export function UnifiedImageGallery({
                 className="pl-10 bg-slate-800/50 border-purple-500/30 text-white placeholder-purple-300 focus:border-purple-400"
               />
             </div>
-            {searchQuery.trim() && (
-              <div className="mt-2 text-sm text-purple-300">
-                {viewMode === 'chains' ? (
-                  <>Found {filteredChains.length} chain{filteredChains.length === 1 ? '' : 's'} matching "{searchQuery}"</>
-                ) : (
-                  <>Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"</>
-                )}
-              </div>
-            )}
+            <div className="flex items-center justify-between mt-2">
+              {searchQuery.trim() && (
+                <div className="text-sm text-purple-300">
+                  {viewMode === 'chains' ? (
+                    <>Found {filteredChains.length} chain{filteredChains.length === 1 ? '' : 's'} matching "{searchQuery}"</>
+                  ) : (
+                    <>Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"</>
+                  )}
+                </div>
+              )}
+              {getAllReferences().length > 0 && (
+                <div className="text-xs text-purple-400 flex items-center gap-2">
+                  <Tag className="w-3 h-3" />
+                  <span>References: {getAllReferences().join(', ')}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Pagination Controls - Only for grid view */}
@@ -531,6 +581,22 @@ export function UnifiedImageGallery({
                         {getSourceIcon(image.source)}
                       </Badge>
 
+                      {/* Reference badge */}
+                      {image.reference && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-green-900/90 text-green-300 border-green-500/50 px-1 py-0.5 cursor-pointer"
+                          title="Click to edit reference"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenReferenceDialog(image.id, image.reference)
+                          }}
+                        >
+                          <Tag className="w-3 h-3 mr-1" />
+                          {image.reference}
+                        </Badge>
+                      )}
+
                       {/* Chain indicator */}
                       {image.chain && (
                         <Badge
@@ -637,13 +703,31 @@ export function UnifiedImageGallery({
                     <div className="flex justify-center gap-1">
                       <Button
                         size="sm"
+                        onClick={() => handleOpenReferenceDialog(image.id, image.reference)}
+                        className="h-6 w-8 p-0 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                        title="Set Reference"
+                      >
+                        <Tag className="w-3 h-3" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={() => handleCopyPrompt(image.prompt)}
+                        className="h-6 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
+                        title="Copy Prompt"
+                      >
+                        <FileText className="w-3 h-3" />
+                      </Button>
+
+                      <Button
+                        size="sm"
                         onClick={() => handleCopyImageUrl(image.url)}
                         className="h-6 w-8 p-0 bg-slate-600 hover:bg-slate-700 text-white rounded text-xs"
                         title="Copy URL"
                       >
                         <Copy className="w-3 h-3" />
                       </Button>
-                      
+
                       <Button
                         size="sm"
                         onClick={() => handleDeleteImage(image.id)}
@@ -744,6 +828,12 @@ export function UnifiedImageGallery({
                   {getSourceIcon(fullscreenImage.source)}
                   <span className="ml-1 capitalize">{fullscreenImage.source.replace('-', ' ')}</span>
                 </Badge>
+                {fullscreenImage.reference && (
+                  <Badge className="bg-green-600 text-white">
+                    <Tag className="w-3 h-3 mr-1" />
+                    {fullscreenImage.reference}
+                  </Badge>
+                )}
                 <Badge className="bg-amber-600 text-white">
                   <Zap className="w-3 h-3 mr-1" />
                   {fullscreenImage.metadata.creditsUsed} credits
@@ -759,8 +849,59 @@ export function UnifiedImageGallery({
                   </Badge>
                 )}
               </div>
-              
+
               <div className="flex gap-2">
+                {/* Send to buttons */}
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSendToTab(fullscreenImage.url, 'shot-creator')
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  title="Send to Shot Creator"
+                >
+                  <Sparkles className="w-3 h-3" />
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSendToTab(fullscreenImage.url, 'shot-animator')
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700"
+                  title="Send to Shot Animator"
+                >
+                  <Film className="w-3 h-3" />
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSendToTab(fullscreenImage.url, 'layout-annotation')
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                  title="Send to Layout & Annotation"
+                >
+                  <Layout className="w-3 h-3" />
+                </Button>
+
+                {/* Reference button */}
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleOpenReferenceDialog(fullscreenImage.id, fullscreenImage.reference)
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                  title="Set Reference"
+                >
+                  <Tag className="w-3 h-3" />
+                </Button>
+
+                {/* Copy buttons */}
                 <Button
                   size="sm"
                   onClick={(e) => {
@@ -772,7 +913,7 @@ export function UnifiedImageGallery({
                 >
                   <Copy className="w-3 h-3" />
                 </Button>
-                
+
                 <Button
                   size="sm"
                   onClick={(e) => {
@@ -784,7 +925,7 @@ export function UnifiedImageGallery({
                 >
                   <FileText className="w-3 h-3" />
                 </Button>
-                
+
                 <Button
                   size="sm"
                   onClick={(e) => {
@@ -797,7 +938,7 @@ export function UnifiedImageGallery({
                 >
                   <Trash2 className="w-3 h-3" />
                 </Button>
-                
+
                 <Button
                   size="sm"
                   onClick={() => setFullscreenImage(null)}
@@ -815,6 +956,11 @@ export function UnifiedImageGallery({
                 <p className="text-white text-sm mb-2">
                   <span className="font-medium">Prompt:</span> {fullscreenImage.prompt}
                 </p>
+                {fullscreenImage.reference && (
+                  <p className="text-green-400 text-sm mb-2">
+                    <span className="font-medium">Reference:</span> {fullscreenImage.reference}
+                  </p>
+                )}
                 <div className="flex items-center gap-4 text-xs text-slate-300">
                   <span>Model: {fullscreenImage.model || 'N/A'}</span>
                   <span>Resolution: {fullscreenImage.settings?.resolution || 'N/A'}</span>
@@ -832,6 +978,98 @@ export function UnifiedImageGallery({
           </div>
         </div>
       )}
+
+      {/* Reference Dialog */}
+      <Dialog open={showReferenceDialog} onOpenChange={setShowReferenceDialog}>
+        <DialogContent className="sm:max-w-md bg-slate-900 border-purple-600">
+          <DialogHeader>
+            <DialogTitle className="text-white">Set Image Reference</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Add a reference tag to easily identify and use this image. References start with @.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="reference" className="text-right text-white">
+                Reference
+              </label>
+              <div className="col-span-3 relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400">@</span>
+                <Input
+                  id="reference"
+                  value={referenceInput}
+                  onChange={(e) => setReferenceInput(e.target.value.replace(/^@/, '').replace(/\s/g, '_'))}
+                  placeholder="e.g., hero, villain, background"
+                  className="pl-8 bg-slate-800 border-purple-600 text-white"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && selectedImageForReference && referenceInput) {
+                      handleUpdateReference(selectedImageForReference, referenceInput)
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="text-sm text-slate-400">
+              Example references:
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-purple-600"
+                  onClick={() => setReferenceInput('hero')}
+                >
+                  @hero
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-purple-600"
+                  onClick={() => setReferenceInput('villain')}
+                >
+                  @villain
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-purple-600"
+                  onClick={() => setReferenceInput('background')}
+                >
+                  @background
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-purple-600"
+                  onClick={() => setReferenceInput('vehicle')}
+                >
+                  @vehicle
+                </Badge>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowReferenceDialog(false)
+                setReferenceInput('')
+                setSelectedImageForReference(null)
+              }}
+              className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedImageForReference && referenceInput) {
+                  handleUpdateReference(selectedImageForReference, referenceInput)
+                }
+              }}
+              disabled={!referenceInput}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Reference
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
