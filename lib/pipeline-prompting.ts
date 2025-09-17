@@ -103,15 +103,14 @@ export function parsePipelinePrompt(
       warnings.push(...stepResult.warnings.map(w => `Step ${index + 1}: ${w}`))
     }
 
-    // For pipeline chaining, each step generates 1 image (using first variation)
-    // But warn user about unused variations
-    if (step.hasVariations && stepResult.expandedPrompts.length > 1) {
-      warnings.push(`Step ${index + 1} has ${stepResult.expandedPrompts.length} variations but only first will be used in pipeline`)
-    }
+    // No longer need this warning since we now generate ALL variations
+    // The pipeline will generate all variations for each step
   })
 
-  // Pipeline generates 1 image per step (no multiplication)
-  totalEstimatedImages = processedSteps.length
+  // Calculate total images including all variations
+  totalEstimatedImages = processedSteps.reduce((total, step) => {
+    return total + (step.expandedPrompts?.length || 1)
+  }, 0)
 
   // Additional validations
   if (processedSteps.length > 10) {

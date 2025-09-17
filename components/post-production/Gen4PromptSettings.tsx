@@ -47,17 +47,21 @@ interface Gen4PromptSettingsProps {
   canGenerate: boolean
   referenceImagesCount: number
   compact?: boolean
+  hasNonPipelineImages?: boolean // NEW: Indicates if reference images are from non-pipeline sources
+  userId?: string // Pass actual user ID from auth
 }
 
 export function Gen4PromptSettings({
   gen4Prompt,
   setGen4Prompt,
-  gen4Settings, 
+  gen4Settings,
   setGen4Settings,
   gen4Processing,
   onGenerate,
   canGenerate,
-  referenceImagesCount
+  referenceImagesCount,
+  hasNonPipelineImages = false,
+  userId
 }: Gen4PromptSettingsProps) {
   const [gen4Prefix, setGen4Prefix] = useState('')
   const [gen4Suffix, setGen4Suffix] = useState('')
@@ -212,10 +216,13 @@ export function Gen4PromptSettings({
               creditsPerImage={calculateUserCredits(gen4Settings.model || 'nano-banana', 1)}
               placeholder={isEditingMode
                 ? "Describe how to edit the image... e.g., 'Change the background to a sunset'"
-                : "Describe the image... Use [option1, option2], _wildcard_, or | for pipeline steps"
+                : hasNonPipelineImages
+                  ? "Describe the image... Use [option1, option2] or _wildcard_ for variations"
+                  : "Describe the image... Use [option1, option2], _wildcard_, or | for pipeline steps"
               }
               disabled={gen4Processing}
-              userId="7cf1a35d-e572-4e39-b4cd-a38d8f10c6d2" // TODO: Get from auth context
+              disablePipeline={hasNonPipelineImages}
+              userId={userId || 'anonymous'}
             />
           </div>
           

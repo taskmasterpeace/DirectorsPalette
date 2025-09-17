@@ -523,8 +523,14 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
 }
 
 
-// Temporarily use direct export for internal frontend calls
-// TODO: Implement proper API key system for external access
+/**
+ * API Authentication Strategy:
+ * 1. Internal Users: Authenticate via Supabase Bearer token (from useAuth)
+ * 2. External API Users: Use X-API-Key header with DIRECTORS_PALETTE_API_KEY
+ * 3. Development: Authentication bypassed for localhost
+ *
+ * The withApiKeyValidation middleware handles all three cases
+ */
 export const POST = withApiKeyValidation(handleGen4Request)
 
 // Handle preflight requests for CORS

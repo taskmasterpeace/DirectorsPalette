@@ -309,12 +309,26 @@ export function Gen4TabOptimized({
     setGen4Processing(true)
     
     try {
-      // Try to get token, but don't fail if not available
-      const token = await getToken().catch(() => null)
+      // Get authentication token - required for API access
+      const token = await getToken()
 
-      // Log for debugging
+      // For development/testing, we can use a fallback token
+      // In production, this should require proper authentication
       if (!token) {
-        console.warn('⚠️ No auth token available, proceeding without authentication')
+        // Only allow unauthenticated access in development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          console.warn('⚠️ Development mode: Proceeding without authentication')
+          // Use a development token or empty string for local testing
+        } else {
+          // In production, authentication is required
+          toast({
+            title: "Authentication Required",
+            description: "Please sign in to use the Shot Creator",
+            variant: "destructive"
+          })
+          setGen4Processing(false)
+          return
+        }
       }
 
       // Upload reference images

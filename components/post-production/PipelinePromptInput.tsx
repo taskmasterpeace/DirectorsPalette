@@ -23,6 +23,7 @@ interface PipelinePromptInputProps {
   placeholder?: string
   disabled?: boolean
   userId?: string
+  disablePipeline?: boolean // NEW: Disable pipeline syntax when coming from other sources
 }
 
 export function PipelinePromptInput({
@@ -32,7 +33,8 @@ export function PipelinePromptInput({
   creditsPerImage,
   placeholder = "Enter your prompt... Use [option1, option2], _wildcard_, or | for pipeline steps",
   disabled = false,
-  userId = 'anonymous'
+  userId = 'anonymous',
+  disablePipeline = false
 }: PipelinePromptInputProps) {
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [syntaxValidation, setSyntaxValidation] = useState<any>({ isValid: true })
@@ -56,17 +58,31 @@ export function PipelinePromptInput({
       return
     }
 
+    // If pipeline is disabled, check for pipe syntax and show error
+    if (disablePipeline && prompt.includes('|')) {
+      setSyntaxValidation({
+        isValid: false,
+        error: 'Pipeline syntax not available',
+        suggestion: 'Pipeline (|) can only be used when starting fresh. You can still use brackets [option1, option2] and wildcards _name_'
+      })
+      setPipelineResult(null)
+      onPipelineChange(null)
+      return
+    }
+
     // Validate pipeline syntax in real-time
     const validation = validatePipelineSyntax(prompt)
     setSyntaxValidation(validation)
 
-    // Parse pipeline prompt
-    const result = parsePipelinePrompt(prompt, userWildCards)
+    // Parse pipeline prompt (or just dynamic prompt if pipeline disabled)
+    const result = disablePipeline
+      ? parsePipelinePrompt(prompt.replace(/\|/g, ' '), userWildCards) // Replace pipes with spaces if disabled
+      : parsePipelinePrompt(prompt, userWildCards)
     setPipelineResult(result)
 
     // Update parent with pipeline result
     onPipelineChange(result)
-  }, [prompt, onPipelineChange, userWildCards])
+  }, [prompt, onPipelineChange, userWildCards, disablePipeline])
 
   const costCalculation = pipelineResult ?
     calculatePipelineCost(pipelineResult, creditsPerImage) :
@@ -85,12 +101,29 @@ export function PipelinePromptInput({
         <div className="text-xs text-slate-300 space-y-2">
           <div className="font-medium text-white">💡 Enhanced Prompting Examples:</div>
           <div className="grid grid-cols-1 gap-1">
-            <div><strong>Brackets:</strong> <code className="bg-slate-900 px-1 rounded">character [smiling, frowning, surprised]</code></div>
-            <div><strong>Wild Cards:</strong> <code className="bg-slate-900 px-1 rounded">character in _locations_ with dramatic lighting</code></div>
-            <div><strong>🔥 Pipeline:</strong> <code className="bg-slate-900 px-1 rounded">enhance lighting | remove background | add office setting</code></div>
-            <div className="text-slate-400 text-xs mt-1">
-              Pipeline steps use | and each result feeds into the next step automatically
-            </div>
+            <div><strong>Brackets:</strong> <code className="bg-slate-900 px-1 rounded">character [smiling, frowning, surprised]</code> → generates 3 images</div>
+            <div><strong>Wild Cards:</strong> <code className="bg-slate-900 px-1 rounded">character in _locations_ with dramatic lighting</code> → generates multiple variations</div>
+            {!disablePipeline ? (
+              <>
+                <div><strong>🔥 Pipeline:</strong> <code className="bg-slate-900 px-1 rounded">enhance lighting | remove background | add office setting</code> → 3 sequential steps</div>
+                <div className="mt-2 p-2 bg-slate-900 rounded">
+                  <div className="font-medium text-blue-400 mb-1">Pipeline with Variations:</div>
+                  <code className="text-xs text-slate-200">isolate character | show character [smiling, dancing]</code>
+                  <div className="text-slate-400 mt-1">
+                    • Step 1: isolate character (1 image)<br/>
+                    • Step 2: show character smiling + dancing (2 images)<br/>
+                    • Result: 3 total images (step 1 + both variations of step 2)
+                  </div>
+                </div>
+                <div className="text-slate-500 text-xs mt-2">
+                  ℹ️ Each variation is generated separately. The last image from each step feeds into the next.
+                </div>
+              </>
+            ) : (
+              <div className="text-yellow-400 text-xs mt-1">
+                ⚠️ Pipeline syntax (|) is disabled when using images from other sources. Use brackets and wildcards for variations.
+              </div>
+            )}
           </div>
         </div>
       </div>

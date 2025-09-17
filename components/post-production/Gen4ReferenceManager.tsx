@@ -88,6 +88,65 @@ export function Gen4ReferenceManager({
     }
   }
 
+  // Handle paste from clipboard
+  const handlePasteImage = async (event?: React.MouseEvent) => {
+    // Prevent event bubbling if called from button click
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+
+    try {
+      // Try to read images first
+      try {
+        const clipboardItems = await navigator.clipboard.read()
+        for (const item of clipboardItems) {
+          const imageType = item.types.find(type => type.startsWith('image/'))
+          if (imageType) {
+            const blob = await item.getType(imageType)
+            const file = new File([blob], `pasted-image.${imageType.split('/')[1]}`, { type: imageType })
+            await handleGen4ImageUpload(file)
+            return
+          }
+        }
+      } catch (readError) {
+        // Could not read clipboard items, trying text fallback
+      }
+
+      // Try text clipboard for image URL
+      const text = await navigator.clipboard.readText()
+      if (text && (text.startsWith('http') || text.startsWith('data:image'))) {
+        // Handle URL or data URL
+        const newImage: Gen4ReferenceImage = {
+          id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          url: text,
+          preview: text,
+          tags: [],
+          detectedAspectRatio: '16:9', // Default, will be updated when loaded
+          file: undefined // Explicitly set file as undefined for URL-based images
+        }
+        setGen4ReferenceImages([...gen4ReferenceImages, newImage])
+        toast({
+          title: "Image Pasted",
+          description: "Image URL pasted from clipboard"
+        })
+      } else {
+        toast({
+          title: "No Image Found",
+          description: "No image found in clipboard",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Paste error:', error)
+      toast({
+        title: "Paste Failed",
+        description: "Unable to paste image from clipboard. Try copying an image first.",
+        variant: "destructive"
+      })
+    }
+  }
+
   // Handle removing reference image
   const removeGen4Image = (imageId: string) => {
     setGen4ReferenceImages(gen4ReferenceImages.filter(img => img.id !== imageId))
@@ -104,6 +163,15 @@ export function Gen4ReferenceManager({
           <Label className="text-white text-sm">
             {editingMode ? 'Input Image' : 'Reference Images'} ({gen4ReferenceImages.length}/{maxImages})
           </Label>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={(e) => handlePasteImage(e)}
+            className="h-7 px-2 border-slate-600 hover:border-slate-500"
+          >
+            <Clipboard className="h-3 w-3 mr-1" />
+            Paste
+          </Button>
         </div>
         {/* Horizontal compact layout */}
         <div className="flex gap-2">
@@ -227,25 +295,7 @@ export function Gen4ReferenceManager({
                     size="lg"
                     variant="outline"
                     className="h-16 md:h-8 md:flex-1 border-slate-600 hover:border-slate-500 bg-slate-800/50 hover:bg-slate-800 flex items-center justify-center"
-                    onClick={async () => {
-                      try {
-                        const clipboardItems = await navigator.clipboard.read()
-                        for (const item of clipboardItems) {
-                          if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
-                            const blob = await item.getType('image/png')
-                            const file = new File([blob], `reference-${index + 1}.png`, { type: 'image/png' })
-                            handleGen4ImageUpload(file)
-                            break
-                          }
-                        }
-                      } catch (error) {
-                        toast({
-                          title: "Paste Failed",
-                          description: "No image found in clipboard",
-                          variant: "destructive"
-                        })
-                      }
-                    }}
+                    onClick={(e) => handlePasteImage(e)}
                   >
                     <Clipboard className="h-6 w-6 md:h-4 md:w-4" />
                     <span className="ml-2 md:ml-1 text-sm md:text-xs">Paste</span>
