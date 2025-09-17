@@ -103,128 +103,166 @@ export function Gen4TabOptimized({
     return filtered
   }
 
-  const executePipelineSteps = async (pipelineResult: any, referenceUrl: string, authToken: string) => {
+  const executePipelineSteps = async (pipelineResult: any, referenceUrl: string, authToken: string | null) => {
     try {
-      const steps = pipelineResult.steps.map((step: any) => step.prompt)
       const chainId = `chain_${Date.now()}`
       let currentInputImage = referenceUrl
+      let totalVariations = 0
+      let finalImage = null
 
-      // Create immediate placeholders for all steps
-      steps.forEach((stepPrompt, index) => {
-        addImage({
-          url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDM0MzQzIi8+PC9zdmc+', // SVG placeholder
-          prompt: stepPrompt,
-          source: 'shot-creator',
-          model: gen4Settings.model || 'nano-banana',
-          settings: {
-            aspectRatio: gen4Settings.aspectRatio,
-            resolution: gen4Settings.resolution,
-            seed: gen4Settings.seed
-          },
-          tags: [`pipeline-step-${index + 1}`, 'pipeline', 'generating'],
-          creditsUsed: 0,
-          chain: {
-            chainId,
-            stepNumber: index + 1,
-            totalSteps: steps.length,
-            stepPrompt,
-            isFinal: index === steps.length - 1
-          }
+      // Calculate total variations across all steps
+      pipelineResult.steps.forEach((step: any) => {
+        const variationCount = step.expandedPrompts?.length || 1
+        totalVariations += variationCount
+      })
+
+      // Create placeholders for all variations
+      let placeholderIndex = 0
+      pipelineResult.steps.forEach((step: any, stepIndex: number) => {
+        const variations = step.expandedPrompts || [step.prompt]
+        variations.forEach((varPrompt: string, varIndex: number) => {
+          placeholderIndex++
+          addImage({
+            url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDM0MzQzIi8+PC9zdmc+',
+            prompt: varPrompt,
+            source: 'shot-creator',
+            model: gen4Settings.model || 'nano-banana',
+            settings: {
+              aspectRatio: gen4Settings.aspectRatio,
+              resolution: gen4Settings.resolution,
+              seed: gen4Settings.seed
+            },
+            tags: [`pipeline-step-${stepIndex + 1}`, 'pipeline', 'generating', `var-${varIndex + 1}`],
+            creditsUsed: 0,
+            chain: {
+              chainId,
+              stepNumber: stepIndex + 1,
+              totalSteps: pipelineResult.steps.length,
+              stepPrompt: varPrompt,
+              variationIndex: varIndex,
+              totalVariations: variations.length,
+              isFinal: false // Will update for actual final image
+            }
+          })
         })
       })
 
-      // DON'T reset processing state here - let pipeline complete first
-      // setGen4Processing(false) - REMOVED - this was causing infinite loops
+      // Process each step with all variations
+      for (let i = 0; i < pipelineResult.steps.length; i++) {
+        const step = pipelineResult.steps[i]
+        const variations = step.expandedPrompts || [step.prompt]
+        const isLastStep = i === pipelineResult.steps.length - 1
 
-      for (let i = 0; i < steps.length; i++) {
-        const stepPrompt = steps[i]
+        // For each variation in this step
+        for (let v = 0; v < variations.length; v++) {
+          const varPrompt = variations[v]
+          const isLastVariation = v === variations.length - 1
 
-        toast({
-          title: `Step ${i + 1}/${steps.length}`,
-          description: `${stepPrompt.substring(0, 40)}...`,
-        })
-
-        const stepResponse = await fetch('/post-production/api/gen4', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            prompt: stepPrompt,
-            reference_images: [currentInputImage],
-            model: gen4Settings.model || 'nano-banana',
-            aspect_ratio: gen4Settings.aspectRatio,
-            resolution: gen4Settings.resolution,
-            seed: gen4Settings.seed,
-            max_images: 1,
-            _isPipelineStep: true,
-            _stepNumber: i + 1
+          toast({
+            title: `Step ${i + 1}/${pipelineResult.steps.length} - Variation ${v + 1}/${variations.length}`,
+            description: `${varPrompt.substring(0, 40)}...`,
           })
-        })
 
-        if (!stepResponse.ok) {
-          const errorData = await stepResponse.json().catch(() => ({ error: stepResponse.statusText }))
+          const stepResponse = await fetch('/post-production/api/gen4', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+            },
+            body: JSON.stringify({
+              prompt: varPrompt,
+              reference_images: [currentInputImage],
+              model: gen4Settings.model || 'nano-banana',
+              aspect_ratio: gen4Settings.aspectRatio,
+              resolution: gen4Settings.resolution,
+              seed: gen4Settings.seed,
+              max_images: 1,
+              _isPipelineStep: true,
+              _stepNumber: i + 1,
+              _variationNumber: v + 1
+            })
+          })
 
-          // Check if it's a temporary error that can be retried
-          if (stepResponse.status === 503 || errorData.retry) {
-            toast.error(`Step ${i + 1} failed due to temporary AI service issues. Please try again in a moment.`)
-            throw new Error(`Temporary service issue - please retry`)
+          if (!stepResponse.ok) {
+            const errorData = await stepResponse.json().catch(() => ({ error: stepResponse.statusText }))
+
+            // Check if it's a temporary error that can be retried
+            if (stepResponse.status === 503 || errorData.retry) {
+              toast.error(`Step ${i + 1} variation ${v + 1} failed due to temporary AI service issues. Please try again in a moment.`)
+              throw new Error(`Temporary service issue - please retry`)
+            }
+
+            throw new Error(`Step ${i + 1} variation ${v + 1} failed: ${errorData.error || stepResponse.statusText}`)
           }
 
-          throw new Error(`Step ${i + 1} failed: ${errorData.error || stepResponse.statusText}`)
+          const stepResult = await stepResponse.json()
+
+          if (!stepResult.images || stepResult.images.length === 0) {
+            // Handle case where no images were generated due to API issues
+            if (stepResult.retry) {
+              toast.error('AI service temporarily unavailable. Please try again shortly.')
+              throw new Error('Service temporarily unavailable')
+            }
+            throw new Error(`Step ${i + 1} variation ${v + 1}: No images generated`)
+          }
+
+          const stepImage = stepResult.images[0]
+
+          // Remove the placeholder for this specific variation
+          const currentChainId = chainId
+          const placeholders = getImagesByTag('generating').filter(img =>
+            img.chain?.chainId === currentChainId &&
+            img.chain?.stepNumber === i + 1 &&
+            img.chain?.variationIndex === v
+          )
+          placeholders.forEach(placeholder => {
+            removeImage(placeholder.id)
+          })
+
+          // Determine if this is the final image of the entire pipeline
+          const isFinalPipelineImage = isLastStep && isLastVariation
+
+          // Only update input for next step if this is the last variation of current step
+          if (isLastVariation) {
+            currentInputImage = stepImage.url
+            finalImage = stepImage.url
+          }
+
+          // Add the real image
+          addImage({
+            url: stepImage.url,
+            prompt: varPrompt,
+            source: 'shot-creator',
+            model: gen4Settings.model || 'nano-banana',
+            settings: {
+              aspectRatio: gen4Settings.aspectRatio,
+              resolution: gen4Settings.resolution,
+              seed: gen4Settings.seed
+            },
+            tags: [
+              `pipeline-step-${i + 1}`,
+              'pipeline',
+              `var-${v + 1}`,
+              ...(isFinalPipelineImage ? ['pipeline-final'] : [])
+            ],
+            creditsUsed: stepResult.credits_used || 0,
+            chain: {
+              chainId,
+              stepNumber: i + 1,
+              totalSteps: pipelineResult.steps.length,
+              stepPrompt: varPrompt,
+              variationIndex: v,
+              totalVariations: variations.length,
+              isFinal: isFinalPipelineImage,
+              isPipelineFinal: isFinalPipelineImage
+            }
+          })
         }
-
-        const stepResult = await stepResponse.json()
-
-        if (!stepResult.images || stepResult.images.length === 0) {
-          // Handle case where no images were generated due to API issues
-          if (stepResult.retry) {
-            toast.error('AI service temporarily unavailable. Please try again shortly.')
-            throw new Error('Service temporarily unavailable')
-          }
-          throw new Error(`Step ${i + 1}: No images generated`)
-        }
-
-        const stepImage = stepResult.images[0]
-        currentInputImage = stepImage.url
-
-        // Remove the placeholder for this step
-        const currentChainId = chainId // Ensure chainId is captured in closure
-        const placeholders = getImagesByTag('generating').filter(img =>
-          img.chain?.chainId === currentChainId && img.chain?.stepNumber === i + 1
-        )
-        placeholders.forEach(placeholder => {
-          removeImage(placeholder.id)
-        })
-
-        // Add the real image
-        addImage({
-          url: stepImage.url,
-          prompt: stepPrompt,
-          source: 'shot-creator',
-          model: gen4Settings.model || 'nano-banana',
-          settings: {
-            aspectRatio: gen4Settings.aspectRatio,
-            resolution: gen4Settings.resolution,
-            seed: gen4Settings.seed
-          },
-          tags: [`pipeline-step-${i + 1}`, 'pipeline'],
-          creditsUsed: stepResult.credits_used || 0,
-          chain: {
-            chainId,
-            stepNumber: i + 1,
-            totalSteps: steps.length,
-            stepPrompt: stepPrompt,
-            isFinal: i === steps.length - 1
-          }
-        })
-
       }
 
       toast({
         title: "Pipeline Complete!",
-        description: `All ${steps.length} steps executed successfully`,
+        description: `Generated ${totalVariations} images across ${pipelineResult.steps.length} steps`,
       })
 
       // Reset processing state after successful pipeline completion
@@ -271,9 +309,12 @@ export function Gen4TabOptimized({
     setGen4Processing(true)
     
     try {
-      const token = await getToken()
+      // Try to get token, but don't fail if not available
+      const token = await getToken().catch(() => null)
+
+      // Log for debugging
       if (!token) {
-        throw new Error("Authentication required")
+        console.warn('⚠️ No auth token available, proceeding without authentication')
       }
 
       // Upload reference images
@@ -321,7 +362,10 @@ export function Gen4TabOptimized({
       // Generate with Gen4
       const headers = new Headers()
       headers.set('Content-Type', 'application/json')
-      headers.set('Authorization', `Bearer ${token}`)
+      // Only add Authorization header if token exists
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+      }
       
       // Create AbortController for main generation timeout
       const genController = new AbortController()
@@ -531,10 +575,12 @@ export function Gen4TabOptimized({
               gen4Settings={gen4Settings}
               setGen4Settings={setGen4Settings}
               gen4Processing={gen4Processing}
+              hasNonPipelineImages={gen4ReferenceImages.some(img => img.url && !img.url.includes('pipeline'))} // Check if any reference image is from non-pipeline source
               onGenerate={handleGen4Generate}
               canGenerate={canGenerate}
               referenceImagesCount={gen4ReferenceImages.length}
               compact={false}
+              userId={user?.id}
             />
           </div>
 
