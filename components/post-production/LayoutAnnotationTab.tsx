@@ -146,21 +146,19 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
   }, [toast])
 
   useEffect(() => {
-    if (incomingImages.length === 0) return
+    if (incomingImages.length === 0) {
+      return
+    }
 
     const canvasApi = canvasRef.current
     if (!canvasApi?.importImage) {
-      const timer = window.setTimeout(() => {
-        setIncomingImages(prev => [...prev])
-      }, 100)
-      return () => window.clearTimeout(timer)
+      return
     }
 
-    const queue = [...incomingImages]
-    setIncomingImages([])
-    queue.forEach((url) => {
+    incomingImages.forEach((url) => {
       canvasApi.importImage(url)
     })
+    setIncomingImages([])
   }, [incomingImages])
 
   const handleFileUpload = useCallback((event: ChangeEvent<HTMLInputElement>) => {

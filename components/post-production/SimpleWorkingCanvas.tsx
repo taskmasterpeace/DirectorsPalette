@@ -60,6 +60,26 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
   const [textPosition, setTextPosition] = useState<{ x: number; y: number } | null>(null)
   const [pendingText, setPendingText] = useState('')
 
+  const getCanvasPoint = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return null
+    }
+
+    const rect = canvas.getBoundingClientRect()
+    if (!rect.width || !rect.height) {
+      return null
+    }
+
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    }
+  }, [])
+
   // Initialize canvas and sync dimensions with props
   useEffect(() => {
     const canvas = canvasRef.current
@@ -186,14 +206,13 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
   }, [backgroundColor, images])
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
     const ctx = ctxRef.current
-    if (!canvas || !ctx) return
+    const point = getCanvasPoint(e.clientX, e.clientY)
+    if (!ctx || !point) {
+      return
+    }
 
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / zoom
-    const y = (e.clientY - rect.top) / zoom
-
+    const { x, y } = point
 
     if (tool === 'text') {
       setTextPosition({ x, y })
@@ -216,19 +235,20 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       ctx.beginPath()
       ctx.moveTo(x, y)
     }
-  }, [tool, color, brushSize, zoom])
+  }, [tool, color, brushSize, getCanvasPoint])
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
+    if (!isDrawing) {
+      return
+    }
 
-    const canvas = canvasRef.current
     const ctx = ctxRef.current
-    if (!canvas || !ctx) return
+    const point = getCanvasPoint(e.clientX, e.clientY)
+    if (!ctx || !point) {
+      return
+    }
 
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / zoom
-    const y = (e.clientY - rect.top) / zoom
-
+    const { x, y } = point
     setCurrentPoint({ x, y })
 
     if (tool === 'brush') {
@@ -238,20 +258,21 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       // For shape tools, draw live preview
       drawPreview()
     }
-  }, [isDrawing, tool, zoom, drawPreview])
+  }, [isDrawing, tool, drawPreview, getCanvasPoint])
 
   const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !startPoint) return
+    if (!isDrawing || !startPoint) {
+      return
+    }
 
-    const canvas = canvasRef.current
     const ctx = ctxRef.current
     const previewCtx = previewCtxRef.current
-    if (!canvas || !ctx || !previewCtx) return
+    const point = getCanvasPoint(e.clientX, e.clientY)
+    if (!ctx || !previewCtx || !point) {
+      return
+    }
 
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / zoom
-    const y = (e.clientY - rect.top) / zoom
-
+    const { x, y } = point
 
     // Clear preview canvas
     previewCtx.clearRect(0, 0, previewCtx.canvas.width, previewCtx.canvas.height)
@@ -266,25 +287,21 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
       const width = x - startPoint.x
       const height = y - startPoint.y
       ctx.strokeRect(startPoint.x, startPoint.y, width, height)
-      
     } else if (tool === 'circle') {
-      const radius = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2))
+      const radius = Math.sqrt((x - startPoint.x) ** 2 + (y - startPoint.y) ** 2)
       ctx.beginPath()
       ctx.arc(startPoint.x, startPoint.y, radius, 0, 2 * Math.PI)
       ctx.stroke()
-      
     } else if (tool === 'line') {
       ctx.beginPath()
       ctx.moveTo(startPoint.x, startPoint.y)
       ctx.lineTo(x, y)
       ctx.stroke()
-      
     } else if (tool === 'arrow') {
       drawArrow(ctx, startPoint.x, startPoint.y, x, y)
     }
 
     if (tool !== 'select') {
-      // Add to objects list and save state
       setObjects(prev => [...prev, {
         type: tool,
         startPoint,
@@ -299,7 +316,7 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
     setIsDrawing(false)
     setStartPoint(null)
     setCurrentPoint(null)
-  }, [isDrawing, startPoint, tool, color, brushSize, zoom, drawArrow, saveState])
+  }, [isDrawing, startPoint, tool, color, brushSize, drawArrow, saveState, getCanvasPoint])
 
   const handleTextSubmit = useCallback(() => {
     if (!pendingText.trim() || !textPosition) return
@@ -470,18 +487,22 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
         {/* Canvas Container */}
         <div className="flex-1 bg-slate-900 rounded-lg p-4 relative flex items-center justify-center min-h-96 border-2 border-purple-500/50 overflow-auto">
           <div className="relative flex items-center justify-center w-full h-full min-h-[500px]">
-            <div className="relative" style={{ maxWidth: '100%', maxHeight: '100%' }}>
+            <div
+              className="relative"
+              style={{
+                width: `${canvasWidth}px`,
+                height: `${canvasHeight}px`
+              }}
+            >
               {/* Main Canvas */}
               <canvas
                 ref={canvasRef}
+                width={canvasWidth}
+                height={canvasHeight}
                 className="border-4 border-purple-400 bg-white shadow-2xl rounded-lg cursor-crosshair block"
                 style={{
                   transform: `scale(${zoom})`,
-                  transformOrigin: 'center center',
-                  width: `${canvasWidth}px`,
-                  height: `${canvasHeight}px`,
-                  maxWidth: '100%',
-                  maxHeight: '100%'
+                  transformOrigin: 'top left',
                 }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -490,12 +511,12 @@ const SimpleWorkingCanvas = forwardRef<SimpleCanvasRef, SimpleCanvasProps>(({
               {/* Preview Canvas (overlays main canvas) */}
               <canvas
                 ref={previewCanvasRef}
+                width={canvasWidth}
+                height={canvasHeight}
                 className="absolute top-0 left-0 pointer-events-none"
                 style={{
                   transform: `scale(${zoom})`,
-                  transformOrigin: 'center center',
-                  width: `${canvasWidth}px`,
-                  height: `${canvasHeight}px`
+                  transformOrigin: 'top left',
                 }}
               />
             </div>
