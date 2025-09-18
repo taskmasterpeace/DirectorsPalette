@@ -250,7 +250,9 @@ export const usePromptLibraryStore = create<PromptLibraryState>()(
         set({ isLoading: true, error: null })
 
         try {
-          if (!supabase) {
+          // If no Supabase or no userId, work in offline mode
+          if (!supabase || !userId || userId === 'guest') {
+            console.log('Working in offline mode - no Supabase connection or guest user')
             set({ isLoading: false })
             return
           }
@@ -262,7 +264,12 @@ export const usePromptLibraryStore = create<PromptLibraryState>()(
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
 
-          if (promptsError) throw promptsError
+          if (promptsError) {
+            console.warn('Failed to load prompts from Supabase:', promptsError.message)
+            // Don't throw, just work offline
+            set({ isLoading: false })
+            return
+          }
 
           // Load custom categories
           const { data: categoriesData, error: categoriesError } = await supabase
@@ -271,7 +278,10 @@ export const usePromptLibraryStore = create<PromptLibraryState>()(
             .eq('user_id', userId)
             .order('order', { ascending: true })
 
-          if (categoriesError) throw categoriesError
+          if (categoriesError) {
+            console.warn('Failed to load categories from Supabase:', categoriesError.message)
+            // Continue with just the prompts data
+          }
 
           const prompts = promptsData || []
           const quickPrompts = prompts.filter(p => p.is_quick_access)
@@ -332,16 +342,18 @@ export const usePromptLibraryStore = create<PromptLibraryState>()(
             isLoading: false
           })
         } catch (error) {
-          console.error('Failed to load prompts:', error)
-          set({
-            error: error instanceof Error ? error.message : 'Failed to load prompts',
-            isLoading: false
-          })
+          console.warn('Prompt Library: Working in offline mode due to:', error instanceof Error ? error.message : error)
+          // Don't set error state, just work offline
+          set({ isLoading: false })
         }
       },
 
       saveToSupabase: async (userId) => {
-        if (!supabase || !userId) return
+        // Skip saving if no Supabase or guest user
+        if (!supabase || !userId || userId === 'guest') {
+          console.log('Skipping Supabase save - offline mode or guest user')
+          return
+        }
 
         try {
           const state = get()
@@ -389,7 +401,8 @@ export const usePromptLibraryStore = create<PromptLibraryState>()(
             if (categoriesError) throw categoriesError
           }
         } catch (error) {
-          console.error('Failed to save to Supabase:', error)
+          console.warn('Failed to save to Supabase (will retry later):', error instanceof Error ? error.message : error)
+          // Don't throw - just log and continue
         }
       },
 

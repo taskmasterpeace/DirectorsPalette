@@ -82,10 +82,17 @@ class PromptLoaderSingleton {
             categoryId: preset.categoryId,
             tags: preset.tags,
             reference: preset.reference,
-            isQuickAccess: preset.isQuickAccess || false
+            isQuickAccess: preset.isQuickAccess || false,
+            metadata: {
+              model: 'nano-banana',
+              source: 'preset',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
           })
         } catch (error) {
-          console.error('Error adding preset prompt:', error)
+          // Silently continue - prompts will work locally even without Supabase
+          console.log('Note: Prompt added locally (Supabase save may have failed)')
         }
       }
 

@@ -92,11 +92,24 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
   // Load user prompts on mount
   useEffect(() => {
     const loadPrompts = async () => {
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await loadUserPrompts(user.id)
+      try {
+        if (supabase) {
+          const { data: { user }, error } = await supabase.auth.getUser()
+          if (!error && user) {
+            await loadUserPrompts(user.id)
+          } else {
+            // No user or auth error - work in guest mode
+            console.log('Prompt Library: Working in guest mode')
+            await loadUserPrompts('guest')
+          }
+        } else {
+          // No Supabase - work offline
+          console.log('Prompt Library: Working offline - Supabase not available')
+          await loadUserPrompts('guest')
         }
+      } catch (error) {
+        console.warn('Prompt Library: Failed to check auth status, working offline:', error)
+        await loadUserPrompts('guest')
       }
     }
     loadPrompts()
