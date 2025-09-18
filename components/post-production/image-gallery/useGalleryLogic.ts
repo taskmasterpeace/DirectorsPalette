@@ -19,7 +19,8 @@ export function useGalleryLogic(
     fullscreenImage,
     getTotalImages,
     getTotalCreditsUsed,
-    getUniqueChains
+    getUniqueChains,
+    updateImageReference
   } = useUnifiedGalleryStore()
 
   // State
@@ -30,7 +31,7 @@ export function useGalleryLogic(
     viewMode: 'grid'
   })
 
-  const IMAGES_PER_PAGE = 8
+  const IMAGES_PER_PAGE = 12
 
   // Get chain data
   const chains = useMemo(() => getUniqueChains(), [getUniqueChains])
@@ -191,6 +192,7 @@ export function useGalleryLogic(
     handleSearchChange,
     handleViewModeChange,
     handlePageChange,
-    setFullscreenImage
+    setFullscreenImage,
+    updateImageReference
   }
 }

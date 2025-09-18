@@ -1,0 +1,24 @@
+{
+  "project": {
+    "name": "Director's Palette",
+    "description": "Professional-grade AI creative platform for generating production-ready shot lists",
+    "type": "web"
+  },
+  "models": {
+    "openai": {
+      "apiKey": "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",
+      "model": "gpt-4"
+    }
+  },
+  "tasks": {
+    "autoGenerate": false,
+    "trackProgress": true
+  },
+  "rules": [
+    "Follow TypeScript strict mode",
+    "Use Next.js App Router patterns",
+    "Maximum 200 lines per component file",
+    "Run tests before committing",
+    "Use Zustand for state management"
+  ]
+}

@@ -17,7 +17,7 @@ import type {
 
 // Import the smaller components
 import { Gen4ReferenceManager } from './Gen4ReferenceManager'
-import { Gen4PromptSettings } from './Gen4PromptSettings' 
+import { Gen4PromptSettings } from './Gen4PromptSettings'
 // Removed Gen4GenerationHistory - using UnifiedImageGallery only
 import { Gen4ReferenceLibrary } from './Gen4ReferenceLibrary'
 import { ModelSelector } from './ModelSelector'

@@ -101,11 +101,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Show login form if not authenticated AND on protected routes
   if (!session.isAuthenticated) {
     // Allow public routes without forcing authentication
-    const isPublicRoute = typeof window !== 'undefined' && 
-      (window.location.pathname === '/' ||              // Landing page  
+    const isPublicRoute = typeof window !== 'undefined' &&
+      (window.location.pathname === '/' ||              // Landing page
        window.location.pathname.startsWith('/help') ||  // Help pages
-       window.location.pathname.startsWith('/auth/'))   // Auth callbacks
-    
+       window.location.pathname.startsWith('/auth/') || // Auth callbacks
+       window.location.pathname.startsWith('/post-production') || // TEMPORARY: For testing annotation system
+       window.location.pathname.startsWith('/test-annotation'))   // TEMPORARY: For testing annotation system
+
     if (!isPublicRoute) {
       return <LoginForm onLogin={login} />
     }

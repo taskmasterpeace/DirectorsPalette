@@ -7,7 +7,8 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
+import { Switch } from '@/components/ui/switch'
+import {
   MousePointer2,
   Brush,
   Square,
@@ -26,44 +27,38 @@ interface CanvasToolbarProps {
   onPropertiesChange: (properties: Partial<DrawingProperties>) => void
 }
 
-const PRESET_COLORS = [
-  '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-  '#FFA500', '#800080', '#FFC0CB', '#A52A2A', '#808080', '#000000'
-]
-
 const FONT_FAMILIES = [
   'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Verdana', 'Tahoma'
 ]
 
-export function CanvasToolbar({ 
-  canvasState, 
-  onToolChange, 
-  onPropertiesChange 
+export function CanvasToolbar({
+  canvasState,
+  onToolChange,
+  onPropertiesChange
 }: CanvasToolbarProps) {
-  const [showColorPicker, setShowColorPicker] = useState(false)
-  const [customColor, setCustomColor] = useState(canvasState.color)
+  const [fillMode, setFillMode] = useState(canvasState.fillMode || false)
 
   const tools = [
-    { id: 'select', icon: MousePointer2, label: 'Select', shortcut: 'V' },
-    { id: 'brush', icon: Brush, label: 'Brush', shortcut: 'B' },
-    { id: 'rectangle', icon: Square, label: 'Rectangle', shortcut: 'R' },
-    { id: 'circle', icon: Circle, label: 'Circle', shortcut: 'C' },
-    { id: 'line', icon: Minus, label: 'Line', shortcut: 'L' },
-    { id: 'arrow', icon: ArrowRight, label: 'Arrow', shortcut: 'A' },
-    { id: 'text', icon: Type, label: 'Text', shortcut: 'T' },
-    { id: 'eraser', icon: Eraser, label: 'Eraser', shortcut: 'E' }
+    { id: 'select', icon: MousePointer2, label: 'Select' },
+    { id: 'brush', icon: Brush, label: 'Brush' },
+    { id: 'rectangle', icon: Square, label: 'Rectangle' },
+    { id: 'circle', icon: Circle, label: 'Circle' },
+    { id: 'line', icon: Minus, label: 'Line' },
+    { id: 'arrow', icon: ArrowRight, label: 'Arrow' },
+    { id: 'text', icon: Type, label: 'Text' },
+    { id: 'eraser', icon: Eraser, label: 'Eraser' }
   ] as const
 
   const handleColorChange = (color: string) => {
     onPropertiesChange({ color })
-    setCustomColor(color)
   }
 
-  const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const color = e.target.value
-    setCustomColor(color)
-    onPropertiesChange({ color })
+  const handleFillModeChange = (checked: boolean) => {
+    setFillMode(checked)
+    onPropertiesChange({ fillMode: checked })
   }
+
+  const isShapeTool = ['rectangle', 'circle'].includes(canvasState.tool)
 
   return (
     <Card className="bg-slate-800/50 border-slate-600">
@@ -73,26 +68,25 @@ export function CanvasToolbar({
           Drawing Tools
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* Tool Selection */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-300">Tools</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1">
             {tools.map((tool) => {
               const IconComponent = tool.icon
               const isActive = canvasState.tool === tool.id
-              
+
               return (
                 <Button
                   key={tool.id}
                   size="sm"
                   onClick={() => onToolChange(tool.id as CanvasState['tool'])}
-                  className={`flex items-center gap-2 justify-start text-left ${
-                    isActive 
-                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  className={`flex items-center gap-2 justify-start text-left h-8 ${
+                    isActive
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
                       : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                   }`}
-                  title={`${tool.label} (${tool.shortcut})`}
                 >
                   <IconComponent className="w-4 h-4" />
                   <span className="text-xs">{tool.label}</span>
@@ -102,77 +96,66 @@ export function CanvasToolbar({
           </div>
         </div>
 
-        {/* Color Selection */}
-        <div className="space-y-3">
+        {/* Color Selection - Simplified */}
+        <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-300">Color</Label>
-          
-          {/* Current Color Display */}
           <div className="flex items-center gap-2">
-            <div 
-              className="w-8 h-8 rounded border-2 border-slate-400 cursor-pointer"
-              style={{ backgroundColor: canvasState.color }}
-              onClick={() => setShowColorPicker(!showColorPicker)}
-              title="Current color - click to toggle color picker"
+            <input
+              type="color"
+              value={canvasState.color}
+              onChange={(e) => handleColorChange(e.target.value)}
+              className="w-12 h-10 rounded border-2 border-slate-600 cursor-pointer bg-slate-700"
             />
             <Input
               type="text"
               value={canvasState.color}
               onChange={(e) => handleColorChange(e.target.value)}
-              className="flex-1 bg-slate-700 border-slate-600 text-white text-sm"
+              className="flex-1 bg-slate-700 border-slate-600 text-white text-sm h-10 font-mono"
               placeholder="#FF0000"
             />
           </div>
-          
-          {/* Preset Colors */}
-          <div className="grid grid-cols-6 gap-2">
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                className={`w-8 h-8 rounded border-2 cursor-pointer hover:scale-110 transition-transform ${
-                  canvasState.color === color ? 'border-white' : 'border-slate-400'
-                }`}
-                style={{ backgroundColor: color }}
-                onClick={() => handleColorChange(color)}
-                title={color}
-              />
-            ))}
-          </div>
-          
-          {/* Custom Color Picker */}
-          {showColorPicker && (
-            <div className="space-y-2">
-              <Label className="text-xs text-slate-400">Custom Color</Label>
-              <input
-                type="color"
-                value={customColor}
-                onChange={handleCustomColorChange}
-                className="w-full h-8 rounded border border-slate-600 cursor-pointer"
+        </div>
+
+        {/* Fill Mode for Shapes */}
+        {isShapeTool && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium text-slate-300">Fill Shape</Label>
+              <Switch
+                checked={fillMode}
+                onCheckedChange={handleFillModeChange}
+                className="data-[state=checked]:bg-green-600"
               />
             </div>
-          )}
-        </div>
-
-        {/* Brush Size */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-slate-300">
-            Brush Size: {canvasState.brushSize}px
-          </Label>
-          <Slider
-            value={[canvasState.brushSize]}
-            onValueChange={([value]) => onPropertiesChange({ brushSize: value })}
-            min={1}
-            max={50}
-            step={1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-slate-400">
-            <span>1px</span>
-            <span>50px</span>
+            <p className="text-xs text-slate-400">
+              {fillMode ? 'Shape will be filled' : 'Shape will be hollow'}
+            </p>
           </div>
-        </div>
+        )}
+
+        {/* Brush Size - Only show for brush, line, arrow, eraser tools */}
+        {!isShapeTool && canvasState.tool !== 'select' && canvasState.tool !== 'text' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-300">
+              Brush Size: {canvasState.brushSize}px
+            </Label>
+            <Slider
+              value={[canvasState.brushSize]}
+              onValueChange={([value]) => onPropertiesChange({ brushSize: value })}
+              min={1}
+              max={50}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-slate-400">
+              <span>1px</span>
+              <span>50px</span>
+            </div>
+          </div>
+        )}
 
         {/* Opacity */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Label className="text-sm font-medium text-slate-300">
             Opacity: {Math.round(canvasState.opacity * 100)}%
           </Label>
@@ -192,9 +175,9 @@ export function CanvasToolbar({
 
         {/* Text Properties (only show when text tool is selected) */}
         {canvasState.tool === 'text' && (
-          <div className="space-y-4 border-t border-slate-600 pt-4">
+          <div className="space-y-3 border-t border-slate-600 pt-3">
             <Label className="text-sm font-medium text-slate-300">Text Properties</Label>
-            
+
             {/* Font Family */}
             <div className="space-y-2">
               <Label className="text-xs text-slate-400">Font Family</Label>
@@ -202,13 +185,13 @@ export function CanvasToolbar({
                 value={canvasState.fontFamily}
                 onValueChange={(value) => onPropertiesChange({ fontFamily: value })}
               >
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white h-8 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {FONT_FAMILIES.map((font) => (
-                    <SelectItem 
-                      key={font} 
+                    <SelectItem
+                      key={font}
                       value={font}
                       className="text-white hover:bg-slate-600"
                       style={{ fontFamily: font }}
@@ -219,7 +202,7 @@ export function CanvasToolbar({
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Font Size */}
             <div className="space-y-2">
               <Label className="text-xs text-slate-400">
@@ -240,40 +223,6 @@ export function CanvasToolbar({
             </div>
           </div>
         )}
-
-        {/* Tool Tips */}
-        <div className="border-t border-slate-600 pt-4">
-          <Label className="text-xs font-medium text-slate-400 block mb-2">
-            Keyboard Shortcuts
-          </Label>
-          <div className="grid grid-cols-2 gap-1 text-xs text-slate-500">
-            <div>V - Select</div>
-            <div>B - Brush</div>
-            <div>R - Rectangle</div>
-            <div>C - Circle</div>
-            <div>L - Line</div>
-            <div>A - Arrow</div>
-            <div>T - Text</div>
-            <div>E - Eraser</div>
-          </div>
-        </div>
-
-        {/* Current Tool Info */}
-        <div className="bg-slate-700/50 rounded-lg p-3">
-          <div className="text-sm text-green-400 font-medium mb-1">
-            Active Tool: {tools.find(t => t.id === canvasState.tool)?.label}
-          </div>
-          <div className="text-xs text-slate-400">
-            {canvasState.tool === 'select' && 'Click and drag to move objects'}
-            {canvasState.tool === 'brush' && 'Click and drag to draw freehand'}
-            {canvasState.tool === 'rectangle' && 'Click and drag to draw rectangle'}
-            {canvasState.tool === 'circle' && 'Click and drag to draw circle'}
-            {canvasState.tool === 'line' && 'Click and drag to draw line'}
-            {canvasState.tool === 'arrow' && 'Click and drag to draw arrow'}
-            {canvasState.tool === 'text' && 'Click to add text'}
-            {canvasState.tool === 'eraser' && 'Click to erase elements'}
-          </div>
-        </div>
       </CardContent>
     </Card>
   )

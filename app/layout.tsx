@@ -9,6 +9,7 @@ import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { LayoutHeader } from "@/components/layout-header"
 import { AuthProvider } from "@/components/auth/AuthProvider"
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout"
+import { PromptProvider } from "@/components/providers/PromptProvider"
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
@@ -25,9 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <AuthProvider>
-            <ConditionalLayout>
-              {children}
-            </ConditionalLayout>
+            <PromptProvider>
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
+            </PromptProvider>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>

@@ -78,12 +78,19 @@ ComplexComponent.tsx (800 lines) becomes:
 
 ### Testing Requirements
 
-**NEVER deploy without testing:**
+**🚨 MANDATORY: TEST THAT SHIT BEFORE MARKING DONE! 🚨**
+
+**NEVER deploy or mark tasks complete without testing:**
 
 1. **Unit Tests**: Run `npm run test` after changes
 2. **Browser Testing**: Always test with Playwright (`npx playwright test`)
-3. **Manual Testing**: Verify functionality in development server
+3. **Manual Testing**: Verify functionality in development server - ACTUALLY TEST THE FEATURE WORKS
 4. **Build Verification**: Ensure `npm run build` succeeds
+5. **Feature Testing**: Test the actual feature in the browser before considering it done
+6. **Error Checking**: Check browser console for errors
+7. **Regression Testing**: Verify existing features still work
+
+**IMPORTANT**: If you don't test it, it's not done. Period.
 
 ## Key Features & Components
 
@@ -176,3 +183,7 @@ npx playwright test --ui
 - Implement virtual scrolling for large lists
 - Lazy load heavy components with dynamic imports
 - Monitor bundle size with `npm run build`
+
+## Task Master AI Instructions
+**Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
+@./.taskmaster/CLAUDE.md

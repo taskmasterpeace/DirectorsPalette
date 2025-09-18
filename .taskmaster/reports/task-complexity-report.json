@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2025-09-18T08:46:28.030Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 59,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 51,
+			"taskTitle": "Fix Accessibility Issues in Dialogs",
+			"complexityScore": 7,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the task into subtasks for adding DialogTitle components, implementing aria-describedby attributes, testing with screen readers, and verifying compliance with WCAG standards.",
+			"reasoning": "The task involves multiple aspects of accessibility improvements, requiring both implementation and testing across different dialogs. Ensuring compliance with WCAG standards adds complexity."
+		},
+		{
+			"taskId": 52,
+			"taskTitle": "Improve Visual Consistency and Spacing",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Divide the task into conducting a spacing audit, implementing design tokens, and creating spacing utility classes.",
+			"reasoning": "Standardizing spacing involves auditing existing components, implementing new design tokens, and ensuring consistency across various UI elements."
+		},
+		{
+			"taskId": 53,
+			"taskTitle": "Enhance Empty State Designs",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Create subtasks for designing icons and illustrations, crafting engaging messages, and consulting with the design team.",
+			"reasoning": "The task requires creative input and consistency across the application, involving design and content creation."
+		},
+		{
+			"taskId": 54,
+			"taskTitle": "Fix Color Contrast Issues",
+			"complexityScore": 6,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Split the task into running a contrast analysis, adjusting colors, and updating the design system documentation.",
+			"reasoning": "Addressing color contrast issues involves analysis, design adjustments, and documentation updates, requiring coordination across teams."
+		},
+		{
+			"taskId": 55,
+			"taskTitle": "Code Cleanup and Optimization",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the task into identifying duplicate code, removing unused components, consolidating functions, optimizing bundle size, and backing up the codebase.",
+			"reasoning": "The task involves a comprehensive audit and optimization of the codebase, which is complex and requires careful planning to avoid breaking functionality."
+		},
+		{
+			"taskId": 56,
+			"taskTitle": "Comprehensive Testing Suite",
+			"complexityScore": 9,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Create subtasks for developing Playwright tests, adding visual regression tests, implementing accessibility tests, conducting performance testing, and documenting test coverage.",
+			"reasoning": "Developing a comprehensive testing suite involves multiple types of tests and integration into the CI/CD pipeline, requiring significant effort and expertise."
+		},
+		{
+			"taskId": 57,
+			"taskTitle": "Setup Continuous Integration for Testing",
+			"complexityScore": 7,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Divide the task into configuring the CI/CD pipeline, integrating Playwright tests, and ensuring accessibility and performance tests are included.",
+			"reasoning": "Integrating automated testing into the CI/CD pipeline requires technical setup and coordination with existing processes, adding complexity."
+		},
+		{
+			"taskId": 58,
+			"taskTitle": "Conduct Accessibility Research",
+			"complexityScore": 5,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for conducting research on best practices and implementing findings to enhance dialog accessibility.",
+			"reasoning": "The task involves research and implementation, which requires understanding current best practices and applying them effectively."
+		},
+		{
+			"taskId": 59,
+			"taskTitle": "Design System Documentation Update",
+			"complexityScore": 4,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Divide the task into documenting color palette changes and updating spacing guidelines.",
+			"reasoning": "Updating documentation is straightforward but requires attention to detail to ensure accuracy and clarity."
+		},
+		{
+			"taskId": 60,
+			"taskTitle": "User Feedback Collection",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Create subtasks for deploying surveys and analyzing feedback data.",
+			"reasoning": "Collecting and analyzing user feedback is relatively simple but important for informing future improvements."
+		}
+	]
+}

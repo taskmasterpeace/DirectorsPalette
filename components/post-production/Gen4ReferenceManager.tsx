@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { 
+import {
   Upload,
   Clipboard,
   Trash2,
   Plus,
-  Edit
+  Edit,
+  X,
+  Expand
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import type { Gen4ReferenceImage } from '@/lib/post-production/enhanced-types'
@@ -33,7 +35,8 @@ export function Gen4ReferenceManager({
 }: Gen4ReferenceManagerProps) {
   const { toast } = useToast()
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null)
-  
+  const [fullscreenImage, setFullscreenImage] = useState<Gen4ReferenceImage | null>(null)
+
   // Progressive disclosure: Start with 3, expand to 6, then 9, then max
   const getVisibleSlots = () => {
     const filledSlots = gen4ReferenceImages.length
@@ -267,13 +270,25 @@ export function Gen4ReferenceManager({
                       <img
                         src={image.preview}
                         alt={`Reference ${index + 1}`}
-                        className="w-full h-full object-cover md:object-contain"
+                        className="w-full h-full object-cover md:object-contain cursor-pointer"
+                        onClick={() => setFullscreenImage(image)}
                       />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute bottom-2 left-2 h-8 w-8 p-0 md:h-6 md:w-6 bg-black/50 hover:bg-black/70"
+                        onClick={() => setFullscreenImage(image)}
+                      >
+                        <Expand className="h-4 w-4 md:h-3 md:w-3 text-white" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         className="absolute top-2 right-2 h-8 w-8 p-0 md:h-6 md:w-6"
-                        onClick={() => removeGen4Image(image.id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeGen4Image(image.id)
+                        }}
                       >
                         <Trash2 className="h-4 w-4 md:h-3 md:w-3" />
                       </Button>
@@ -386,9 +401,67 @@ export function Gen4ReferenceManager({
           </div>
         )}
         
-        <p className="text-sm md:text-xs text-slate-400 text-center md:text-left mt-8 mb-4">
-          Tap image areas to upload or use the action buttons below each slot
-        </p>
+
+        {/* Fullscreen Modal */}
+        {fullscreenImage && (
+          <div
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <div className="relative max-w-7xl max-h-screen w-full h-full flex items-center justify-center p-4">
+              {/* Close button */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-4 right-4 h-10 w-10 p-0 bg-black/50 hover:bg-black/70 z-10"
+                onClick={() => setFullscreenImage(null)}
+              >
+                <X className="h-6 w-6 text-white" />
+              </Button>
+
+              {/* Image */}
+              <img
+                src={fullscreenImage.preview}
+                alt="Reference image fullscreen"
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              {/* Image info overlay */}
+              <div className="absolute bottom-4 left-4 right-4 bg-black/70 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-sm font-medium">
+                      Reference Image
+                    </p>
+                    {fullscreenImage.detectedAspectRatio && (
+                      <p className="text-slate-300 text-xs mt-1">
+                        Aspect Ratio: {fullscreenImage.detectedAspectRatio}
+                      </p>
+                    )}
+                    {fullscreenImage.tags && fullscreenImage.tags.length > 0 && (
+                      <p className="text-slate-300 text-xs mt-1">
+                        Tags: {fullscreenImage.tags.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeGen4Image(fullscreenImage.id)
+                      setFullscreenImage(null)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   )
 }

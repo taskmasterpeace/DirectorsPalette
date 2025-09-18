@@ -4,8 +4,10 @@ import { useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { X, ImageIcon, Copy, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ImageIcon, Copy, Download, ChevronLeft, ChevronRight, FileText, Link, Tag, Sparkles, Film, Layout, Save, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ui/use-toast'
+import { useReferenceNamePrompt } from '@/components/providers/PromptProvider'
 import { GalleryHeader } from './GalleryHeader'
 import { ImageCard } from './ImageCard'
 import { ChainView } from './ChainView'
@@ -22,6 +24,7 @@ export function UnifiedImageGalleryRefactored({
   onImageSelect,
   className
 }: UnifiedImageGalleryProps) {
+  const { toast } = useToast()
   const {
     images,
     paginatedImages,
@@ -42,8 +45,11 @@ export function UnifiedImageGalleryRefactored({
     handleSearchChange,
     handleViewModeChange,
     handlePageChange,
-    setFullscreenImage
+    setFullscreenImage,
+    updateImageReference
   } = useGalleryLogic(onSendToTab, onUseAsReference, onSendToLibrary, onImageSelect)
+
+  const showReferenceNamePrompt = useReferenceNamePrompt()
 
   // Keyboard navigation for fullscreen modal
   const navigateToImage = useCallback((direction: 'next' | 'previous') => {
@@ -96,7 +102,7 @@ export function UnifiedImageGalleryRefactored({
   if (mode === 'minimal') {
     return (
       <div className={cn("w-full", className)}>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {images.slice(0, 8).map((image) => (
             <ImageCard
               key={image.id}
@@ -107,7 +113,15 @@ export function UnifiedImageGalleryRefactored({
               onCopy={() => handleCopyImage(image.url)}
               onDownload={() => handleDownloadImage(image.url)}
               onDelete={() => handleDeleteImage(image.url)}
-              showActions={false}
+              onSendTo={currentTab ? (target) => handleSendTo(image.url, target) : undefined}
+              onSetReference={async () => {
+                const newRef = await showReferenceNamePrompt()
+                if (newRef) {
+                  updateImageReference(image.id, newRef)
+                }
+              }}
+              onAddToLibrary={() => onSendToLibrary?.(image.url)}
+              showActions={true}
             />
           ))}
         </div>
@@ -152,7 +166,7 @@ export function UnifiedImageGalleryRefactored({
         ) : (
           <>
             <ScrollArea className="h-[600px]">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {paginatedImages.map((image) => (
                   <ImageCard
                     key={image.id}
@@ -164,6 +178,14 @@ export function UnifiedImageGalleryRefactored({
                     onDownload={() => handleDownloadImage(image.url)}
                     onDelete={() => handleDeleteImage(image.url)}
                     onSendTo={currentTab ? (target) => handleSendTo(image.url, target) : undefined}
+                    onSetReference={async () => {
+                      const newRef = await showReferenceNamePrompt()
+                      if (newRef) {
+                        updateImageReference(image.id, newRef)
+                      }
+                    }}
+                    onAddToLibrary={() => onSendToLibrary?.(image.url)}
+                    showActions={true}
                   />
                 ))}
               </div>
@@ -287,13 +309,57 @@ export function UnifiedImageGalleryRefactored({
                   <p className="text-white text-sm capitalize">{fullscreenImage.source?.replace('-', ' ')}</p>
                 </div>
 
-                {/* Credits */}
-                {fullscreenImage.creditsUsed !== undefined && (
-                  <div className="mb-4">
-                    <h4 className="text-slate-400 text-xs uppercase mb-2">Credits Used</h4>
-                    <p className="text-white text-sm">{fullscreenImage.creditsUsed} credits</p>
-                  </div>
-                )}
+                {/* Resolution */}
+                <div className="mb-4">
+                  <h4 className="text-slate-400 text-xs uppercase mb-2">Resolution</h4>
+                  <p className="text-white text-sm">
+                    {fullscreenImage.width && fullscreenImage.height
+                      ? `${fullscreenImage.width} × ${fullscreenImage.height}`
+                      : (() => {
+                          // Map resolution strings to actual dimensions
+                          const resolutionMap: Record<string, string> = {
+                            '720p': '1280 × 720',
+                            '1080p': '1920 × 1080',
+                            '1K': '1024 × 1024',
+                            '2K': '2048 × 2048',
+                            '4K': '4096 × 4096',
+                            'HD': '1920 × 1080',
+                            'FHD': '1920 × 1080',
+                            'UHD': '3840 × 2160'
+                          };
+
+                          const resolution = fullscreenImage.settings?.resolution;
+                          if (resolution && resolutionMap[resolution]) {
+                            return resolutionMap[resolution];
+                          }
+
+                          // If resolution has custom dimensions, use them
+                          if (fullscreenImage.settings?.custom_width && fullscreenImage.settings?.custom_height) {
+                            return `${fullscreenImage.settings.custom_width} × ${fullscreenImage.settings.custom_height}`;
+                          }
+
+                          // Default based on aspect ratio if available
+                          const aspectRatio = fullscreenImage.settings?.aspect_ratio;
+                          const aspectRatioDefaults: Record<string, string> = {
+                            '16:9': '1920 × 1080',
+                            '9:16': '1080 × 1920',
+                            '1:1': '1024 × 1024',
+                            '4:3': '1024 × 768',
+                            '3:4': '768 × 1024',
+                            '21:9': '2560 × 1080',
+                            '3:2': '1536 × 1024',
+                            '2:3': '1024 × 1536'
+                          };
+
+                          if (aspectRatio && aspectRatioDefaults[aspectRatio]) {
+                            return aspectRatioDefaults[aspectRatio];
+                          }
+
+                          // Final fallback
+                          return resolution || '1024 × 1024';
+                        })()}
+                  </p>
+                </div>
 
                 {/* Timestamp */}
                 <div className="mb-4">
@@ -315,25 +381,184 @@ export function UnifiedImageGalleryRefactored({
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2 mt-6">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-white border-slate-600"
-                    onClick={() => handleCopyImage(fullscreenImage.url)}
-                  >
-                    <Copy className="w-3.5 h-3.5 mr-1" />
-                    Copy
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-white border-slate-600"
-                    onClick={() => handleDownloadImage(fullscreenImage.url)}
-                  >
-                    <Download className="w-3.5 h-3.5 mr-1" />
-                    Download
-                  </Button>
+                <div className="mt-6 space-y-2">
+                  {/* Primary action row */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => handleCopyImage(fullscreenImage.url)}
+                      title="Copy to Clipboard"
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1" />
+                      Copy
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => handleDownloadImage(fullscreenImage.url)}
+                      title="Download Image"
+                    >
+                      <Download className="w-3.5 h-3.5 mr-1" />
+                      Download
+                    </Button>
+                  </div>
+
+                  {/* Secondary actions */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => {
+                        if (fullscreenImage.prompt) {
+                          navigator.clipboard.writeText(fullscreenImage.prompt)
+                          toast({
+                            title: "Prompt Copied",
+                            description: "Prompt copied to clipboard"
+                          })
+                        }
+                      }}
+                      title="Copy Prompt"
+                    >
+                      <FileText className="w-3.5 h-3.5 mr-1" />
+                      Copy Prompt
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => {
+                        navigator.clipboard.writeText(fullscreenImage.url)
+                        toast({
+                          title: "URL Copied",
+                          description: "Image URL copied to clipboard"
+                        })
+                      }}
+                      title="Copy Image URL"
+                    >
+                      <Link className="w-3.5 h-3.5 mr-1" />
+                      Copy URL
+                    </Button>
+                  </div>
+
+                  {/* Send to options */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={async () => {
+                        const newRef = await showReferenceNamePrompt()
+                        if (newRef) {
+                          updateImageReference(fullscreenImage.id, newRef)
+                          toast({
+                            title: "Reference Set",
+                            description: `Image tagged as ${newRef}`
+                          })
+                        }
+                      }}
+                      title="Set as Reference"
+                    >
+                      <Tag className="w-3.5 h-3.5 mr-1" />
+                      Reference
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => handleSendTo(fullscreenImage.url, 'shot-creator')}
+                      title="Send to Shot Creator"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 mr-1" />
+                      Creator
+                    </Button>
+                  </div>
+
+                  {/* More send options */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => handleSendTo(fullscreenImage.url, 'shot-animator')}
+                      title="Send to Shot Animator"
+                    >
+                      <Film className="w-3.5 h-3.5 mr-1" />
+                      Animator
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => handleSendTo(fullscreenImage.url, 'layout-annotation')}
+                      title="Send to Layout"
+                    >
+                      <Layout className="w-3.5 h-3.5 mr-1" />
+                      Layout
+                    </Button>
+                  </div>
+
+                  {/* Library and delete */}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-white border-slate-600"
+                      onClick={() => {
+                        onSendToLibrary?.(fullscreenImage.url)
+                        toast({
+                          title: "Added to Library",
+                          description: "Image saved to reference library"
+                        })
+                      }}
+                      title="Add to Library"
+                    >
+                      <Save className="w-3.5 h-3.5 mr-1" />
+                      Add to Library
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => {
+                        const currentIndex = images.findIndex(img => img.url === fullscreenImage.url)
+
+                        // Delete the image from the gallery
+                        handleDeleteImage(fullscreenImage.url)
+
+                        // If there are other images, show the next/previous one
+                        if (images.length > 1) {
+                          // Calculate remaining images after deletion
+                          const remainingImages = images.filter(img => img.url !== fullscreenImage.url)
+
+                          if (remainingImages.length > 0) {
+                            // Prefer showing the image at the same index position
+                            // If we deleted the last image, show the previous one
+                            const nextIndex = Math.min(currentIndex, remainingImages.length - 1)
+                            setFullscreenImage(remainingImages[nextIndex])
+                          } else {
+                            // No images left, close modal
+                            setFullscreenImage(null)
+                          }
+                        } else {
+                          // This was the only image, close modal
+                          setFullscreenImage(null)
+                        }
+                      }}
+                      title="Delete Image"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

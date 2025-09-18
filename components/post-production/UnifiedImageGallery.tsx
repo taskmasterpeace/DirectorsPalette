@@ -17,7 +17,6 @@ import {
   X,
   ImageIcon,
   Calendar,
-  Zap,
   Layout,
   FileText,
   Search,
@@ -25,7 +24,8 @@ import {
   ChevronRight,
   Tag,
   Save,
-  Check
+  Check,
+  Zap
 } from 'lucide-react'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { useToast } from '@/components/ui/use-toast'
@@ -61,7 +61,6 @@ export function UnifiedImageGallery({
     fullscreenImage,
     getTotalImages,
     getTotalCreditsUsed,
-    getUniqueChains,
     updateImageReference,
     getImageByReference,
     getAllReferences
@@ -70,64 +69,40 @@ export function UnifiedImageGallery({
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'chains'>('grid')
   const [editingReference, setEditingReference] = useState<string | null>(null)
   const [referenceInput, setReferenceInput] = useState('')
   const [showReferenceDialog, setShowReferenceDialog] = useState(false)
   const [selectedImageForReference, setSelectedImageForReference] = useState<string | null>(null)
   const IMAGES_PER_PAGE = 8
   
-  // Get chain data for chains view
-  const chains = useMemo(() => getUniqueChains(), [getUniqueChains])
-
   // Filter and pagination logic
-  const { filteredImages, paginatedImages, totalPages, filteredChains } = useMemo(() => {
-    if (viewMode === 'chains') {
-      // Chain view logic
-      const filtered = searchQuery.trim() === ''
-        ? chains
-        : chains.filter(chain =>
-            chain.images.some(image =>
-              image.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              image.chain?.stepPrompt.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-          )
+  const { filteredImages, paginatedImages, totalPages } = useMemo(() => {
+    // Grid view logic
+    const filtered = searchQuery.trim() === ''
+      ? images
+      : images.filter(image => {
+          const query = searchQuery.toLowerCase()
+          // Check if searching by reference
+          if (query.startsWith('@')) {
+            return image.reference?.toLowerCase().includes(query)
+          }
+          // Regular search
+          return image.prompt.toLowerCase().includes(query) ||
+                 image.model?.toLowerCase().includes(query) ||
+                 image.source.toLowerCase().includes(query) ||
+                 image.reference?.toLowerCase().includes(query)
+        })
 
-      return {
-        filteredImages: [],
-        paginatedImages: [],
-        totalPages: 1,
-        filteredChains: filtered
-      }
-    } else {
-      // Grid view logic (existing)
-      const filtered = searchQuery.trim() === ''
-        ? images
-        : images.filter(image => {
-            const query = searchQuery.toLowerCase()
-            // Check if searching by reference
-            if (query.startsWith('@')) {
-              return image.reference?.toLowerCase().includes(query)
-            }
-            // Regular search
-            return image.prompt.toLowerCase().includes(query) ||
-                   image.model?.toLowerCase().includes(query) ||
-                   image.source.toLowerCase().includes(query) ||
-                   image.reference?.toLowerCase().includes(query)
-          })
+    // Pagination
+    const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
+    const endIndex = startIndex + IMAGES_PER_PAGE
 
-      // Pagination
-      const startIndex = (currentPage - 1) * IMAGES_PER_PAGE
-      const endIndex = startIndex + IMAGES_PER_PAGE
-
-      return {
-        filteredImages: filtered,
-        paginatedImages: filtered.slice(startIndex, endIndex),
-        totalPages: Math.ceil(filtered.length / IMAGES_PER_PAGE),
-        filteredChains: []
-      }
+    return {
+      filteredImages: filtered,
+      paginatedImages: filtered.slice(startIndex, endIndex),
+      totalPages: Math.ceil(filtered.length / IMAGES_PER_PAGE)
     }
-  }, [images, chains, currentPage, searchQuery, viewMode])
+  }, [images, currentPage, searchQuery])
 
   const handleCopyImageUrl = async (imageUrl: string) => {
     try {
@@ -262,6 +237,30 @@ export function UnifiedImageGallery({
     }
   }
 
+  const getModelIcon = (model?: string) => {
+    switch (model) {
+      case 'nano-banana': return '🍌'
+      case 'seedream-4': return '🌱'
+      case 'gen4-image': return '⚡'
+      case 'gen4-image-turbo': return '💨'
+      case 'qwen-image': return '🎨'
+      case 'qwen-image-edit': return '✏️'
+      default: return '🍌'
+    }
+  }
+
+  const getModelColor = (model?: string) => {
+    switch (model) {
+      case 'nano-banana': return 'bg-yellow-600'
+      case 'seedream-4': return 'bg-green-600'
+      case 'gen4-image': return 'bg-blue-600'
+      case 'gen4-image-turbo': return 'bg-purple-600'
+      case 'qwen-image': return 'bg-orange-600'
+      case 'qwen-image-edit': return 'bg-indigo-600'
+      default: return 'bg-yellow-600'
+    }
+  }
+
   if (images.length === 0) {
     return (
       <Card className={cn("bg-gradient-to-br from-purple-900/30 to-blue-900/30 border-purple-500/30", className)}>
@@ -324,26 +323,6 @@ export function UnifiedImageGallery({
               >
                 Clear Selection
               </Button>
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1">
-                <Button
-                  size="sm"
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  onClick={() => setViewMode('grid')}
-                  className="h-6 px-2 text-xs"
-                >
-                  Grid
-                </Button>
-                <Button
-                  size="sm"
-                  variant={viewMode === 'chains' ? 'default' : 'ghost'}
-                  onClick={() => setViewMode('chains')}
-                  className="h-6 px-2 text-xs"
-                >
-                  <Zap className="w-3 h-3 mr-1" />
-                  Chains
-                </Button>
-              </div>
             </div>
           </CardTitle>
           
@@ -373,11 +352,7 @@ export function UnifiedImageGallery({
             <div className="flex items-center justify-between mt-2">
               {searchQuery.trim() && (
                 <div className="text-sm text-purple-300">
-                  {viewMode === 'chains' ? (
-                    <>Found {filteredChains.length} chain{filteredChains.length === 1 ? '' : 's'} matching "{searchQuery}"</>
-                  ) : (
-                    <>Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"</>
-                  )}
+                  Found {filteredImages.length} image{filteredImages.length === 1 ? '' : 's'} matching "{searchQuery}"
                 </div>
               )}
               {getAllReferences().length > 0 && (
@@ -389,8 +364,8 @@ export function UnifiedImageGallery({
             </div>
           </div>
 
-          {/* Pagination Controls - Only for grid view */}
-          {viewMode === 'grid' && totalPages > 1 && (
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
             <div className="flex items-center justify-between mb-4">
               <Button
                 size="sm"
@@ -430,112 +405,8 @@ export function UnifiedImageGallery({
           )}
           
           <ScrollArea className="h-[600px]">
-            {viewMode === 'chains' ? (
-              // Chain View
-              <div className="space-y-6">
-                {filteredChains.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400">
-                    <Zap className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No pipeline chains found</p>
-                    <p className="text-sm">Use | in prompts to create image-to-image chains</p>
-                  </div>
-                ) : (
-                  filteredChains.map((chain) => (
-                    <Card key={chain.chainId} className="bg-slate-800/30 border-purple-500/30">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Zap className="w-5 h-5 text-purple-400" />
-                          Pipeline Chain: {chain.totalSteps} Steps
-                          <Badge variant="outline" className="text-purple-300 border-purple-400">
-                            {chain.images.length}/{chain.totalSteps} completed
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                          {chain.images.map((image) => (
-                            <div key={image.id} className="space-y-2">
-                              {/* Chain Step Header */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-medium">
-                                  {image.chain?.stepNumber}
-                                </div>
-                                <div className="flex-1 text-xs text-slate-300">
-                                  Step {image.chain?.stepNumber}: {image.chain?.stepPrompt.substring(0, 30)}...
-                                  {image.chain?.isFinal && (
-                                    <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
-                                      FINAL
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Chain Step Image */}
-                              <div className="relative group">
-                                {image.metadata?.isVideo || image.url.includes('.mp4') || image.tags?.includes('video') ? (
-                                  <video
-                                    src={image.url}
-                                    className="w-full h-32 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
-                                    onClick={() => setFullscreenImage(image)}
-                                    controls={false}
-                                    muted
-                                    preload="metadata"
-                                  />
-                                ) : (
-                                  <img
-                                    src={image.url}
-                                    alt={image.chain?.stepPrompt || image.prompt}
-                                    className="w-full h-32 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
-                                    onClick={() => setFullscreenImage(image)}
-                                  />
-                                )}
-
-                                {/* Source badge and persistence status */}
-                                <div className="absolute top-1 left-1 flex flex-col gap-1">
-                                  <Badge className={cn("text-white p-1 text-xs", getSourceColor(image.source))}>
-                                    {getSourceIcon(image.source)}
-                                  </Badge>
-                                  {image.persistence?.isPermanent ? (
-                                    <Badge variant="outline" className="text-xs bg-green-900/90 text-green-300 border-green-500/50 px-1 py-0.5">
-                                      ✅
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-xs bg-red-900/90 text-red-300 border-red-500/50 px-1 py-0.5">
-                                      ⏰
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                {/* Chain step actions */}
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <div className="flex gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setFullscreenImage(image)}
-                                      className="h-6 w-6 p-0 bg-black/50 border-slate-500 hover:bg-black/70"
-                                    >
-                                      <ZoomIn className="w-3 h-3 text-white" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Chain Step Info */}
-                              <div className="text-xs text-slate-400">
-                                {new Date(image.metadata.createdAt).toLocaleDateString()}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            ) : (
-              // Grid View - Existing
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Grid View */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {paginatedImages.map((image) => (
                 <div key={image.id} className="space-y-2">
                   {/* Media - Image or Video */}
@@ -558,7 +429,7 @@ export function UnifiedImageGallery({
                     ) : image.metadata?.isVideo || image.url.includes('.mp4') || image.tags?.includes('video') ? (
                       <video
                         src={image.url}
-                        className="w-full h-48 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                        className="w-full h-auto rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
                         onClick={() => setFullscreenImage(image)}
                         onMouseEnter={(e) => e.currentTarget.style.cursor = 'zoom-in'}
                         controls={false}
@@ -569,17 +440,17 @@ export function UnifiedImageGallery({
                       <img
                         src={image.url}
                         alt={image.prompt.slice(0, 50)}
-                        className="w-full h-48 object-cover rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
+                        className="w-full h-auto rounded border border-slate-600 bg-slate-800 cursor-zoom-in"
                         onClick={() => setFullscreenImage(image)}
                         onMouseEnter={(e) => e.currentTarget.style.cursor = 'zoom-in'}
                       />
                     )}
                     
-                    {/* Source badge and persistence status */}
+                    {/* Model icon - transparent background */}
                     <div className="absolute top-2 left-2 flex flex-col gap-1">
-                      <Badge className={cn("text-white p-1", getSourceColor(image.source))} title={image.source.replace('-', ' ')}>
-                        {getSourceIcon(image.source)}
-                      </Badge>
+                      <div className="text-sm drop-shadow-lg" title={image.model?.replace('-', ' ') || 'nano-banana'}>
+                        {getModelIcon(image.model)}
+                      </div>
 
                       {/* Reference badge */}
                       {image.reference && (
@@ -740,8 +611,7 @@ export function UnifiedImageGallery({
                   </div>
                 </div>
               ))}
-              </div>
-            )}
+            </div>
           </ScrollArea>
 
           {/* Bulk actions */}
@@ -868,6 +738,18 @@ export function UnifiedImageGallery({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation()
+                    handleSendToTab(fullscreenImage.url, 'shot-editor')
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  title="Send to Shot Editor"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
                     handleSendToTab(fullscreenImage.url, 'shot-animator')
                   }}
                   className="bg-orange-600 hover:bg-orange-700"
@@ -899,6 +781,47 @@ export function UnifiedImageGallery({
                   title="Set Reference"
                 >
                   <Tag className="w-3 h-3" />
+                </Button>
+
+                {/* Add to Library button */}
+                {onSendToLibrary && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSendToLibrary(fullscreenImage.url)
+                      toast({
+                        title: "Added to Library",
+                        description: "Image saved to reference library"
+                      })
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                    title="Add to Library"
+                  >
+                    <Save className="w-3 h-3" />
+                  </Button>
+                )}
+
+                {/* Download button */}
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const link = document.createElement('a')
+                    link.href = fullscreenImage.url
+                    link.download = `generated-${fullscreenImage.id}.png`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    toast({
+                      title: "Download Started",
+                      description: "Image download initiated"
+                    })
+                  }}
+                  className="bg-teal-600 hover:bg-teal-700"
+                  title="Download Image"
+                >
+                  <Download className="w-3 h-3" />
                 </Button>
 
                 {/* Copy buttons */}

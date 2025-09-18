@@ -7,19 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { 
-  Download, 
-  Share, 
-  Copy, 
+import {
+  Download,
+  Share,
+  Copy,
   FileImage,
   Palette,
   Sparkles,
   Film,
   Edit,
-  Save
+  Save,
+  Images
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import type { CanvasEditorRef } from './CanvasEditor'
+import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 
 interface CanvasExporterProps {
   canvasRef: React.RefObject<CanvasEditorRef>
@@ -27,7 +29,7 @@ interface CanvasExporterProps {
 }
 
 interface ExportSettings {
-  format: 'png' | 'jpg' | 'svg' | 'pdf'
+  format: 'png' | 'jpg'
   quality: number
   scale: number
   backgroundColor: string
@@ -36,9 +38,7 @@ interface ExportSettings {
 
 const EXPORT_FORMATS = [
   { value: 'png', label: 'PNG', description: 'Best for images with transparency' },
-  { value: 'jpg', label: 'JPEG', description: 'Best for photos, smaller file size' },
-  { value: 'svg', label: 'SVG', description: 'Vector format, scalable' },
-  { value: 'pdf', label: 'PDF', description: 'Document format' }
+  { value: 'jpg', label: 'JPEG', description: 'Best for photos, smaller file size' }
 ]
 
 const QUALITY_PRESETS = [
@@ -156,12 +156,30 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
 
     try {
       const dataUrl = canvasRef.current.exportCanvas('png')
-      
-      // Here you would integrate with your gallery store
-      // For now, we'll just show a toast
+
+      // Add to unified gallery store
+      const addImage = useUnifiedGalleryStore.getState().addImage
+      addImage({
+        url: dataUrl,
+        prompt: 'Canvas annotation export',
+        source: 'layout-annotation',
+        model: 'canvas-export',
+        reference: `@canvas_${Date.now()}`,
+        settings: {
+          aspectRatio: '16:9',
+          resolution: `${canvasRef.current?.getCanvasWidth?.() || 1200}x${canvasRef.current?.getCanvasHeight?.() || 675}`
+        },
+        tags: ['canvas', 'annotation', 'export'],
+        creditsUsed: 0,
+        isPermanent: false,
+        persistence: {
+          isPermanent: false
+        }
+      })
+
       toast({
         title: "Sent to Gallery",
-        description: "Canvas added to image gallery"
+        description: "Canvas added to image gallery successfully"
       })
     } catch (error) {
       console.error('Send to gallery failed:', error)
@@ -202,8 +220,6 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
     let bytesPerPixel = 4 // RGBA
     if (exportSettings.format === 'jpg') {
       bytesPerPixel = 3 * exportSettings.quality
-    } else if (exportSettings.format === 'svg') {
-      return 'Variable'
     }
     
     const estimatedBytes = scaledSize * bytesPerPixel
@@ -218,10 +234,10 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-600 h-fit">
+    <Card className="bg-slate-900/90 border-purple-500/30 h-fit">
       <CardHeader className="pb-3">
         <CardTitle className="text-white text-lg flex items-center gap-2">
-          <Download className="w-5 h-5 text-green-400" />
+          <Download className="w-5 h-5 text-purple-400" />
           Export & Share
         </CardTitle>
       </CardHeader>
@@ -236,15 +252,15 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
               updateExportSettings({ format: value })
             }
           >
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+            <SelectTrigger className="bg-slate-800 border-purple-500/30 text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-slate-700 border-slate-600">
+            <SelectContent className="bg-slate-800 border-purple-500/30">
               {EXPORT_FORMATS.map((format) => (
                 <SelectItem 
                   key={format.value} 
                   value={format.value}
-                  className="text-white hover:bg-slate-600"
+                  className="text-white hover:bg-purple-600/30"
                 >
                   <div>
                     <div className="font-medium">{format.label}</div>
@@ -336,9 +352,9 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
         )}
 
         {/* File Size Estimate */}
-        <div className="bg-slate-700/30 rounded-lg p-3">
+        <div className="bg-purple-900/20 rounded-lg p-3 border border-purple-500/20">
           <div className="text-sm text-slate-300 mb-1">Estimated File Size</div>
-          <div className="text-lg font-medium text-green-400">
+          <div className="text-lg font-medium text-purple-400">
             {getEstimatedFileSize()}
           </div>
         </div>
@@ -348,7 +364,7 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
           <Button
             onClick={exportCanvas}
             disabled={isExporting}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white transition-all"
           >
             <Download className="w-4 h-4 mr-2" />
             {isExporting ? 'Exporting...' : 'Download Canvas'}
@@ -356,7 +372,7 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
 
           <Button
             onClick={copyCanvasToClipboard}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-all"
           >
             <Copy className="w-4 h-4 mr-2" />
             Copy to Clipboard
@@ -364,15 +380,15 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
 
           <Button
             onClick={sendToGallery}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+            className="w-full bg-pink-600 hover:bg-pink-700 text-white transition-all"
           >
-            <Save className="w-4 h-4 mr-2" />
+            <Images className="w-4 h-4 mr-2" />
             Save to Gallery
           </Button>
         </div>
 
         {/* Send to Other Tabs */}
-        <div className="space-y-3 border-t border-slate-600 pt-4">
+        <div className="space-y-3 border-t border-purple-500/30 pt-4">
           <Label className="text-sm font-medium text-slate-300">Send to Tab</Label>
           
           <div className="grid grid-cols-1 gap-2">
@@ -406,13 +422,12 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
         </div>
 
         {/* Export Tips */}
-        <div className="bg-slate-700/30 rounded-lg p-3">
-          <h4 className="text-xs font-medium text-slate-300 mb-2">Export Tips</h4>
-          <ul className="text-xs text-slate-400 space-y-1">
+        <div className="bg-purple-900/20 rounded-lg p-3 border border-purple-500/20">
+          <h4 className="text-xs font-medium text-purple-300 mb-2">Export Tips</h4>
+          <ul className="text-xs text-purple-200/70 space-y-1">
             <li>• PNG: Best for images with transparency</li>
             <li>• JPEG: Smaller files, good for photos</li>
             <li>• 2x scale for high resolution displays</li>
-            <li>• Higher quality = larger file size</li>
           </ul>
         </div>
       </CardContent>

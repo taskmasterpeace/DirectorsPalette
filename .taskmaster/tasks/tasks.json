@@ -1,0 +1,2090 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 2,
+        "title": "Update Color Theme",
+        "description": "Update all UI elements to match the Director's Palette dark theme for color consistency.",
+        "details": "Audit all components in the post-production folder. Replace light backgrounds with slate-800/900. Update border colors to slate-600/700. Ensure purple-500/600 for accents. Update all text to white/slate-300.",
+        "testStrategy": "Verify all backgrounds use slate-800/900, borders use slate-600/700, active states use purple-500/600, and all text is white or slate-300. Test on different screen sizes and ensure no console errors.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Remove Unnecessary Export Options",
+        "description": "Simplify the export options in the CanvasExporter component by removing SVG and PDF options.",
+        "details": "Edit the CanvasExporter component to remove SVG and PDF export functionalities. Keep only PNG, JPEG, clipboard, and gallery options. Simplify the export UI to reduce clutter.",
+        "testStrategy": "Ensure only PNG/JPEG download options are available, copy to clipboard works, and save to gallery works. Verify no SVG or PDF options are visible and test on different screen sizes.",
+        "priority": "low",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Fix Background Color Text Styling",
+        "description": "Ensure consistent text styling in the 'Background Color' section of the CanvasSettings component.",
+        "details": "Update text styling in the CanvasSettings component. Fix label alignment and spacing. Ensure consistent font sizes and colors that match the overall theme.",
+        "testStrategy": "Verify that the background color label is properly styled with consistent spacing and alignment. Ensure it matches the overall theme and test on different screen sizes.",
+        "priority": "low",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Test Image Drag & Resize Functionality",
+        "description": "Verify the drag and resize functionality of images within the canvas.",
+        "details": "Import a test image and verify drag functionality works. Ensure resize handles appear and function correctly. Test aspect ratio lock during resize and ensure images stay within canvas bounds.",
+        "testStrategy": "Test image import, drag to new positions, resize with handles, and maintain aspect ratio during resize. Verify images stay within canvas bounds and test on different screen sizes.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement 'Fit to Screen' Button",
+        "description": "Add a 'Fit to Screen' button to the canvas for quick reset of the view.",
+        "details": "Implement a button in the SimpleWorkingCanvas component that resets the canvas view to fit the screen. Ensure it works across all aspect ratios.",
+        "testStrategy": "Test the 'Fit to Screen' button functionality to ensure it resets the view correctly for all aspect ratios. Verify no console errors and test on different screen sizes.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Audit and Refactor Code for Performance",
+        "description": "Conduct a code audit and refactor for performance improvements.",
+        "details": "Review the current codebase for any performance bottlenecks. Refactor code where necessary to improve performance and maintainability.",
+        "testStrategy": "Run performance tests to identify bottlenecks. Verify improvements post-refactor and ensure no new issues are introduced. Test on different screen sizes and environments.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Enhance Accessibility Features",
+        "description": "Improve accessibility features across the annotation system UI.",
+        "details": "Ensure all UI components are accessible, including keyboard navigation and screen reader support. Update ARIA labels and roles as necessary.",
+        "testStrategy": "Conduct accessibility testing using tools like aXe and screen readers. Verify keyboard navigation and ARIA roles are correctly implemented. Test on different screen sizes.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Update Documentation",
+        "description": "Update the system documentation to reflect UI/UX changes and new features.",
+        "details": "Revise existing documentation to include changes made to the UI/UX. Ensure all new features and modifications are well-documented.",
+        "testStrategy": "Review documentation for accuracy and completeness. Ensure all changes are reflected and understandable. Conduct peer reviews for quality assurance.",
+        "priority": "low",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Conduct User Acceptance Testing (UAT)",
+        "description": "Perform User Acceptance Testing to validate the UI/UX fixes and enhancements.",
+        "details": "Organize UAT sessions with stakeholders to gather feedback on the implemented changes. Ensure all acceptance criteria are met and document any issues for further refinement.",
+        "testStrategy": "Conduct UAT sessions and gather feedback. Verify all acceptance criteria are met and document any issues for further refinement. Ensure no critical issues remain before release.",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implement Click and Drag Shape Creation",
+        "description": "Enable click and drag functionality to create shapes with desired size in one motion.",
+        "details": "Modify the shape creation logic to initiate shape drawing on mouse down and finalize on mouse up, calculating the shape size based on the drag distance. Ensure the current tool remains active after shape creation.",
+        "testStrategy": "Test by clicking and dragging on the canvas to create shapes of various sizes. Verify that the tool remains active after shape creation.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Add Fill Option for Shapes",
+        "description": "Introduce a toggle for switching between fill and outline modes for shapes.",
+        "details": "Add a boolean state 'fillMode' to toggle between fill and outline modes. Update shape rendering logic to use fill property when fillMode is true and stroke property when false. Apply changes to all shape tools.",
+        "testStrategy": "Toggle the fill mode and draw shapes to ensure they are filled or outlined as per the selected mode. Verify the toggle affects all shape tools.",
+        "priority": "high",
+        "dependencies": [
+          11
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Adjust Canvas Positioning",
+        "description": "Move the canvas higher on the screen to improve screen utilization.",
+        "details": "Reduce the top margin of the canvas container to position it closer to the header. Adjust CSS styles accordingly to ensure proper alignment.",
+        "testStrategy": "Check the canvas position relative to the header to ensure it is closer and utilizes more vertical space effectively.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Simplify Background Color Options",
+        "description": "Remove all background color options and set the canvas background to white permanently.",
+        "details": "Remove the color picker and preset buttons from the UI. Hardcode the canvas background color to white in the CSS or component styles.",
+        "testStrategy": "Verify that the canvas background is always white and that no color options are available in the UI.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Reorganize Left Sidebar",
+        "description": "Reorganize the left sidebar to improve usability and reduce vertical spacing.",
+        "details": "Move the Canvas Size selector to the top of the sidebar. Remove the Background Color section and adjust the spacing between remaining sections. Update the layout to fill the space effectively.",
+        "testStrategy": "Inspect the sidebar layout to ensure the Canvas Size selector is at the top and spacing is reduced. Confirm the Background Color section is removed.",
+        "priority": "low",
+        "dependencies": [
+          14
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Remove Layer System",
+        "description": "Delete the non-functional layer system from the interface.",
+        "details": "Remove the Layers panel from the right sidebar and delete any related components and state management. Ensure the interface is simplified and functional without layers.",
+        "testStrategy": "Check the interface to confirm the Layers panel is removed and the application functions correctly without it.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Enhance Export & Share Options",
+        "description": "Update export and share functionalities to include 'Send to Gallery' and remove non-existent options.",
+        "details": "Verify the functionality of 'Copy to Clipboard' and 'Download Canvas'. Update 'Send to Tab' options to include 'Send to Gallery' and remove 'Shot Editor'. Ensure remaining options are functional.",
+        "testStrategy": "Test each export and share option to ensure they work correctly, especially the new 'Send to Gallery' feature.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Add Fill/Outline Toggle in Drawing Tools",
+        "description": "Introduce a visual toggle for fill/outline mode in the Drawing Tools section.",
+        "details": "Add a toggle button near the color picker in the Drawing Tools section. Implement a visual indicator to show the current mode (fill or outline).",
+        "testStrategy": "Toggle between fill and outline modes using the new button and verify the visual indicator reflects the current mode.",
+        "priority": "medium",
+        "dependencies": [
+          12
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Remove Layer-Related State Management",
+        "description": "Clean up the code by removing layer-related state management from the application.",
+        "details": "Identify and remove any state management logic related to layers from the CanvasState and other relevant components.",
+        "testStrategy": "Ensure the application runs without errors and the state management is clean and efficient after removing layer-related logic.",
+        "priority": "medium",
+        "dependencies": [
+          16
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Verify Success Criteria",
+        "description": "Conduct a comprehensive test to ensure all success criteria are met.",
+        "details": "Perform a thorough review and testing of the application to ensure all requirements are implemented correctly and the success criteria are met.",
+        "testStrategy": "Execute a full test suite covering all changes and verify that each success criterion is satisfied.",
+        "priority": "high",
+        "dependencies": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Integrate Full Action Button Set in Image Modal View",
+        "description": "Add all action buttons from the UnifiedImageGallery to the individual image modal view, ensuring functionality and consistency.",
+        "details": "Review the current implementation of the image modal view to identify where the action buttons are located. Currently, only 'Copy' and 'Download' buttons are present. Extend this to include all action buttons available in the UnifiedImageGallery's three-dot menu: 'Copy Prompt', 'Copy Image URL', 'Download', 'Set as Reference', 'Send to Shot Creator', 'Send to Shot Animator', 'Send to Layout', 'Add to Library', and 'Delete Image'. Ensure each button is functional and consistent with its implementation in the gallery. Update the modal view's layout to accommodate these buttons without cluttering the interface. Consider using a responsive design to maintain usability across different screen sizes.",
+        "testStrategy": "Open an image in the gallery to trigger the modal view. Verify that all action buttons are present and correctly aligned at the bottom of the modal. Test each button to ensure it performs its intended action: copying prompts and URLs, downloading images, setting references, sending to various components, adding to the library, and deleting images. Confirm that the modal view remains responsive and user-friendly on different devices and screen sizes. Conduct a code review to ensure consistency with the gallery's button implementations.",
+        "status": "done",
+        "dependencies": [
+          9
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Comprehensive Testing of Recent Canvas Annotation Improvements",
+        "description": "Test all recent improvements to the canvas annotation system, including shape creation, fill mode toggle, canvas positioning, background color, layer removal, and export functionality.",
+        "details": "Conduct a thorough testing session in the development environment to verify the functionality of recent canvas annotation improvements. This includes testing the click-and-drag shape creation to ensure shapes are drawn accurately and smoothly. Verify the fill mode toggle works correctly, switching between fill and outline modes as expected. Check the canvas positioning to ensure it is correctly aligned as per Task 13. Confirm the canvas background is permanently set to white, as specified in Task 14. Ensure that all layer-related functionalities have been removed and do not affect the application, as per Tasks 16 and 19. Finally, test the export functionality to ensure only the correct options are available and work as intended, following the changes in Tasks 3 and 17.",
+        "testStrategy": "1. Test click-and-drag shape creation by drawing various shapes and verifying their accuracy and smoothness. 2. Toggle between fill and outline modes and ensure the visual indicator updates correctly. 3. Check the canvas position to ensure it is closer to the header and utilizes vertical space effectively. 4. Verify the canvas background is always white and no color options are available. 5. Confirm that no layer-related features are present and the application runs smoothly without them. 6. Test export options to ensure only PNG, JPEG, clipboard, and gallery options are available and functional. 7. Conduct tests in different screen sizes and resolutions to ensure consistent behavior.",
+        "status": "done",
+        "dependencies": [
+          3,
+          13,
+          14,
+          16,
+          17,
+          18,
+          19
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Audit and Clean Codebase for Bloated Code",
+        "description": "Identify and remove unused imports, dead code, commented-out code blocks, redundant components, and oversized components exceeding 200 lines.",
+        "details": "Conduct a thorough audit of the codebase to identify bloated code left from previous refactoring efforts. Focus on finding unused imports, dead code, commented-out code blocks, redundant components, and components that exceed 200 lines. Use static analysis tools to automate the detection of some of these issues. For oversized components, consider breaking them into smaller, more manageable pieces. Ensure that any code removal or refactoring does not affect the current functionality of the application. Collaborate with team members to verify the necessity of any questionable code before removal.",
+        "testStrategy": "1. Use static analysis tools to identify unused imports and dead code. 2. Manually review the codebase for commented-out code blocks and redundant components. 3. For components exceeding 200 lines, verify if they can be logically split into smaller components without losing functionality. 4. After refactoring, run the full test suite to ensure no existing functionality is broken. 5. Conduct peer reviews to validate the changes and ensure no critical code is removed.",
+        "status": "done",
+        "dependencies": [
+          7
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Run Comprehensive Playwright E2E Tests for Canvas Annotation Workflow",
+        "description": "Execute end-to-end tests using Playwright to validate the complete canvas annotation workflow, including shape drawing, image manipulation, export features, and gallery integration.",
+        "details": "Develop a suite of Playwright end-to-end tests to cover the entire canvas annotation workflow. This includes testing the drawing of shapes, manipulating images, exporting annotations, and integrating with the gallery. Ensure that all recent improvements and cleanups in the canvas functionality are thoroughly tested. The tests should simulate user interactions in a browser environment, verifying that each feature works as expected. Pay special attention to the integration points such as exporting to the gallery and the functionality of the 'Fit to Screen' button. Ensure that the tests are robust and can handle various scenarios, including edge cases.",
+        "testStrategy": "1. Set up the Playwright testing environment and ensure it is configured to run in a headless browser mode. 2. Write tests to simulate drawing various shapes on the canvas and verify their accuracy and smoothness. 3. Test image manipulation features such as resizing and rotating images. 4. Verify export functionalities, ensuring that annotations can be exported in the correct formats and sent to the gallery. 5. Test the 'Fit to Screen' button to ensure it resets the view correctly. 6. Run the tests across different browsers to ensure cross-browser compatibility. 7. Validate that all tests pass without errors and that the canvas workflow is fully functional.",
+        "status": "done",
+        "dependencies": [
+          3,
+          6,
+          17,
+          22
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Update Resolution Display in Fullscreen Image Modal",
+        "description": "Modify the fullscreen image modal to display the actual resolution dimensions instead of '2K'.",
+        "details": "To implement this task, first locate the component responsible for rendering the fullscreen image modal. Identify where the resolution is being fetched and displayed as '2K'. Update the logic to dynamically retrieve the actual resolution of the image being displayed. This may involve accessing image metadata or using a library to determine the image dimensions. Ensure that the resolution is formatted correctly as 'width x height' (e.g., '1920 x 1080'). Update any related styles or UI elements to accommodate the new display format. Test the changes across different image resolutions to ensure accuracy and consistency.",
+        "testStrategy": "1. Open the fullscreen image modal with various images of different resolutions. 2. Verify that the resolution displayed matches the actual dimensions of each image (e.g., '1920 x 1080'). 3. Check that the resolution updates correctly when switching between images in the modal. 4. Ensure that the UI layout remains consistent and visually appealing with the new resolution format. 5. Conduct cross-browser testing to confirm consistent behavior across different environments.",
+        "status": "done",
+        "dependencies": [
+          21
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Implement Clickable Reference Images for Fullscreen View",
+        "description": "Enable reference images in the Shot Creator to be clicked and expanded to a fullscreen view, with a click-off to close functionality.",
+        "details": "To implement this feature, modify the Shot Creator component to include an event listener on reference images. When a reference image is clicked, trigger a modal or overlay that displays the image in fullscreen. Ensure the modal supports high-resolution images and maintains aspect ratio. Implement a click-off mechanism to close the fullscreen view, such as clicking outside the image or pressing the 'Esc' key. Consider accessibility features like keyboard navigation and screen reader support. Use CSS transitions for smooth opening and closing animations. Ensure compatibility with different browsers and devices.",
+        "testStrategy": "1. Click on a reference image in the Shot Creator to verify it expands to fullscreen. 2. Check that the image maintains its aspect ratio and displays at high resolution. 3. Click outside the image or press 'Esc' to ensure the fullscreen view closes. 4. Test the feature on various browsers and devices to ensure compatibility. 5. Verify accessibility features, including keyboard navigation and screen reader support. 6. Ensure smooth animations during opening and closing of the fullscreen view.",
+        "status": "done",
+        "dependencies": [
+          21,
+          25
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Reorganize Shot Creator Layout",
+        "description": "Adjust the layout of the Shot Creator by repositioning the Generate button, prompt window, and grouping Library and Show Prefix/Suffix buttons.",
+        "details": "To reorganize the Shot Creator layout, first move the Generate button directly under the reference images section. Then, place the prompt window immediately below the Generate button. Group the Library and Show Prefix/Suffix buttons together and position them under the prompt window. Ensure that the Library and Show Prefix/Suffix buttons have consistent styling, matching the overall theme of the application. This may involve updating CSS styles or component properties to ensure uniformity in size, color, and font. Consider using flexbox or grid layout techniques to achieve the desired arrangement while maintaining responsiveness across different screen sizes.",
+        "testStrategy": "1. Open the Shot Creator and verify that the Generate button is positioned directly under the reference images.\n2. Check that the prompt window is placed immediately below the Generate button.\n3. Ensure the Library and Show Prefix/Suffix buttons are grouped together under the prompt window.\n4. Verify that the styling of the Library and Show Prefix/Suffix buttons is consistent, including size, color, and font.\n5. Test the layout on various screen sizes to ensure responsiveness and usability.\n6. Conduct a visual inspection to confirm that the layout changes do not introduce any visual glitches or misalignments.",
+        "status": "done",
+        "dependencies": [
+          15
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Fix Library Button in Shot Creator Panel",
+        "description": "Ensure the Library button in the Shot Creator panel opens the library dialog when clicked.",
+        "details": "Investigate the current implementation of the Library button in the Shot Creator panel to identify why it is not functioning. Check if the button is correctly wired to an event handler that should open the library dialog. If the event handler is missing or incorrectly implemented, add or correct it to ensure it triggers the opening of the library dialog. Ensure that the library dialog is properly initialized and displayed when the button is clicked. Review any related CSS or component properties to ensure the button is styled consistently with the rest of the panel. Consider any recent changes in the Shot Creator layout (Task 27) that might affect the button's functionality.",
+        "testStrategy": "1. Click the Library button in the Shot Creator panel to verify it opens the library dialog. 2. Ensure the dialog appears correctly and is fully functional. 3. Test the button's functionality across different browsers and screen sizes to ensure consistent behavior. 4. Verify that the button's styling matches the rest of the Shot Creator panel and that there are no console errors when the button is clicked.",
+        "status": "done",
+        "dependencies": [
+          27
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Create Preset and Reference Image Libraries for Shot Creator",
+        "description": "Develop two libraries: a Preset Library for quick prompt presets and a Reference Image Library for storing images, both accessible from the Shot Creator.",
+        "details": "To implement the Preset Library, create a module that allows users to save, edit, and delete prompt presets. This module should provide a user-friendly interface for managing presets, including a list view and options to apply presets quickly. For the Reference Image Library, develop a storage system where users can upload, organize, and retrieve images. Integrate both libraries into the Shot Creator interface, ensuring they are accessible via buttons or menu options. Consider using a database or local storage for data persistence. Ensure the libraries are responsive and maintain consistent styling with the Shot Creator. Collaborate with the UI/UX team to design intuitive interfaces for both libraries.",
+        "testStrategy": "1. Access the Preset Library from the Shot Creator and verify the ability to create, edit, and delete presets. 2. Apply a preset and ensure it updates the Shot Creator settings accordingly. 3. Access the Reference Image Library and test uploading, organizing, and retrieving images. 4. Verify that images can be selected and used within the Shot Creator. 5. Ensure both libraries are responsive and styled consistently with the Shot Creator. 6. Conduct usability testing to ensure intuitive navigation and functionality.",
+        "status": "done",
+        "dependencies": [
+          27,
+          28
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Add Quick Preset Conversion for Library Items",
+        "description": "Enable users to convert library items into quick presets for one-click access.",
+        "details": "To implement the ability to convert library items into quick presets, first extend the existing library module to include a 'Save as Preset' option for each item. This option should be accessible via a context menu or a dedicated button next to each library item. When a user selects this option, prompt them to name the preset and confirm the action. Store these presets in a dedicated section within the Preset Library, ensuring they are easily accessible for quick application. Update the UI to reflect these changes, including any necessary modifications to the library and preset management interfaces. Consider using a database or local storage to persist these presets across sessions. Ensure that the presets are applied correctly when selected, updating the relevant settings in the Shot Creator.",
+        "testStrategy": "1. Open the library and select an item to convert into a quick preset. 2. Use the 'Save as Preset' option and verify that the preset is saved with the correct name. 3. Check that the new preset appears in the Preset Library and can be applied with a single click. 4. Ensure that applying the preset updates the Shot Creator settings as expected. 5. Test the feature across different browsers and devices to ensure consistent behavior. 6. Verify that presets persist across sessions and can be managed (edited or deleted) as needed.",
+        "status": "done",
+        "dependencies": [
+          27,
+          29
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 31,
+        "title": "Fix Fill Shape Toggle for Circles and Rectangles",
+        "description": "Investigate and fix the bug where the fill toggle for circles and rectangles does not fill the shapes when enabled.",
+        "details": "To address the issue with the fill toggle not working for circles and rectangles, first review the current implementation of the fill toggle feature. Check the logic that determines whether a shape should be filled or outlined, focusing on the 'fillMode' state management. Ensure that the rendering logic for both circles and rectangles correctly applies the fill property when 'fillMode' is true. This may involve updating the rendering functions to use 'ctx.fill()' instead of 'ctx.stroke()' when the fill mode is active. Additionally, verify that the UI toggle correctly updates the 'fillMode' state and that this state is properly passed to the shape rendering logic. Consider adding unit tests to cover scenarios where the fill mode is toggled on and off, ensuring that shapes are rendered correctly in both modes.",
+        "testStrategy": "1. Toggle the fill mode on and draw a circle and a rectangle to verify they are filled correctly. 2. Toggle the fill mode off and ensure the shapes are drawn as outlines. 3. Conduct regression testing to ensure no other shape rendering functionalities are affected. 4. Add unit tests to verify that the 'fillMode' state is correctly applied to the rendering logic for both circles and rectangles.",
+        "status": "done",
+        "dependencies": [
+          12,
+          18
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 32,
+        "title": "Conditionally Hide Brush Size Slider for Shape Tools",
+        "description": "Hide the brush size slider in the UI when rectangle or circle tools are selected, as it is not applicable to these tools.",
+        "details": "To implement this feature, modify the UI rendering logic to conditionally display the brush size slider based on the selected tool. First, identify the current mechanism that determines which UI elements are shown for each tool. Introduce a check in this mechanism to determine if the selected tool is a shape tool (rectangle or circle). If it is, ensure the brush size slider is hidden. This can be achieved by setting a state variable that controls the visibility of the slider. Update the UI component responsible for rendering the slider to respect this state. Additionally, ensure that switching between tools updates the UI accordingly without requiring a full refresh. Consider using a state management library like Redux or Context API if the application is React-based to manage the UI state efficiently.",
+        "testStrategy": "1. Select the rectangle tool and verify that the brush size slider is hidden.\n2. Select the circle tool and ensure the brush size slider remains hidden.\n3. Switch to a tool that uses the brush size (e.g., freehand drawing) and confirm the slider appears.\n4. Rapidly switch between tools to ensure the UI updates correctly without lag or errors.\n5. Conduct cross-browser testing to ensure consistent behavior across different environments.",
+        "status": "done",
+        "dependencies": [
+          8
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 33,
+        "title": "Add Toggle Button for Collapsible Sidebar",
+        "description": "Implement a toggle button to show or hide the left navigation sidebar to enhance canvas workspace utilization.",
+        "details": "To implement the collapsible sidebar, first, add a toggle button to the UI, preferably at the top of the sidebar for easy access. Use a state variable, e.g., `isSidebarVisible`, to manage the visibility of the sidebar. When the button is clicked, toggle this state. Use CSS transitions for smooth animations when the sidebar is shown or hidden. Ensure the canvas resizes appropriately when the sidebar is collapsed or expanded. Consider accessibility by ensuring the toggle button is keyboard navigable and has appropriate ARIA attributes. Review the current layout and ensure that the sidebar's collapse does not affect other UI components adversely. Use media queries to ensure the sidebar behaves correctly on different screen sizes.",
+        "testStrategy": "1. Verify the toggle button is visible and accessible via keyboard navigation. 2. Click the toggle button to hide the sidebar and ensure the canvas expands to utilize the freed space. 3. Click the toggle button again to show the sidebar and ensure the canvas resizes correctly. 4. Test the toggle functionality across different screen sizes and browsers to ensure consistent behavior. 5. Check for smooth CSS transitions when the sidebar is shown or hidden. 6. Ensure no console errors occur during the toggle operation.",
+        "status": "done",
+        "dependencies": [
+          15,
+          13
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 34,
+        "title": "Implement Prompt Library with Supabase Persistence",
+        "description": "Create a prompt library system with editable categories, user-specific storage in Supabase, search functionality, and a quick prompt feature for one-click access.",
+        "details": "To implement the prompt library system, start by designing a database schema in Supabase to store prompts, categories, and user-specific data. Ensure the schema supports editable categories and user-specific storage. Develop a backend service to handle CRUD operations for prompts and categories, leveraging Supabase's API. Implement a search functionality that matches the capabilities of the reference library, allowing users to search prompts by keywords, categories, and other metadata. Develop a frontend interface for managing the prompt library, including a quick prompt feature that allows users to access prompts with a single click without opening the full library interface. Ensure the UI is intuitive and responsive, with accessibility features such as keyboard navigation and screen reader support. Consider using React for the frontend and Node.js for the backend, integrating with Supabase for data persistence.",
+        "testStrategy": "1. Verify the database schema in Supabase supports all required fields and relationships for prompts, categories, and user data. 2. Test CRUD operations for prompts and categories through the backend service. 3. Implement unit and integration tests for the search functionality to ensure it retrieves accurate results based on keywords and categories. 4. Test the frontend interface for managing prompts, ensuring it is responsive and accessible. 5. Verify the quick prompt feature works as intended, allowing users to access prompts with a single click. 6. Conduct user testing to ensure the system meets usability and performance expectations.",
+        "status": "done",
+        "dependencies": [
+          8,
+          17
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 35,
+        "title": "Implement Image Reference Library with Categories and Supabase Storage",
+        "description": "Create an image reference library with editable categories, user-specific storage in Supabase, search functionality, and quick reference feature.",
+        "details": "To implement the image reference library, start by designing a database schema in Supabase to store images, categories, and user-specific data. Ensure the schema supports editable categories and user-specific storage. Develop a backend service to handle CRUD operations for images and categories, leveraging Supabase's API. Implement a search functionality that matches the capabilities of the prompt library, allowing users to search images by keywords, categories, and other metadata. Develop a quick reference feature that allows users to set and save image references for one-click access. Ensure the UI is intuitive and supports drag-and-drop for organizing images into categories. Consider accessibility features and ensure the library is responsive across devices.",
+        "testStrategy": "1. Verify the database schema in Supabase supports all required fields and relationships for images, categories, and user data. 2. Test CRUD operations for images and categories through the backend service. 3. Implement unit and integration tests for the search functionality to ensure it retrieves accurate results based on keywords and categories. 4. Test the quick reference feature to ensure images can be set and accessed with one click. 5. Conduct usability testing to ensure the UI is intuitive and responsive. 6. Verify accessibility features using tools like aXe and screen readers.",
+        "status": "done",
+        "dependencies": [
+          34,
+          8
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 36,
+        "title": "Implement @ Reference System for Auto-Adding Images",
+        "description": "Enable users to type '@' in prompts to display a filterable list of references, allowing selection to auto-add images to the reference section.",
+        "details": "To implement the @ reference system, first extend the prompt input component to detect the '@' character. Upon detection, trigger a dropdown that fetches and displays a list of references from the image reference library (Task 35). Each reference should include a name and category icon. Implement a filtering mechanism that narrows down the list based on user input following the '@'. When a user selects a reference, automatically add the associated image to the reference section of the canvas. Ensure the system supports multiple '@' mentions, adding multiple images accordingly. Update the help documentation to include instructions on using this feature. Consider performance optimizations for fetching and displaying large lists of references.",
+        "testStrategy": "1. Type '@' in the prompt input to verify the dropdown appears with a list of references. 2. Type additional characters to ensure the list filters correctly. 3. Select a reference and verify the corresponding image is added to the reference section. 4. Test multiple '@' mentions to ensure multiple images are added. 5. Review the help documentation to confirm it includes accurate instructions for using the @ reference system. 6. Test the feature across different browsers and devices to ensure compatibility and performance.",
+        "status": "done",
+        "dependencies": [
+          35
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 37,
+        "title": "Replace Browser Prompt with Modal Dialog for Reference Naming",
+        "description": "Implement a modal dialog for naming references, allowing users to save references without names initially and add names later.",
+        "details": "To replace the browser prompt with a modal dialog, first design a modal component that fits the application's UI style. The modal should allow users to enter a name for a reference or skip naming to save it without a name. Integrate this modal into the reference creation workflow, ensuring it appears when a new reference is added. Use state management to handle the reference name and update the reference list accordingly. Ensure the modal is accessible, with proper ARIA roles and keyboard navigation support. Consider using existing UI components for consistency with the application's design.",
+        "testStrategy": "1. Trigger the modal dialog by adding a new reference and verify it appears instead of a browser prompt. 2. Enter a name in the modal and save the reference, ensuring the name is correctly displayed in the reference list. 3. Save a reference without a name and verify it appears in the list with a placeholder or empty name. 4. Reopen the modal to add a name to an unnamed reference and ensure the update is reflected. 5. Test the modal for accessibility, including keyboard navigation and screen reader support.",
+        "status": "done",
+        "dependencies": [
+          8,
+          26
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 38,
+        "title": "Fix Layout Canvas Buttons Functionality",
+        "description": "Ensure all buttons on the layout canvas are functioning correctly, including export, copy, download, and send to gallery.",
+        "details": "Review the current implementation of all buttons on the layout canvas, focusing on their event handlers and associated actions. Specifically, verify the functionality of export, copy, download, and send to gallery buttons. Check for any JavaScript errors or broken links that may affect button functionality. Update or refactor the code as necessary to ensure each button performs its intended action without errors. Consider user feedback and recent changes to the layout (Task 27) and export options (Tasks 3 and 17) to ensure compatibility. Ensure that the UI reflects the button states correctly and that all buttons are accessible and responsive across different devices and screen sizes.",
+        "testStrategy": "1. Manually test each button on the layout canvas to ensure it performs its intended action without errors. \n2. Verify the export button provides the correct file formats and functions as expected.\n3. Test the copy button to ensure it copies the correct content to the clipboard.\n4. Check the download button to ensure it downloads the canvas in the correct format.\n5. Test the 'send to gallery' button to ensure it uploads the canvas correctly.\n6. Conduct cross-browser testing to ensure functionality is consistent across different browsers.\n7. Perform accessibility testing to ensure all buttons are accessible via keyboard navigation and screen readers.",
+        "status": "done",
+        "dependencies": [
+          3,
+          17,
+          27
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 39,
+        "title": "Develop Comprehensive Test Suite for Library Systems",
+        "description": "Create a test suite for the Prompt Library and Image Reference Library, including unit, integration, and E2E tests.",
+        "details": "To develop a comprehensive test suite for the new library systems, begin by setting up unit tests for the data stores using a testing framework like Jest. These tests should cover CRUD operations, data validation, and error handling. For integration tests, use a tool like React Testing Library to simulate user interactions with components, ensuring they correctly integrate with the data stores and UI elements. End-to-end (E2E) tests should be implemented using Playwright or Cypress to simulate complete user workflows, including Supabase persistence, @ reference autocomplete, modal dialogs, and Shot Creator integration. Ensure tests are organized into suites for maintainability and use mocking libraries to simulate external dependencies where necessary. Follow best practices for test isolation and coverage to ensure reliability and robustness.",
+        "testStrategy": "1. Set up Jest for unit testing and write tests for all CRUD operations in the Prompt and Image Reference Libraries. 2. Use React Testing Library to create integration tests for component interactions, verifying UI updates and data flow. 3. Implement E2E tests with Playwright to simulate user workflows, including creating, editing, and deleting prompts and images, and verifying Supabase persistence. 4. Test the @ reference autocomplete feature and modal dialogs for naming references. 5. Ensure Shot Creator integration is tested by verifying library access and functionality within the Shot Creator. 6. Validate test results against expected outcomes and ensure all tests pass consistently.",
+        "status": "pending",
+        "dependencies": [
+          29,
+          34,
+          35,
+          37
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Unit Tests for Data Stores",
+            "description": "Implement unit tests for CRUD operations, data validation, and error handling in the Prompt and Image Reference Libraries using Jest.",
+            "dependencies": [],
+            "details": "Use Jest to create unit tests that cover all CRUD operations, data validation, and error handling for both libraries.",
+            "status": "pending",
+            "testStrategy": "Ensure all CRUD operations are tested for correctness, data validation rules are enforced, and error handling is robust."
+          },
+          {
+            "id": 2,
+            "title": "Develop Integration Tests for Component Interactions",
+            "description": "Create integration tests using React Testing Library to verify component interactions and data flow.",
+            "dependencies": [
+              "39.1"
+            ],
+            "details": "Use React Testing Library to simulate user interactions with components, ensuring they integrate correctly with data stores and UI elements.",
+            "status": "pending",
+            "testStrategy": "Verify that UI updates correctly reflect data changes and that components interact as expected."
+          },
+          {
+            "id": 3,
+            "title": "Implement E2E Tests for User Workflows",
+            "description": "Use Playwright or Cypress to simulate complete user workflows, including Supabase persistence and Shot Creator integration.",
+            "dependencies": [
+              "39.2"
+            ],
+            "details": "Develop E2E tests to simulate user workflows, focusing on Supabase persistence, @ reference autocomplete, modal dialogs, and Shot Creator integration.",
+            "status": "pending",
+            "testStrategy": "Ensure all user workflows are tested end-to-end, covering all critical paths and edge cases."
+          },
+          {
+            "id": 4,
+            "title": "Organize Tests into Maintainable Suites",
+            "description": "Structure tests into organized suites for better maintainability and readability.",
+            "dependencies": [
+              "39.3"
+            ],
+            "details": "Group tests into logical suites, ensuring clear separation between unit, integration, and E2E tests for easier maintenance.",
+            "status": "pending",
+            "testStrategy": "Verify that tests are organized logically, with clear documentation and separation of concerns."
+          },
+          {
+            "id": 5,
+            "title": "Integrate Mocking Libraries for External Dependencies",
+            "description": "Use mocking libraries to simulate external dependencies and ensure test isolation.",
+            "dependencies": [
+              "39.4"
+            ],
+            "details": "Implement mocking for external services and dependencies to ensure tests are isolated and reliable.",
+            "status": "pending",
+            "testStrategy": "Check that all external dependencies are mocked appropriately, ensuring tests do not rely on external systems."
+          }
+        ]
+      },
+      {
+        "id": 40,
+        "title": "Fix Shot Creator UI Layout Issues",
+        "description": "Refactor the Shot Creator UI by removing redundant tabs, combining existing tabs, and optimizing layout for better usability.",
+        "details": "To address the UI layout issues in the Shot Creator, first remove the redundant 'Reference Library' tab located next to the 'Entity Manager'. Next, combine the 'Images' and 'Library' tabs into a single 'References' tab. This will involve merging the functionalities of both tabs and ensuring all references are accessible from the new tab. Remove the upload functionality from the image library dialog to streamline the interface. Update the category display to use only icons (People, Places, Props, Layouts) without text labels, ensuring the icons are intuitive and recognizable. Finally, optimize the layout to reduce screen real estate usage, possibly by adjusting padding, margins, and component sizes. Ensure that these changes maintain a consistent look and feel with the rest of the application.",
+        "testStrategy": "1. Open the Shot Creator and verify the 'Reference Library' tab is removed.\n2. Check that the 'Images' and 'Library' tabs are combined into a single 'References' tab and all functionalities are intact.\n3. Ensure the image library dialog no longer includes upload functionality.\n4. Verify that category icons are displayed without text labels and are clear and recognizable.\n5. Test the overall layout to ensure reduced screen real estate usage without compromising usability.\n6. Confirm that all changes are consistent across different screen sizes and browsers.",
+        "status": "done",
+        "dependencies": [
+          27,
+          28
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Remove Redundant 'Reference Library' Tab",
+            "description": "Eliminate the 'Reference Library' tab located next to the 'Entity Manager' to streamline the UI.",
+            "dependencies": [],
+            "details": "Identify and remove the code associated with the 'Reference Library' tab to ensure it no longer appears in the UI.",
+            "status": "done",
+            "testStrategy": "Open the Shot Creator and verify that the 'Reference Library' tab is no longer present."
+          },
+          {
+            "id": 2,
+            "title": "Combine 'Images' and 'Library' Tabs",
+            "description": "Merge the 'Images' and 'Library' tabs into a single 'References' tab, consolidating their functionalities.",
+            "dependencies": [
+              "40.1"
+            ],
+            "details": "Integrate the functionalities of both tabs into a new 'References' tab, ensuring all previous features are accessible.",
+            "status": "done",
+            "testStrategy": "Check that the new 'References' tab includes all functionalities from the 'Images' and 'Library' tabs."
+          },
+          {
+            "id": 3,
+            "title": "Remove Upload Functionality from Image Library Dialog",
+            "description": "Streamline the interface by removing the upload functionality from the image library dialog.",
+            "dependencies": [
+              "40.2"
+            ],
+            "details": "Locate and remove the upload feature from the image library dialog to simplify the user interface.",
+            "status": "done",
+            "testStrategy": "Ensure the image library dialog no longer includes the option to upload images."
+          },
+          {
+            "id": 4,
+            "title": "Update Category Display to Icon-Only",
+            "description": "Modify the category display to use only icons without text labels for improved usability.",
+            "dependencies": [
+              "40.3"
+            ],
+            "details": "Replace text labels with intuitive icons for categories such as People, Places, Props, and Layouts.",
+            "status": "done",
+            "testStrategy": "Verify that categories are displayed with icons only and that they are intuitive and recognizable."
+          },
+          {
+            "id": 5,
+            "title": "Optimize Layout for Screen Real Estate",
+            "description": "Adjust padding, margins, and component sizes to optimize the layout and reduce screen real estate usage.",
+            "dependencies": [
+              "40.4"
+            ],
+            "details": "Refactor the layout to minimize space usage while maintaining a consistent look and feel with the application.",
+            "status": "done",
+            "testStrategy": "Check that the layout uses less screen space and maintains consistency with the rest of the application."
+          }
+        ]
+      },
+      {
+        "id": 41,
+        "title": "Implement Multi-Image Reference System with Tag-Based Selection",
+        "description": "Develop a system where tags can reference multiple images, allowing users to select images based on tags like 'mood' or 'atmosphere'.",
+        "details": "To implement the multi-image reference system, first extend the existing image reference library (Task 35) to support multiple images per tag. Update the database schema in Supabase to allow images to be associated with multiple tags. Develop a backend service to handle fetching images by tag, ensuring efficient querying and retrieval. On the frontend, modify the user interface to allow users to filter and select images based on tags. Implement a tagging interface where users can assign tags to images and search for images using these tags. Ensure the system supports dynamic updates, so when a tag is added or removed from an image, it reflects immediately in the UI. Consider using a library like React Query for efficient data fetching and caching. Ensure the system is scalable and can handle a large number of images and tags.",
+        "testStrategy": "1. Verify that images can be tagged with multiple tags in the UI and that these tags are stored correctly in the database. 2. Test the retrieval of images by tag, ensuring that all images with a given tag are displayed correctly. 3. Check the UI for filtering images by tags, ensuring that the correct images are shown when a tag is selected. 4. Test the dynamic update functionality by adding and removing tags from images and verifying that the changes are reflected in real-time. 5. Conduct performance testing to ensure the system handles large datasets efficiently.",
+        "status": "pending",
+        "dependencies": [
+          35,
+          36
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extend Image Reference Library for Multi-Image Support",
+            "description": "Modify the existing image reference library to support multiple images per tag.",
+            "dependencies": [],
+            "details": "Update the image reference library's data model to allow each tag to associate with multiple images. Ensure that the library's API can handle requests to add, remove, and list images for a given tag. This may involve changes to the data structures used in the library and the methods that interact with these structures.",
+            "status": "pending",
+            "testStrategy": "Verify that multiple images can be associated with a single tag and that these associations are correctly stored and retrieved."
+          },
+          {
+            "id": 2,
+            "title": "Update Supabase Schema for Tag-Image Associations",
+            "description": "Modify the database schema in Supabase to support many-to-many relationships between tags and images.",
+            "dependencies": [
+              "41.1"
+            ],
+            "details": "Design and implement a new table in Supabase to manage the many-to-many relationship between tags and images. This table should include foreign keys referencing the images and tags tables. Ensure that the schema supports efficient querying and indexing for fast retrieval of images by tag.",
+            "status": "pending",
+            "testStrategy": "Test the database schema by inserting and retrieving data to ensure that images can be correctly associated with multiple tags and vice versa."
+          },
+          {
+            "id": 3,
+            "title": "Develop Backend Service for Image Retrieval by Tag",
+            "description": "Create a backend service to handle requests for fetching images based on tags.",
+            "dependencies": [
+              "41.2"
+            ],
+            "details": "Implement a RESTful API endpoint that allows clients to request images associated with specific tags. Use efficient querying techniques to ensure fast response times, especially when dealing with large datasets. Consider implementing caching strategies to improve performance.",
+            "status": "pending",
+            "testStrategy": "Perform load testing on the API to ensure it can handle a large number of requests and verify that it returns the correct images for given tags."
+          },
+          {
+            "id": 4,
+            "title": "Modify Frontend for Tag-Based Image Selection",
+            "description": "Update the user interface to allow users to filter and select images based on tags.",
+            "dependencies": [
+              "41.3"
+            ],
+            "details": "Enhance the frontend application to include a tag-based filtering system. Implement a user-friendly interface where users can select tags and view the associated images. Use a library like React Query to manage data fetching and caching, ensuring that the UI remains responsive and up-to-date.",
+            "status": "pending",
+            "testStrategy": "Test the UI to ensure that users can filter images by tags and that the displayed images update correctly when tags are selected or deselected."
+          },
+          {
+            "id": 5,
+            "title": "Implement Tagging Interface for Image Management",
+            "description": "Develop an interface that allows users to assign tags to images and search for images using these tags.",
+            "dependencies": [
+              "41.4"
+            ],
+            "details": "Create a tagging interface where users can easily add or remove tags from images. Ensure that changes in tags are immediately reflected in the UI and stored in the database. Implement search functionality that allows users to find images by entering tag names.",
+            "status": "pending",
+            "testStrategy": "Verify that users can add and remove tags from images and that these changes are correctly reflected in both the UI and the database. Test the search functionality to ensure it returns accurate results based on user input."
+          }
+        ]
+      },
+      {
+        "id": 42,
+        "title": "Fix Double Window Issue in Prompt Library",
+        "description": "Resolve the issue where the Prompt Library opens two windows instead of one, ensuring a single clean modal dialog is displayed.",
+        "details": "Investigate the current implementation of the Prompt Library to identify why two windows are being opened. Check the event handlers and modal initialization logic to ensure only one modal is triggered. Refactor the code to consolidate the modal opening logic, ensuring that it adheres to the application's UI standards for modal dialogs. Optimize the modal to use minimal screen real estate while maintaining usability. Ensure that the modal is responsive and accessible, with proper ARIA roles and keyboard navigation support. Consider reviewing the implementation of Task 37 for modal dialog best practices.",
+        "testStrategy": "1. Open the Prompt Library and verify that only one modal dialog appears. 2. Ensure the modal is displayed correctly and does not overlap or duplicate. 3. Test the modal's responsiveness on various screen sizes and devices. 4. Verify that the modal is accessible, with proper ARIA roles and keyboard navigation. 5. Check that the modal uses minimal screen real estate while remaining functional and user-friendly.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          37
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Investigate Double Window Issue",
+            "description": "Analyze the current implementation of the Prompt Library to identify why two windows are being opened.",
+            "dependencies": [],
+            "details": "Review the codebase to locate the modal initialization logic and event handlers that may be causing the double window issue.",
+            "status": "pending",
+            "testStrategy": "Verify the code paths that lead to modal opening and ensure they are correctly identified."
+          },
+          {
+            "id": 2,
+            "title": "Refactor Modal Initialization Logic",
+            "description": "Refactor the code to consolidate the modal opening logic, ensuring only one modal is triggered.",
+            "dependencies": [
+              "42.1"
+            ],
+            "details": "Modify the event handlers and initialization logic to ensure a single modal is opened, adhering to UI standards.",
+            "status": "pending",
+            "testStrategy": "Open the Prompt Library and verify that only one modal dialog appears."
+          },
+          {
+            "id": 3,
+            "title": "Optimize Modal Design",
+            "description": "Optimize the modal to use minimal screen real estate while maintaining usability.",
+            "dependencies": [
+              "42.2"
+            ],
+            "details": "Adjust the modal's layout and styling to ensure it is compact yet functional.",
+            "status": "pending",
+            "testStrategy": "Ensure the modal is displayed correctly and does not overlap or duplicate."
+          },
+          {
+            "id": 4,
+            "title": "Ensure Modal Responsiveness and Accessibility",
+            "description": "Make sure the modal is responsive and accessible, with proper ARIA roles and keyboard navigation support.",
+            "dependencies": [
+              "42.3"
+            ],
+            "details": "Implement responsive design techniques and accessibility features in the modal.",
+            "status": "pending",
+            "testStrategy": "Test the modal's responsiveness on various screen sizes and devices. Verify that the modal is accessible, with proper ARIA roles and keyboard navigation."
+          },
+          {
+            "id": 5,
+            "title": "Review and Implement Best Practices",
+            "description": "Review the implementation of Task 37 for modal dialog best practices and apply them.",
+            "dependencies": [
+              "42.4"
+            ],
+            "details": "Examine Task 37's implementation for insights and integrate any relevant best practices into the current modal logic.",
+            "status": "pending",
+            "testStrategy": "Ensure the modal adheres to best practices and UI standards for modal dialogs."
+          }
+        ]
+      },
+      {
+        "id": 43,
+        "title": "Research and Implement Nano-Banana Prompt Best Practices",
+        "description": "Research and develop a comprehensive library of prompt templates optimized for the nano-banana model, including best practices and transformation techniques.",
+        "details": "Begin by researching the nano-banana model's unique characteristics and requirements for effective prompt writing. Identify key elements that influence prompt performance, such as context, specificity, and transformation techniques. Explore existing literature and case studies on prompt engineering for similar models to gather insights. Develop a set of best practices for writing prompts specifically tailored to the nano-banana model. Create a library of prompt templates that incorporate these best practices, ensuring they cover a wide range of use cases and scenarios. Implement a system for categorizing and storing these templates, possibly leveraging existing infrastructure like the prompt library from Task 34. Ensure the templates are easily accessible and editable by users. Consider integrating a version control system to track changes and improvements over time.",
+        "testStrategy": "1. Conduct a literature review to ensure all relevant best practices and techniques are included in the prompt library. 2. Validate the effectiveness of the prompt templates by testing them with the nano-banana model and measuring performance improvements. 3. Ensure the prompt library is integrated with existing systems, such as the prompt library from Task 34, and verify accessibility and editability. 4. Solicit feedback from users on the usability and effectiveness of the prompt templates and make iterative improvements based on this feedback.",
+        "status": "done",
+        "dependencies": [
+          34
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research Nano-Banana Model Characteristics",
+            "description": "Investigate the unique characteristics and requirements of the nano-banana model for effective prompt writing.",
+            "dependencies": [],
+            "details": "Conduct a thorough review of the nano-banana model's documentation and any available research papers to understand its specific needs for prompt engineering.",
+            "status": "done",
+            "testStrategy": "Ensure all relevant characteristics are documented and understood by cross-referencing multiple sources."
+          },
+          {
+            "id": 2,
+            "title": "Identify Key Elements Influencing Prompt Performance",
+            "description": "Determine the key elements such as context, specificity, and transformation techniques that influence prompt performance for the nano-banana model.",
+            "dependencies": [
+              "43.1"
+            ],
+            "details": "Analyze existing literature and case studies on prompt engineering for similar models to identify elements that impact prompt effectiveness.",
+            "status": "done",
+            "testStrategy": "Validate the identified elements by comparing them with known best practices in prompt engineering."
+          },
+          {
+            "id": 3,
+            "title": "Develop Best Practices for Nano-Banana Prompts",
+            "description": "Create a set of best practices for writing prompts specifically tailored to the nano-banana model.",
+            "dependencies": [
+              "43.2"
+            ],
+            "details": "Synthesize insights from research to formulate best practices that enhance prompt performance for the nano-banana model.",
+            "status": "done",
+            "testStrategy": "Review the best practices with experts in prompt engineering to ensure comprehensiveness and applicability."
+          },
+          {
+            "id": 4,
+            "title": "Create a Library of Prompt Templates",
+            "description": "Develop a comprehensive library of prompt templates incorporating best practices for the nano-banana model.",
+            "dependencies": [
+              "43.3"
+            ],
+            "details": "Design and compile a variety of prompt templates that cover a wide range of use cases and scenarios, ensuring they align with the developed best practices.",
+            "status": "done",
+            "testStrategy": "Test the prompt templates with the nano-banana model to measure performance improvements and adjust as necessary."
+          },
+          {
+            "id": 5,
+            "title": "Implement Template Categorization and Version Control",
+            "description": "Set up a system for categorizing and storing prompt templates, integrating version control for tracking changes.",
+            "dependencies": [
+              "43.4"
+            ],
+            "details": "Leverage existing infrastructure like the prompt library from Task 34 to categorize and store templates, and integrate a version control system for template management.",
+            "status": "done",
+            "testStrategy": "Ensure templates are easily accessible and editable by users, and verify the version control system tracks changes accurately."
+          }
+        ]
+      },
+      {
+        "id": 44,
+        "title": "Add Random Selection Feature for Categories in @ Reference System",
+        "description": "Implement a feature to randomly select an item from a specified category when a user types a category name in the @ reference system.",
+        "details": "To implement the random selection feature, first extend the existing @ reference system (Task 36) to support category recognition. When a user types a category name like 'characters' or 'effects', the system should query the image reference library (Task 35) to retrieve all items within that category. Implement a random selection algorithm to choose one item from the retrieved list. Ensure that the selected item is then automatically added to the reference section. Update the UI to provide feedback to the user about the selected item. Consider edge cases such as empty categories or invalid category names, and handle these gracefully by providing appropriate user feedback.",
+        "testStrategy": "1. Type a category name in the @ reference system and verify that an item from that category is randomly selected and added to the reference section. 2. Test with multiple categories to ensure the random selection works consistently. 3. Verify that the system handles empty categories by providing user feedback. 4. Ensure that invalid category names do not cause errors and provide appropriate feedback. 5. Conduct tests to ensure the UI updates correctly to reflect the selected item.",
+        "status": "pending",
+        "dependencies": [
+          35,
+          36
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extend @ Reference System for Category Recognition",
+            "description": "Modify the existing @ reference system to recognize category names input by the user.",
+            "dependencies": [],
+            "details": "Update the parsing logic of the @ reference system to identify when a user inputs a category name. This involves adding a list of valid category names and ensuring the system can differentiate between category names and other inputs.",
+            "status": "pending",
+            "testStrategy": "Test by inputting various category names to ensure they are correctly recognized by the system."
+          },
+          {
+            "id": 2,
+            "title": "Query Image Reference Library for Category Items",
+            "description": "Implement functionality to query the image reference library to retrieve all items within a specified category.",
+            "dependencies": [
+              "44.1"
+            ],
+            "details": "Develop a query function that takes a recognized category name and retrieves all associated items from the image reference library. Ensure the function handles cases where the category is empty or invalid.",
+            "status": "pending",
+            "testStrategy": "Verify that the correct items are retrieved for valid categories and appropriate feedback is given for empty or invalid categories."
+          },
+          {
+            "id": 3,
+            "title": "Implement Random Selection Algorithm",
+            "description": "Create an algorithm to randomly select one item from the list of items retrieved for a category.",
+            "dependencies": [
+              "44.2"
+            ],
+            "details": "Develop a random selection algorithm that takes the list of items from a category and selects one item at random. Ensure the algorithm is efficient and handles edge cases such as an empty list.",
+            "status": "pending",
+            "testStrategy": "Test the random selection by repeatedly querying the same category and verifying that different items are selected over multiple trials."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Selected Item into Reference Section",
+            "description": "Ensure the randomly selected item is automatically added to the reference section of the system.",
+            "dependencies": [
+              "44.3"
+            ],
+            "details": "Modify the system to automatically add the selected item to the user's reference section. Ensure the integration is seamless and the item is displayed correctly.",
+            "status": "pending",
+            "testStrategy": "Check that the selected item appears in the reference section and is displayed correctly after selection."
+          },
+          {
+            "id": 5,
+            "title": "Update UI for User Feedback",
+            "description": "Enhance the user interface to provide feedback about the selected item and handle edge cases.",
+            "dependencies": [
+              "44.4"
+            ],
+            "details": "Update the UI to display a message or visual indicator of the selected item. Implement error messages or notifications for cases where the category is empty or invalid.",
+            "status": "pending",
+            "testStrategy": "Test the UI feedback by selecting items from various categories and verifying that the feedback is clear and informative. Check error handling for invalid inputs."
+          }
+        ]
+      },
+      {
+        "id": 45,
+        "title": "Implement Nano-Banana Green Screen Character Workflow",
+        "description": "Develop a workflow for extracting characters from backgrounds, applying chroma key, removing shadows, and maintaining identity consistency, accessible as a quick access prompt.",
+        "details": "To implement the Nano-Banana Green Screen Character Workflow, start by designing a system that can accurately extract characters from various backgrounds. Utilize chroma key techniques to replace backgrounds with a green screen. Develop algorithms to detect and remove shadows while ensuring the character's face and identity remain consistent. Integrate this workflow into the existing prompt library (Task 34) to allow quick access as a prompt in the characters category. Consider using chain prompting techniques to guide users through the process step-by-step. Ensure the workflow is optimized for performance and can handle high-resolution images efficiently. Collaborate with the team responsible for the image reference library (Task 35) to ensure compatibility and leverage existing image processing capabilities.",
+        "testStrategy": "1. Test the workflow with a variety of images to ensure characters are correctly extracted and placed on a green screen. 2. Verify that shadows are effectively removed without affecting the character's appearance. 3. Ensure the workflow maintains face and identity consistency across different images. 4. Test the integration with the prompt library to confirm the workflow is accessible as a quick access prompt. 5. Conduct performance testing to ensure the workflow handles high-resolution images efficiently. 6. Gather user feedback to refine the process and improve usability.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          35
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Character Extraction System",
+            "description": "Develop a system to accurately extract characters from various backgrounds.",
+            "dependencies": [],
+            "details": "Create algorithms that can identify and separate characters from complex backgrounds using advanced image processing techniques.",
+            "status": "pending",
+            "testStrategy": "Test with diverse background images to ensure accurate character extraction without losing detail."
+          },
+          {
+            "id": 2,
+            "title": "Implement Chroma Key Technique",
+            "description": "Apply chroma key techniques to replace backgrounds with a green screen.",
+            "dependencies": [
+              "45.1"
+            ],
+            "details": "Utilize chroma key algorithms to replace the extracted background with a uniform green screen, ensuring seamless integration.",
+            "status": "pending",
+            "testStrategy": "Verify that the green screen replacement is consistent across different lighting conditions and image resolutions."
+          },
+          {
+            "id": 3,
+            "title": "Develop Shadow Removal Algorithm",
+            "description": "Create algorithms to detect and remove shadows while maintaining character integrity.",
+            "dependencies": [
+              "45.2"
+            ],
+            "details": "Design a shadow detection and removal process that preserves the character's appearance and identity.",
+            "status": "pending",
+            "testStrategy": "Test shadow removal on images with varying shadow intensities to ensure character integrity is maintained."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Workflow into Prompt Library",
+            "description": "Integrate the green screen workflow into the existing prompt library for quick access.",
+            "dependencies": [
+              "45.3"
+            ],
+            "details": "Ensure the workflow is accessible as a prompt in the characters category, leveraging existing prompt library infrastructure.",
+            "status": "pending",
+            "testStrategy": "Test the prompt integration to ensure users can access and utilize the workflow efficiently."
+          },
+          {
+            "id": 5,
+            "title": "Optimize Workflow for Performance",
+            "description": "Optimize the workflow to handle high-resolution images efficiently.",
+            "dependencies": [
+              "45.4"
+            ],
+            "details": "Enhance the workflow's performance to ensure it processes high-resolution images quickly without compromising quality.",
+            "status": "pending",
+            "testStrategy": "Benchmark the workflow's performance with high-resolution images to ensure it meets speed and quality standards."
+          }
+        ]
+      },
+      {
+        "id": 46,
+        "title": "Implement Split Screen Character View with Face and Full Body",
+        "description": "Create a split-screen template to display a character's face and full body simultaneously, integrating with the green screen workflow.",
+        "details": "To implement the split-screen character view, design a UI component that divides the screen into two sections: one for a close-up of the character's face and another for a full body shot. Ensure that this component is compatible with the green screen workflow developed in Task 45, allowing seamless integration of characters extracted from backgrounds. Use responsive design principles to maintain layout consistency across different screen sizes and resolutions. Implement this feature as a quick access prompt template, enabling users to easily apply the split-screen view to any character. Consider performance optimizations to handle high-resolution images efficiently.",
+        "testStrategy": "1. Verify that the split-screen template correctly displays both the face and full body views of a character. 2. Test the integration with the green screen workflow by applying the template to characters processed through Task 45. 3. Ensure the layout remains consistent across various screen sizes and resolutions. 4. Check the quick access prompt functionality to confirm that users can easily apply the template. 5. Test performance with high-resolution images to ensure smooth operation without lag.",
+        "status": "pending",
+        "dependencies": [
+          45
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design UI Component for Split-Screen View",
+            "description": "Create a UI component that divides the screen into two sections for displaying a character's face and full body.",
+            "dependencies": [],
+            "details": "Design the layout for the split-screen view, ensuring it can display both a close-up of the character's face and a full body shot.",
+            "status": "pending",
+            "testStrategy": "Verify the UI component correctly divides the screen and displays both sections as intended."
+          },
+          {
+            "id": 2,
+            "title": "Integrate with Green Screen Workflow",
+            "description": "Ensure compatibility of the split-screen component with the green screen workflow from Task 45.",
+            "dependencies": [
+              "46.1"
+            ],
+            "details": "Modify the component to integrate seamlessly with the green screen workflow, allowing characters to be extracted and displayed correctly.",
+            "status": "pending",
+            "testStrategy": "Test the integration by applying the split-screen view to characters processed through the green screen workflow."
+          },
+          {
+            "id": 3,
+            "title": "Implement Responsive Design",
+            "description": "Apply responsive design principles to maintain layout consistency across different screen sizes and resolutions.",
+            "dependencies": [
+              "46.1"
+            ],
+            "details": "Ensure the split-screen component adjusts its layout based on the screen size and resolution, maintaining a consistent appearance.",
+            "status": "pending",
+            "testStrategy": "Test the component on various devices and screen sizes to ensure the layout remains consistent and visually appealing."
+          },
+          {
+            "id": 4,
+            "title": "Develop Quick Access Prompt Template",
+            "description": "Create a template for quick access to the split-screen view, allowing users to easily apply it to any character.",
+            "dependencies": [
+              "46.2",
+              "46.3"
+            ],
+            "details": "Implement a prompt template that users can quickly apply to characters, enabling the split-screen view with minimal effort.",
+            "status": "pending",
+            "testStrategy": "Verify that users can apply the split-screen template to characters easily and that it functions as expected."
+          },
+          {
+            "id": 5,
+            "title": "Optimize Performance for High-Resolution Images",
+            "description": "Implement performance optimizations to handle high-resolution images efficiently within the split-screen view.",
+            "dependencies": [
+              "46.4"
+            ],
+            "details": "Optimize the component to ensure smooth performance when displaying high-resolution images, minimizing load times and resource usage.",
+            "status": "pending",
+            "testStrategy": "Test the component with high-resolution images to ensure performance remains smooth and responsive."
+          }
+        ]
+      },
+      {
+        "id": 47,
+        "title": "Enhance Nano-Banana Template System with Advanced Autocomplete Features",
+        "description": "Integrate advanced autocomplete features into the Nano-Banana template system, enhancing the user experience with intelligent suggestions and improved workflow efficiency.",
+        "details": "To enhance the Nano-Banana template system, extend the existing @ reference detection system to include advanced autocomplete features. This involves implementing a predictive algorithm that suggests relevant character tokens based on user input and context. Utilize machine learning techniques to analyze user behavior and improve suggestion accuracy over time. Ensure the system supports all 15 templates, including those for green screen extraction, split-screen views, and 3-step chain workflows. Integrate these features seamlessly into the existing UI, maintaining consistency with current design standards. Consider potential performance impacts and optimize the system for speed and responsiveness.",
+        "testStrategy": "1. Test the autocomplete feature by typing various character tokens in the template system and verify that relevant suggestions appear. 2. Evaluate the accuracy of suggestions by comparing them against expected results based on user input and context. 3. Conduct performance testing to ensure the system remains responsive and fast, even with complex templates. 4. Verify integration with all 15 templates, ensuring no functionality is broken. 5. Gather user feedback to assess usability and make iterative improvements.",
+        "status": "done",
+        "dependencies": [
+          36
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 48,
+        "title": "Visual UI/UX Audit with Playwright",
+        "description": "Perform a comprehensive visual and user experience audit using Playwright for automated browser testing.",
+        "details": "Conduct a thorough visual and UX audit of recently implemented features using Playwright. Focus on the Shot Creator UI changes, nano-banana templates, prompt library, image reference library, and @ reference system. Use Playwright to automate browser interactions, capturing screenshots and testing user interactions to verify visual appearance and functionality. Ensure all UI elements are responsive and accessible, identifying any issues and implementing fixes. Pay special attention to the integration of new features and their impact on the overall user experience. Document findings and collaborate with the design team to address any identified issues.",
+        "testStrategy": "1. Set up Playwright for automated testing in a headless browser environment. 2. Write scripts to navigate through the Shot Creator UI, nano-banana templates, prompt library, image reference library, and @ reference system, capturing screenshots at each step. 3. Verify that all UI elements are displayed correctly and are responsive across different screen sizes. 4. Test accessibility features using Playwright's accessibility testing capabilities. 5. Identify any visual discrepancies or UX issues and document them. 6. Implement necessary fixes and re-run tests to ensure issues are resolved. 7. Compile a report of the audit findings and share with the design and development teams for further action.",
+        "status": "pending",
+        "dependencies": [
+          39,
+          36,
+          45,
+          46
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Playwright Environment",
+            "description": "Install and configure Playwright for automated browser testing in a headless environment.",
+            "dependencies": [],
+            "details": "Ensure Playwright is installed and configured correctly to run tests in a headless browser environment.",
+            "status": "done",
+            "testStrategy": "Verify Playwright installation by running a sample test script to ensure the environment is set up correctly."
+          },
+          {
+            "id": 2,
+            "title": "Automate UI Navigation and Screenshot Capture",
+            "description": "Develop scripts to automate navigation through the Shot Creator UI, nano-banana templates, prompt library, image reference library, and @ reference system, capturing screenshots.",
+            "dependencies": [
+              "48.1"
+            ],
+            "details": "Write Playwright scripts to automate browser interactions and capture screenshots at each step of the UI.",
+            "status": "done",
+            "testStrategy": "Run scripts to ensure screenshots are captured correctly at each navigation step."
+          },
+          {
+            "id": 3,
+            "title": "Verify Responsiveness and Accessibility",
+            "description": "Test all UI elements for responsiveness and accessibility, identifying any issues.",
+            "dependencies": [
+              "48.2"
+            ],
+            "details": "Use Playwright to test the UI on different screen sizes and check for accessibility compliance.",
+            "status": "pending",
+            "testStrategy": "Execute tests on various devices and screen sizes to ensure responsiveness and accessibility standards are met."
+          },
+          {
+            "id": 4,
+            "title": "Identify and Document UI/UX Issues",
+            "description": "Analyze test results to identify any visual or functional issues in the UI/UX.",
+            "dependencies": [
+              "48.3"
+            ],
+            "details": "Review screenshots and test logs to document any issues related to UI appearance or user interactions.",
+            "status": "pending",
+            "testStrategy": "Compile a report of identified issues with detailed descriptions and screenshots."
+          },
+          {
+            "id": 5,
+            "title": "Collaborate with Design Team for Fixes",
+            "description": "Work with the design team to address and implement fixes for identified UI/UX issues.",
+            "dependencies": [
+              "48.4"
+            ],
+            "details": "Discuss findings with the design team and collaborate on solutions to improve the UI/UX.",
+            "status": "pending",
+            "testStrategy": "Re-test the UI after fixes are implemented to ensure all issues are resolved."
+          }
+        ]
+      },
+      {
+        "id": 49,
+        "title": "Visual Polish and CSS Refinement for UI Components",
+        "description": "Enhance the visual design and CSS styling of UI components, focusing on Shot Creator, References tab, Library dialogs, and prompt interfaces.",
+        "details": "Review and improve the visual design of all UI components, specifically targeting the Shot Creator, References tab, Library dialogs, and prompt interfaces. Address spacing issues, alignment problems, color inconsistencies, font sizes, hover states, transitions, and animations. Ensure consistent styling across all components, making the interface more visually appealing with appropriate shadows, borders, and gradients. Test and refine dark mode compatibility to ensure all text remains readable. Polish button styles, input fields, and modal dialogs for a professional appearance. Consider recent layout changes and ensure that all visual elements align with the updated design specifications.",
+        "testStrategy": "1. Conduct a visual inspection of the Shot Creator, References tab, Library dialogs, and prompt interfaces to identify any visual inconsistencies or areas for improvement. 2. Adjust CSS styles to fix spacing, alignment, color, and font size issues. 3. Test hover states, transitions, and animations to ensure they are smooth and consistent. 4. Verify that all components display correctly in dark mode, ensuring text readability. 5. Review button styles, input fields, and modal dialogs for a polished appearance. 6. Use browser developer tools to test changes across different screen sizes and resolutions. 7. Conduct cross-browser testing to ensure consistent appearance and functionality.",
+        "status": "pending",
+        "dependencies": [
+          27,
+          28,
+          40,
+          48
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review and Identify UI Component Issues",
+            "description": "Conduct a thorough review of the Shot Creator, References tab, Library dialogs, and prompt interfaces to identify visual design and CSS styling issues.",
+            "dependencies": [],
+            "details": "Focus on identifying spacing issues, alignment problems, color inconsistencies, font sizes, hover states, transitions, and animations.",
+            "status": "pending",
+            "testStrategy": "Perform a visual inspection to document all inconsistencies and areas for improvement."
+          },
+          {
+            "id": 2,
+            "title": "Implement CSS Adjustments",
+            "description": "Make necessary CSS adjustments to address identified issues in the UI components.",
+            "dependencies": [
+              "49.1"
+            ],
+            "details": "Adjust CSS styles to fix spacing, alignment, color, and font size issues. Ensure consistent styling across all components.",
+            "status": "pending",
+            "testStrategy": "Verify that the CSS changes resolve the identified issues and maintain a consistent style."
+          },
+          {
+            "id": 3,
+            "title": "Enhance Visual Elements",
+            "description": "Enhance visual elements such as shadows, borders, and gradients to improve the overall appearance of the UI components.",
+            "dependencies": [
+              "49.2"
+            ],
+            "details": "Add appropriate shadows, borders, and gradients to make the interface more visually appealing.",
+            "status": "pending",
+            "testStrategy": "Check the visual appeal of the components and ensure enhancements are consistent with design specifications."
+          },
+          {
+            "id": 4,
+            "title": "Test and Refine Dark Mode Compatibility",
+            "description": "Ensure all UI components are compatible with dark mode, maintaining readability and visual appeal.",
+            "dependencies": [
+              "49.3"
+            ],
+            "details": "Test dark mode across all components, ensuring text readability and visual consistency.",
+            "status": "pending",
+            "testStrategy": "Conduct tests in dark mode to verify that all text and elements are clear and visually appealing."
+          },
+          {
+            "id": 5,
+            "title": "Polish Button Styles and Input Fields",
+            "description": "Refine button styles, input fields, and modal dialogs for a professional appearance.",
+            "dependencies": [
+              "49.4"
+            ],
+            "details": "Ensure buttons, input fields, and modal dialogs are styled consistently and professionally.",
+            "status": "pending",
+            "testStrategy": "Test the appearance and functionality of buttons, input fields, and modal dialogs to ensure they meet professional standards."
+          }
+        ]
+      },
+      {
+        "id": 50,
+        "title": "Interactive User Flow Testing with Visual Verification",
+        "description": "Develop comprehensive Playwright tests to simulate real user workflows and verify UI interactions visually.",
+        "details": "Create Playwright scripts to automate the testing of complete user journeys within the application. Focus on the Shot Creator, Library dialogs, @ reference autocomplete, nano-banana templates, prompt library, image reference library, and References tab. Ensure that each step of the user journey is captured with screenshots to verify visual feedback such as hover states, active states, and loading indicators. Document any UI elements that cause confusion or hinder user experience. Use these tests to identify and report any UI/UX issues that need addressing.",
+        "testStrategy": "1. Set up Playwright in a headless browser environment to automate user interactions. 2. Write scripts to navigate through the Shot Creator, Library dialogs, and other specified components, capturing screenshots at each step. 3. Verify that all interactive elements (buttons, dropdowns, modals) function correctly and provide appropriate visual feedback. 4. Document any UI/UX issues encountered during testing, focusing on user experience and potential pain points. 5. Ensure that all visual elements are consistent with design specifications and provide a seamless user experience.",
+        "status": "pending",
+        "dependencies": [
+          29,
+          39,
+          48
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Playwright Environment",
+            "description": "Install and configure Playwright in a headless browser environment for automated testing.",
+            "dependencies": [],
+            "details": "Ensure Playwright is installed and configured correctly to run tests in a headless browser environment.",
+            "status": "pending",
+            "testStrategy": "Verify Playwright installation by running a sample test script to ensure the environment is set up correctly."
+          },
+          {
+            "id": 2,
+            "title": "Develop User Journey Scripts",
+            "description": "Create Playwright scripts to automate testing of complete user journeys within the application.",
+            "dependencies": [
+              "50.1"
+            ],
+            "details": "Focus on automating user interactions for Shot Creator, Library dialogs, @ reference autocomplete, nano-banana templates, prompt library, image reference library, and References tab.",
+            "status": "pending",
+            "testStrategy": "Run scripts to ensure they navigate through the specified components correctly, capturing screenshots at each step."
+          },
+          {
+            "id": 3,
+            "title": "Capture Visual Feedback",
+            "description": "Capture screenshots at each step of the user journey to verify visual feedback.",
+            "dependencies": [
+              "50.2"
+            ],
+            "details": "Ensure that screenshots capture hover states, active states, and loading indicators for visual verification.",
+            "status": "pending",
+            "testStrategy": "Review screenshots to confirm that all visual states are captured accurately and consistently."
+          },
+          {
+            "id": 4,
+            "title": "Document UI/UX Issues",
+            "description": "Identify and document any UI elements that cause confusion or hinder user experience.",
+            "dependencies": [
+              "50.3"
+            ],
+            "details": "Analyze the captured screenshots and user journey scripts to identify UI/UX issues.",
+            "status": "pending",
+            "testStrategy": "Create a report detailing any UI/UX issues found, including screenshots and descriptions."
+          },
+          {
+            "id": 5,
+            "title": "Report and Address UI/UX Issues",
+            "description": "Use the tests to identify and report any UI/UX issues that need addressing.",
+            "dependencies": [
+              "50.4"
+            ],
+            "details": "Compile a list of UI/UX issues and propose solutions to address them.",
+            "status": "pending",
+            "testStrategy": "Ensure all identified issues are documented and communicated to the development team for resolution."
+          }
+        ]
+      },
+      {
+        "id": 51,
+        "title": "Fix Accessibility Issues in Dialogs",
+        "description": "Address accessibility issues in Image Library and Prompt Library dialogs by adding DialogTitle components and aria-describedby attributes.",
+        "details": "Use React's DialogTitle component to ensure all dialogs have a title. Add aria-describedby attributes to improve screen reader support. Ensure all dialogs comply with WCAG standards. Utilize React best practices for accessibility and test with screen readers.",
+        "testStrategy": "Use Playwright to verify console warnings are resolved. Test with axe-core for accessibility. Conduct manual testing with screen readers.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add DialogTitle Components",
+            "description": "Implement DialogTitle components in all dialogs within the Image Library and Prompt Library.",
+            "dependencies": [],
+            "details": "Use React's DialogTitle component to ensure all dialogs have a title. Follow React best practices for component integration.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement aria-describedby Attributes",
+            "description": "Add aria-describedby attributes to dialogs to enhance screen reader support.",
+            "dependencies": [
+              "51.1"
+            ],
+            "details": "Ensure that all dialogs have appropriate aria-describedby attributes to describe their content for screen readers.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Test with Screen Readers",
+            "description": "Conduct manual testing of dialogs using screen readers to verify accessibility improvements.",
+            "dependencies": [
+              "51.1",
+              "51.2"
+            ],
+            "details": "Use screen readers to test the accessibility of dialogs and ensure that titles and descriptions are correctly read.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Verify WCAG Compliance",
+            "description": "Ensure all dialogs comply with WCAG standards.",
+            "dependencies": [
+              "51.1",
+              "51.2",
+              "51.3"
+            ],
+            "details": "Conduct a thorough review of dialogs to ensure compliance with WCAG standards, using tools like axe-core and manual verification.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 52,
+        "title": "Improve Visual Consistency and Spacing",
+        "description": "Standardize spacing and padding across components, focusing on category cards and button groups.",
+        "details": "Conduct a spacing audit and use design tokens to standardize padding. Fix padding in Prompt Library category cards and ensure consistent gaps between button groups. Align elements to an 8px grid system and create spacing utility classes using Tailwind CSS.",
+        "testStrategy": "Use Playwright for before/after screenshots. Conduct visual regression testing with Percy. Compare screenshots for consistency across different screen sizes.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Conduct Spacing Audit",
+            "description": "Perform a comprehensive audit of current spacing and padding across all components, focusing on category cards and button groups.",
+            "dependencies": [],
+            "details": "Review existing UI components to identify inconsistencies in spacing and padding. Document findings and create a report outlining areas that need standardization.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Design Tokens for Standardized Padding",
+            "description": "Create and apply design tokens to standardize padding across components.",
+            "dependencies": [
+              "52.1"
+            ],
+            "details": "Develop a set of design tokens that define standard padding values. Apply these tokens to category cards and button groups to ensure consistency. Align elements to an 8px grid system.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create Spacing Utility Classes with Tailwind CSS",
+            "description": "Develop utility classes using Tailwind CSS to manage spacing and ensure consistent gaps between elements.",
+            "dependencies": [
+              "52.2"
+            ],
+            "details": "Utilize Tailwind CSS to create utility classes for spacing. Ensure these classes are applied to maintain consistent gaps between button groups and other UI elements.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 53,
+        "title": "Enhance Empty State Designs",
+        "description": "Design visually appealing empty states with icons, illustrations, and engaging messages.",
+        "details": "Create visually appealing empty states with icons and helpful messages. Include call-to-action buttons and ensure consistent patterns across the application. Consult with the design team for creative input.",
+        "testStrategy": "Test all empty states with Playwright. Capture screenshots and verify consistent styling and messaging. Test user journey transitions from empty to populated states.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Icons and Illustrations",
+            "description": "Create visually appealing icons and illustrations for empty states.",
+            "dependencies": [],
+            "details": "Develop a set of icons and illustrations that align with the application's design language. Ensure they are versatile and can be used across different empty states.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Craft Engaging Messages",
+            "description": "Develop engaging and helpful messages for empty states.",
+            "dependencies": [],
+            "details": "Write messages that are informative and encourage user interaction. Include call-to-action phrases where appropriate to guide users.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Consult with Design Team",
+            "description": "Collaborate with the design team to ensure creative input and consistency.",
+            "dependencies": [
+              "53.1",
+              "53.2"
+            ],
+            "details": "Meet with the design team to review the icons, illustrations, and messages. Gather feedback and make necessary adjustments to ensure consistency across the application.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 54,
+        "title": "Fix Color Contrast Issues",
+        "description": "Ensure all text elements meet WCAG contrast standards, focusing on purple text on dark backgrounds.",
+        "details": "Run a comprehensive WCAG contrast analysis on all text elements. Adjust colors to meet WCAG AA standards and document changes in the design system. Update the color palette with accessible alternatives.",
+        "testStrategy": "Use automated contrast checking tools and Playwright visual tests. Conduct manual verification with a WCAG contrast checker and test with visually impaired users.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Conduct WCAG Contrast Analysis",
+            "description": "Run a comprehensive WCAG contrast analysis on all text elements, focusing on purple text on dark backgrounds.",
+            "dependencies": [],
+            "details": "Use automated contrast checking tools and conduct manual verification with a WCAG contrast checker. Document any elements that do not meet WCAG AA standards.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Adjust Colors to Meet WCAG Standards",
+            "description": "Adjust colors of text elements that do not meet WCAG AA standards to ensure compliance.",
+            "dependencies": [
+              "54.1"
+            ],
+            "details": "Modify the color palette to include accessible alternatives for purple text on dark backgrounds. Ensure all changes are visually tested with Playwright and manually verified.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Update Design System Documentation",
+            "description": "Document all color changes in the design system to reflect the updated accessible color palette.",
+            "dependencies": [
+              "54.2"
+            ],
+            "details": "Ensure the design system documentation is updated with new color codes and usage guidelines. Include before-and-after examples to illustrate the changes.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 55,
+        "title": "Code Cleanup and Optimization",
+        "description": "Audit the codebase for duplicate code, unused components, and optimize bundle size.",
+        "details": "Identify and remove duplicate code patterns and unused components. Consolidate similar functions into shared utilities and break down large components. Optimize bundle size by removing unnecessary dependencies. Backup the codebase before cleanup.",
+        "testStrategy": "Run the full test suite after each removal. Use Playwright for E2E testing and monitor bundle size changes. Verify no functionality is broken and conduct performance testing.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify Duplicate Code Patterns",
+            "description": "Audit the codebase to identify duplicate code patterns.",
+            "dependencies": [],
+            "details": "Use static analysis tools to scan the codebase for duplicate code patterns. Document findings and prepare a list of duplicate code sections for removal.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Remove Unused Components",
+            "description": "Identify and remove unused components from the codebase.",
+            "dependencies": [
+              "55.1"
+            ],
+            "details": "Conduct a thorough review of the codebase to find components that are no longer in use. Remove these components and ensure no dependencies are broken.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Consolidate Similar Functions",
+            "description": "Consolidate similar functions into shared utilities.",
+            "dependencies": [
+              "55.1"
+            ],
+            "details": "Identify functions that perform similar tasks and consolidate them into shared utility modules. Ensure all references are updated accordingly.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Optimize Bundle Size",
+            "description": "Optimize the bundle size by removing unnecessary dependencies.",
+            "dependencies": [
+              "55.2",
+              "55.3"
+            ],
+            "details": "Analyze the current bundle size and identify unnecessary dependencies. Remove these dependencies and verify the application still functions correctly.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Backup Codebase",
+            "description": "Backup the codebase before starting the cleanup process.",
+            "dependencies": [],
+            "details": "Create a complete backup of the current codebase to ensure a recovery point is available before making any changes.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 56,
+        "title": "Comprehensive Testing Suite",
+        "description": "Develop a comprehensive testing suite for UI components and user flows using Playwright.",
+        "details": "Create a Playwright test suite for all UI components and add visual regression tests. Test all user flows end-to-end and add accessibility tests to the CI/CD pipeline. Implement performance testing for UI interactions and document test coverage metrics.",
+        "testStrategy": "Run all tests in the CI/CD environment. Verify tests catch intentional breaking changes and monitor execution time. Ensure tests work across different browsers and maintain regular updates.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Playwright Test Suite for UI Components",
+            "description": "Create a Playwright test suite for all UI components to ensure they function correctly across different browsers.",
+            "dependencies": [],
+            "details": "Set up Playwright environment and write tests for each UI component, ensuring compatibility with Chrome, Firefox, and WebKit.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Add Visual Regression Tests",
+            "description": "Implement visual regression tests to detect unintended visual changes in UI components.",
+            "dependencies": [
+              "56.1"
+            ],
+            "details": "Integrate a visual regression testing tool with Playwright and capture baseline images for all UI components.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Accessibility Tests in CI/CD Pipeline",
+            "description": "Add accessibility tests to the CI/CD pipeline to ensure compliance with accessibility standards.",
+            "dependencies": [
+              "56.1"
+            ],
+            "details": "Use accessibility testing tools like Axe or Lighthouse to automate accessibility checks during the CI/CD process.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Conduct Performance Testing for UI Interactions",
+            "description": "Perform performance testing to evaluate the responsiveness and speed of UI interactions.",
+            "dependencies": [
+              "56.1"
+            ],
+            "details": "Use Playwright's performance testing capabilities to measure load times and interaction speeds, and identify bottlenecks.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Document Test Coverage Metrics",
+            "description": "Document the coverage of the test suite to ensure all critical paths and components are tested.",
+            "dependencies": [
+              "56.1",
+              "56.2",
+              "56.3",
+              "56.4"
+            ],
+            "details": "Generate test coverage reports and summarize the results, highlighting areas with insufficient coverage.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 57,
+        "title": "Setup Continuous Integration for Testing",
+        "description": "Integrate testing suite into CI/CD pipeline for automated testing and deployment.",
+        "details": "Configure CI/CD pipeline to run Playwright tests automatically on each commit. Ensure accessibility and performance tests are included. Use GitHub Actions or Jenkins for automation.",
+        "testStrategy": "Verify CI/CD pipeline triggers tests on each commit. Monitor test results and ensure successful deployment only if tests pass.",
+        "priority": "high",
+        "dependencies": [
+          56
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure CI/CD Pipeline",
+            "description": "Set up the CI/CD pipeline to automate testing and deployment processes.",
+            "dependencies": [],
+            "details": "Use GitHub Actions or Jenkins to configure the CI/CD pipeline. Ensure it triggers on each commit.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Integrate Playwright Tests",
+            "description": "Incorporate Playwright tests into the CI/CD pipeline for automated testing.",
+            "dependencies": [
+              "57.1"
+            ],
+            "details": "Ensure Playwright tests run automatically on each commit within the CI/CD pipeline.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Include Accessibility and Performance Tests",
+            "description": "Add accessibility and performance tests to the CI/CD pipeline.",
+            "dependencies": [
+              "57.2"
+            ],
+            "details": "Ensure accessibility and performance tests are included and executed in the CI/CD pipeline.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 58,
+        "title": "Conduct Accessibility Research",
+        "description": "Deploy sub-agents to research best practices for React dialog accessibility and implement findings.",
+        "details": "Deploy sub-agents to research the latest best practices for React dialog accessibility. Implement findings to enhance dialog accessibility further.",
+        "testStrategy": "Review research findings and ensure implementation aligns with best practices. Conduct additional accessibility testing to verify improvements.",
+        "priority": "medium",
+        "dependencies": [
+          51
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research Best Practices for React Dialog Accessibility",
+            "description": "Deploy sub-agents to gather information on the latest best practices for React dialog accessibility.",
+            "dependencies": [],
+            "details": "Sub-agents will conduct thorough research on current accessibility standards and guidelines specific to React dialogs, including ARIA roles, keyboard navigation, and screen reader compatibility.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Accessibility Enhancements Based on Research Findings",
+            "description": "Apply the research findings to improve the accessibility of React dialogs.",
+            "dependencies": [
+              "58.1"
+            ],
+            "details": "Utilize the gathered best practices to enhance the accessibility features of React dialogs, ensuring compliance with accessibility standards and improving user experience for all users.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 59,
+        "title": "Design System Documentation Update",
+        "description": "Update design system documentation with new color palette and spacing guidelines.",
+        "details": "Document all changes to the color palette and spacing guidelines in the design system. Ensure documentation is clear and accessible for future reference.",
+        "testStrategy": "Review documentation for completeness and clarity. Verify that all changes are accurately reflected and accessible to the team.",
+        "priority": "medium",
+        "dependencies": [
+          52,
+          54
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Document Color Palette Changes",
+            "description": "Update the design system documentation with the new color palette details.",
+            "dependencies": [],
+            "details": "Ensure all changes to the color palette are accurately documented. Include color codes, usage examples, and any relevant design notes.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Update Spacing Guidelines",
+            "description": "Revise the design system documentation to reflect the updated spacing guidelines.",
+            "dependencies": [
+              "59.1"
+            ],
+            "details": "Document the new spacing guidelines, including measurements, use cases, and visual examples. Ensure guidelines are clear and easy to follow.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 60,
+        "title": "User Feedback Collection",
+        "description": "Collect user feedback on visual improvements and accessibility changes.",
+        "details": "Deploy surveys and feedback forms to collect user opinions on the visual and accessibility improvements. Analyze feedback for further enhancements.",
+        "testStrategy": "Analyze feedback data for trends and insights. Use findings to inform future UI/UX improvements.",
+        "priority": "low",
+        "dependencies": [
+          51,
+          52,
+          53,
+          54
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Deploy Surveys and Feedback Forms",
+            "description": "Create and distribute surveys and feedback forms to collect user opinions on visual and accessibility improvements.",
+            "dependencies": [],
+            "details": "Design survey questions focusing on recent visual and accessibility changes. Use online survey tools to distribute the forms to users. Ensure the forms are accessible and easy to complete.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Analyze Feedback Data",
+            "description": "Collect and analyze the data from the completed surveys and feedback forms to identify trends and areas for improvement.",
+            "dependencies": [
+              "60.1"
+            ],
+            "details": "Compile the feedback data into a report. Use data analysis tools to identify common themes and suggestions. Prepare a summary of findings to inform future UI/UX improvements.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 61,
+        "title": "Fix and Test Prompt and Image Library Buttons in Shot Creator",
+        "description": "Ensure the Prompt Library and Image Library buttons in the Shot Creator are functional, opening dialogs or displaying library content as intended.",
+        "details": "To address the non-functional Prompt Library and Image Library buttons in the Shot Creator, first review the current implementation to identify missing or incorrect event handlers. Implement click handlers for both buttons that trigger the opening of their respective dialogs. For the Prompt Library button, ensure it loads the nano-banana prompts as specified. Verify that the dialogs are initialized correctly and display the appropriate content. Update any necessary CSS or component properties to ensure the dialogs are styled consistently with the application's UI standards. Additionally, ensure the dialogs are responsive and accessible, with proper ARIA roles and keyboard navigation support.",
+        "testStrategy": "1. Click the Prompt Library button in the Shot Creator and verify that it opens the dialog displaying the nano-banana prompts.\n2. Click the Image Library button and ensure it opens the correct dialog with the library content.\n3. Test the functionality across different browsers and screen sizes to ensure consistent behavior.\n4. Verify that the dialogs are responsive and accessible, with proper ARIA roles and keyboard navigation support.\n5. Ensure that the styling of the dialogs matches the application's UI standards.",
+        "status": "pending",
+        "dependencies": [
+          28,
+          34,
+          42
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review Current Button Implementations",
+            "description": "Analyze the current implementation of the Prompt Library and Image Library buttons in the Shot Creator to identify missing or incorrect event handlers.",
+            "dependencies": [],
+            "details": "Access the Shot Creator codebase and locate the sections where the Prompt Library and Image Library buttons are defined. Review the event handlers associated with these buttons to determine if they are missing or incorrectly implemented. Document any discrepancies or issues found for further action.",
+            "status": "done",
+            "testStrategy": "Verify that the current buttons do not trigger any dialogs or actions when clicked."
+          },
+          {
+            "id": 2,
+            "title": "Implement Click Handlers for Library Buttons",
+            "description": "Develop and attach click event handlers to the Prompt Library and Image Library buttons to trigger the opening of their respective dialogs.",
+            "dependencies": [
+              "61.1"
+            ],
+            "details": "Using the findings from the review, implement JavaScript click event handlers for both buttons. Ensure that clicking the Prompt Library button opens a dialog displaying the nano-banana prompts, and the Image Library button opens the appropriate image library dialog. Use existing dialog components or create new ones if necessary.",
+            "status": "done",
+            "testStrategy": "Click each button to confirm that the respective dialog opens correctly."
+          },
+          {
+            "id": 3,
+            "title": "Ensure Proper Dialog Initialization and Content Display",
+            "description": "Verify that the dialogs for both libraries are initialized correctly and display the appropriate content.",
+            "dependencies": [
+              "61.2"
+            ],
+            "details": "Check the initialization logic for both dialogs to ensure they load the correct content. For the Prompt Library, confirm that the nano-banana prompts are displayed. For the Image Library, ensure the correct images are shown. Adjust initialization code if necessary to fix any issues.",
+            "status": "done",
+            "testStrategy": "Open each dialog and verify that the content is loaded and displayed as expected."
+          },
+          {
+            "id": 4,
+            "title": "Update Dialog Styling and Accessibility",
+            "description": "Update the CSS and component properties for the dialogs to ensure they are styled consistently with the application's UI standards and are accessible.",
+            "dependencies": [
+              "61.3"
+            ],
+            "details": "Review the current styling of the dialogs and update the CSS to match the application's design guidelines. Ensure that the dialogs are responsive and include proper ARIA roles for accessibility. Implement keyboard navigation support to allow users to interact with the dialogs using the keyboard.",
+            "status": "pending",
+            "testStrategy": "Check the dialogs on different screen sizes and devices to ensure responsiveness. Use accessibility tools to verify ARIA roles and keyboard navigation."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Cross-Browser and Device Testing",
+            "description": "Test the functionality of the Prompt Library and Image Library buttons and dialogs across different browsers and devices to ensure consistent behavior.",
+            "dependencies": [
+              "61.4"
+            ],
+            "details": "Perform testing on major browsers such as Chrome, Firefox, Safari, and Edge. Test on various devices, including desktops, tablets, and smartphones. Verify that the buttons and dialogs function correctly and consistently across all platforms.",
+            "status": "pending",
+            "testStrategy": "Document any browser-specific or device-specific issues and address them as needed to ensure uniform functionality."
+          }
+        ]
+      },
+      {
+        "id": 62,
+        "title": "Populate Prompt Library with Nano-Banana Specific Prompts and Templates",
+        "description": "Research nano-banana model capabilities and populate the prompt library with specific prompts and templates, including categories like cinematic shots, character styles, and lighting setups.",
+        "details": "Begin by researching the capabilities of the nano-banana model to understand its strengths and unique features. Based on this research, create relevant prompt categories such as cinematic shots, character styles, environment descriptions, lighting setups, and special effects. For each category, develop at least 50 example prompts that leverage the nano-banana model's capabilities. Implement a quick access toggle functionality for these prompts, allowing users to easily add or remove prompts from quick access. Ensure that the prompt library supports dynamic updates and user-specific customization, leveraging the existing Supabase persistence system. Collaborate with the design team to ensure the UI for quick access is intuitive and consistent with the application's design language. Consider implementing a tagging system to enhance searchability and organization of prompts.",
+        "testStrategy": "1. Verify that at least 50 prompts are created and categorized correctly in the prompt library. 2. Test the quick access toggle functionality to ensure prompts can be added and removed from quick access seamlessly. 3. Conduct usability testing with users to ensure the prompt categories and examples are intuitive and useful. 4. Perform integration testing with the Supabase backend to ensure prompt data is stored and retrieved correctly. 5. Validate the search functionality by searching for prompts using various keywords and tags. 6. Ensure the UI is responsive and consistent across different devices and screen sizes.",
+        "status": "done",
+        "dependencies": [
+          34,
+          61
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research Nano-Banana Model Capabilities",
+            "description": "Conduct thorough research on the nano-banana model to understand its strengths, unique features, and capabilities.",
+            "dependencies": [],
+            "details": "Review the nano-banana model documentation, technical specifications, and any available case studies or examples. Identify key features that can be leveraged for creating prompts, such as specific styles, effects, or rendering capabilities.",
+            "status": "done",
+            "testStrategy": "Ensure that a comprehensive list of model capabilities is documented and verified with the development team."
+          },
+          {
+            "id": 2,
+            "title": "Define Prompt Categories Based on Model Capabilities",
+            "description": "Create relevant prompt categories such as cinematic shots, character styles, environment descriptions, lighting setups, and special effects based on the research findings.",
+            "dependencies": [
+              "62.1"
+            ],
+            "details": "Using the documented capabilities from the research, outline distinct categories that align with the model's strengths. Ensure each category is clearly defined and has a specific focus that can be used to generate prompts.",
+            "status": "done",
+            "testStrategy": "Review the categories with stakeholders to ensure they cover all necessary aspects and align with user needs."
+          },
+          {
+            "id": 3,
+            "title": "Develop Example Prompts for Each Category",
+            "description": "Create at least 50 example prompts for each category that leverage the nano-banana model's capabilities.",
+            "dependencies": [
+              "62.2"
+            ],
+            "details": "For each defined category, draft a set of prompts that utilize the model's unique features. Ensure prompts are varied and cover a range of scenarios within each category. Collaborate with creative teams if necessary to enhance prompt quality.",
+            "status": "done",
+            "testStrategy": "Verify that each category has at least 50 prompts and that they are diverse and effectively utilize the model's capabilities."
+          },
+          {
+            "id": 4,
+            "title": "Implement Quick Access Toggle Functionality",
+            "description": "Develop a quick access toggle feature for prompts, allowing users to easily add or remove prompts from quick access.",
+            "dependencies": [
+              "62.3"
+            ],
+            "details": "Design and implement a user interface component that allows users to toggle prompts into a quick access list. Ensure the feature integrates with the existing Supabase persistence system to store user-specific quick access preferences.",
+            "status": "done",
+            "testStrategy": "Test the toggle functionality to ensure prompts can be added and removed from quick access seamlessly. Verify persistence across sessions."
+          },
+          {
+            "id": 5,
+            "title": "Enhance Prompt Library with Dynamic Updates and Tagging System",
+            "description": "Ensure the prompt library supports dynamic updates and implement a tagging system to enhance searchability and organization.",
+            "dependencies": [
+              "62.4"
+            ],
+            "details": "Modify the prompt library to allow for dynamic updates, ensuring new prompts and categories can be added without downtime. Implement a tagging system that allows users to tag prompts for better organization and searchability. Collaborate with the design team to ensure the UI is intuitive and consistent.",
+            "status": "done",
+            "testStrategy": "Conduct usability testing to ensure the tagging system is intuitive and enhances search functionality. Verify that dynamic updates are reflected in real-time without affecting user experience."
+          }
+        ]
+      },
+      {
+        "id": 63,
+        "title": "Remove Redundant Image Library Button from Shot Creator",
+        "description": "Remove the unnecessary Image Library button from the Shot Creator bottom panel to avoid confusion, as the Library tab in the right panel already provides access to the reference library.",
+        "details": "Identify the component responsible for rendering the bottom panel in the Shot Creator. Locate the code segment that adds the Image Library button and remove it. Ensure that the Prompt Library button remains intact and functional. Review any CSS or layout adjustments needed to maintain a clean UI after the button removal. Verify that the right panel's Library tab provides comprehensive access to the reference library, including People, Places, Props, and Layouts.",
+        "testStrategy": "1. Open the Shot Creator and confirm the Image Library button is no longer present in the bottom panel.\n2. Verify that the Prompt Library button is still present and functional.\n3. Check the Library tab in the right panel to ensure it provides full access to the reference library.\n4. Test the UI layout for consistency and aesthetics after the button removal.\n5. Conduct cross-browser testing to ensure the changes are consistent across different environments.",
+        "status": "done",
+        "dependencies": [
+          28,
+          61
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 64,
+        "title": "Revamp Prompt Library UI/UX and Organization",
+        "description": "Improve the Prompt Library's UI/UX by implementing functional categories, enhancing visual hierarchy, and streamlining navigation.",
+        "details": "To revamp the Prompt Library UI/UX, start by implementing a robust categorization system. Ensure that clicking on a category filters prompts to display only those within the selected category. Use a modern front-end framework like React to manage state and UI updates efficiently. Redesign the UI to reduce the overwhelming use of purple by introducing a more balanced color palette and clear visual hierarchy. Remove legacy prompts such as 'Create Character Token' to declutter the library. Implement a drill-down navigation system that allows users to navigate from Categories to Category Prompts and then to Individual Prompts. Use card-based layouts or increased spacing to visually separate prompts, enhancing readability and usability. Ensure the design is responsive and accessible, adhering to WCAG guidelines.",
+        "testStrategy": "1. Click on various categories and verify that only prompts from the selected category are displayed. 2. Review the UI to ensure the color scheme is balanced and visually appealing, with a clear hierarchy. 3. Confirm that legacy prompts like 'Create Character Token' are removed from the library. 4. Test the navigation flow from Categories to Category Prompts to Individual Prompts to ensure it is intuitive and functional. 5. Check the visual separation of prompts using cards or spacing for clarity. 6. Conduct usability testing with users to gather feedback on the new design. 7. Validate that the design is responsive and meets accessibility standards.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          62
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Categorization System",
+            "description": "Develop a robust categorization system for the Prompt Library to allow users to filter prompts by categories.",
+            "dependencies": [],
+            "details": "Use React to create a state management system that handles category selection. Implement a UI component for displaying categories, allowing users to click on a category to filter prompts. Ensure that the filtering logic updates the displayed prompts dynamically based on the selected category.",
+            "status": "pending",
+            "testStrategy": "Click on various categories and verify that only prompts from the selected category are displayed."
+          },
+          {
+            "id": 2,
+            "title": "Redesign UI Color Palette and Visual Hierarchy",
+            "description": "Update the UI design to reduce the overwhelming use of purple and introduce a balanced color palette with a clear visual hierarchy.",
+            "dependencies": [
+              "64.1"
+            ],
+            "details": "Select a new color palette that complements the existing design while reducing the use of purple. Update CSS styles to apply the new colors and adjust font sizes, weights, and spacing to create a clear visual hierarchy. Ensure the design is visually appealing and accessible.",
+            "status": "pending",
+            "testStrategy": "Review the UI to ensure the color scheme is balanced and visually appealing, with a clear hierarchy."
+          },
+          {
+            "id": 3,
+            "title": "Remove Legacy Prompts",
+            "description": "Identify and remove outdated or irrelevant prompts from the Prompt Library to declutter the interface.",
+            "dependencies": [
+              "64.1"
+            ],
+            "details": "Conduct an audit of the current prompts in the library. Identify prompts like 'Create Character Token' that are no longer relevant. Update the database or data source to remove these prompts, ensuring that the library is up-to-date and relevant.",
+            "status": "pending",
+            "testStrategy": "Confirm that legacy prompts like 'Create Character Token' are removed from the library."
+          },
+          {
+            "id": 4,
+            "title": "Implement Drill-Down Navigation System",
+            "description": "Create a navigation system that allows users to drill down from Categories to Category Prompts and then to Individual Prompts.",
+            "dependencies": [
+              "64.1",
+              "64.2"
+            ],
+            "details": "Design a navigation flow using React Router or a similar library to enable users to navigate through categories, view prompts within a category, and access detailed views of individual prompts. Ensure that the navigation is intuitive and responsive.",
+            "status": "pending",
+            "testStrategy": "Navigate through categories and prompts to ensure the drill-down system works as expected."
+          },
+          {
+            "id": 5,
+            "title": "Enhance Prompt Layout for Readability",
+            "description": "Use card-based layouts or increased spacing to visually separate prompts, enhancing readability and usability.",
+            "dependencies": [
+              "64.2",
+              "64.4"
+            ],
+            "details": "Redesign the prompt display using card components or by adjusting spacing between prompts. Ensure that each prompt is clearly separated from others, improving readability. Test the layout on various screen sizes to ensure responsiveness.",
+            "status": "pending",
+            "testStrategy": "Verify that prompts are clearly separated and readable on different devices and screen sizes."
+          }
+        ]
+      },
+      {
+        "id": 65,
+        "title": "Fix Critical Prompt Library Bugs and Implement Enhancements",
+        "description": "Address critical issues in the Prompt Library by implementing a singleton pattern to prevent prompt duplication, ensuring all categories are visible, optimizing UI/UX for vertical space, and integrating a character replacement system.",
+        "details": "1. **Singleton Pattern for Prompt Management**: Refactor the prompt management system to use a singleton pattern. This will ensure that prompt instances are unique and prevent duplication, particularly for the 884 lighting prompts. Use a design pattern library or framework that supports singleton implementation, such as JavaScript's module pattern or a singleton class in TypeScript.\n\n2. **Display All Categories**: Modify the UI logic to ensure all 8 categories are visible in the Prompt Library. This may involve adjusting the layout or using a dynamic loading mechanism to handle category visibility efficiently.\n\n3. **UI/UX Optimization**: Review and optimize the vertical space usage in the Prompt Library UI. This includes reducing unnecessary padding, optimizing font sizes, and ensuring that the layout is responsive across different devices.\n\n4. **@Character Replacement System**: Implement a system that allows for @character placeholders in prompts to be dynamically replaced with character names or tags. Integrate this with the reference image tagging system to ensure seamless character identification and replacement. This may involve updating the backend to support dynamic text replacement and ensuring the frontend can handle these changes in real-time.\n\n5. **Integration and Testing**: Ensure that all changes are integrated smoothly with existing systems, particularly those developed in Task 64 and Task 34. Use automated testing frameworks to validate the functionality and performance of the new features.",
+        "testStrategy": "1. Verify that the singleton pattern is correctly implemented by attempting to create multiple instances of a prompt and ensuring only one instance exists.\n2. Check that all 8 categories are visible in the Prompt Library and that selecting each category displays the correct prompts.\n3. Evaluate the UI/UX improvements by testing the Prompt Library on various devices and screen sizes, ensuring optimal use of vertical space.\n4. Test the @character replacement system by creating prompts with placeholders and confirming they are correctly replaced with character names or tags.\n5. Conduct regression testing to ensure that existing functionalities are not broken by the new changes.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          64,
+          42
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Singleton Pattern for Prompt Management",
+            "description": "Refactor the prompt management system to use a singleton pattern to ensure unique prompt instances and prevent duplication.",
+            "dependencies": [],
+            "details": "Use a design pattern library or framework that supports singleton implementation, such as JavaScript's module pattern or a singleton class in TypeScript.\n<info added on 2025-09-18T18:23:18.069Z>\nCRITICAL: Fix singleton pattern for NanoBananaPromptLoader that is causing 884+ duplicate lighting prompts. The loader is being instantiated multiple times during component lifecycle. Need to: 1) Move prompt loading to module-level singleton outside React component, 2) Use React.useMemo or useRef to ensure single instance, 3) Add duplicate detection and prevention logic, 4) Clear existing duplicates from memory and state, 5) Implement initialization flag to prevent re-loading. Current bug shows prompts growing in real-time as component re-renders.\n</info added on 2025-09-18T18:23:18.069Z>\n<info added on 2025-09-18T18:29:55.869Z>\nIMPLEMENTATION COMPLETED: Fixed critical prompt duplication bug with proper singleton pattern. Implemented PromptLoaderSingleton class with Promise-based initialization, module-level instance management, and comprehensive duplicate clearing. Added utility functions for manual duplicate clearing and debugging. Comprehensive test suite validates deduplication logic. The prompt loader now initializes only once per application lifecycle, preventing the exponential growth issue (884+ lighting prompts). Key improvements: 1) True singleton pattern with private constructor, 2) Promise-based async initialization, 3) Comprehensive duplicate clearing from localStorage and Zustand store, 4) Module-level auto-initialization, 5) Debug utilities, 6) Comprehensive test coverage. All tests passing, build successful.\n</info added on 2025-09-18T18:29:55.869Z>",
+            "status": "done",
+            "testStrategy": "Verify that the singleton pattern is correctly implemented by attempting to create multiple instances of a prompt and ensuring only one instance exists."
+          },
+          {
+            "id": 2,
+            "title": "Ensure Visibility of All Categories",
+            "description": "Modify the UI logic to ensure all 8 categories are visible in the Prompt Library.",
+            "dependencies": [],
+            "details": "Adjust the layout or use a dynamic loading mechanism to handle category visibility efficiently.\n<info added on 2025-09-18T18:23:32.981Z>\n1. Fix the issue of missing categories by ensuring all 8 categories are displayed: Cinematic, Characters, Lighting, Environments, Effects, Moods, Camera, Styles. \n2. Investigate the PromptLibrary component for any rendering logic errors that might limit category display.\n3. Confirm that all categories are correctly listed in the nano_banana_prompts.json file.\n4. Remove any .slice() or other limiting functions applied to the categories array.\n5. Ensure the responsive grid layout is capable of displaying all 8 categories effectively.\n6. Test the category filtering functionality to confirm it works for all 8 categories.\n</info added on 2025-09-18T18:23:32.981Z>",
+            "status": "pending",
+            "testStrategy": "Check that all 8 categories are visible in the Prompt Library and that selecting each category displays the correct prompts."
+          },
+          {
+            "id": 3,
+            "title": "Optimize UI/UX for Vertical Space",
+            "description": "Review and optimize the vertical space usage in the Prompt Library UI.",
+            "dependencies": [],
+            "details": "Reduce unnecessary padding, optimize font sizes, and ensure that the layout is responsive across different devices.\n<info added on 2025-09-18T18:23:47.468Z>\nOptimize UI/UX to reduce vertical space usage in the Prompt Library modal. Issues: 1) Modal takes up too much screen height, 2) Cards have excessive padding, 3) Need more compact grid layout. Solutions: 1) Reduce modal max-height from 90vh to 70-75vh, 2) Make cards more compact with smaller padding and font sizes, 3) Use CSS grid with auto-fill and minmax for responsive columns, 4) Add horizontal scrolling for categories if needed, 5) Reduce header/footer heights in modal, 6) Consider collapsible sections for categories.\n</info added on 2025-09-18T18:23:47.468Z>",
+            "status": "pending",
+            "testStrategy": "Evaluate the UI to ensure vertical space is optimized and the layout is responsive on various devices."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Character Replacement System",
+            "description": "Implement a system for dynamic replacement of @character placeholders in prompts.",
+            "dependencies": [],
+            "details": "Integrate with the reference image tagging system to ensure seamless character identification and replacement.\n<info added on 2025-09-18T18:24:04.812Z>\nImplement a system for dynamic replacement of @character placeholders in prompts. Implementation steps include: 1) Parse prompts for @character placeholder, 2) Check Gen4ReferenceManager for tagged reference images, 3) Replace @character with appropriate @ref1, @ref2 etc based on tagged references, 4) If no references tagged, show warning to user, 5) Support multiple placeholders like @character1, @character2, 6) Integrate with existing reference tagging UI in Gen4TabOptimized component.\n</info added on 2025-09-18T18:24:04.812Z>",
+            "status": "pending",
+            "testStrategy": "Ensure the backend supports dynamic text replacement and the frontend can handle these changes in real-time."
+          },
+          {
+            "id": 5,
+            "title": "Integration and Testing of Changes",
+            "description": "Ensure smooth integration of all changes with existing systems and validate functionality.",
+            "dependencies": [
+              "65.1",
+              "65.2",
+              "65.3",
+              "65.4"
+            ],
+            "details": "Use automated testing frameworks to validate the functionality and performance of the new features.",
+            "status": "pending",
+            "testStrategy": "Conduct integration tests to ensure all changes work seamlessly with systems from Task 64 and Task 34."
+          }
+        ]
+      },
+      {
+        "id": 66,
+        "title": "Fix Critical Prompt Library UI and Functionality Issues",
+        "description": "Address issues in the Prompt Library by ensuring all categories are displayed, implementing a dynamic replacement system, and optimizing the modal UI.",
+        "details": "1. **Display All Categories**: Update the UI logic to ensure all 8 categories (Cinematic Shots, Character Styles, Lighting Setups, Environments, Special Effects, Moods & Atmosphere, Camera Angles, Art Styles) are visible in the Prompt Library. This may involve modifying the data fetching logic to retrieve all categories from the store and updating the UI components to display them.\n\n2. **Dynamic Replacement System**: Implement a dynamic replacement system for category placeholders (e.g., @cinematic, @character) that randomly selects an item from the respective category during prompt generation. Use a randomization algorithm to ensure varied selections and integrate this system into the prompt generation workflow.\n\n3. **Modal UI Optimization**: Redesign the modal UI to be wider (80vw) and reduce vertical space usage. Improve navigation flow by ensuring intuitive navigation elements are present and accessible. Consider using CSS Grid or Flexbox for layout adjustments to achieve a responsive design that maintains usability across different screen sizes.",
+        "testStrategy": "1. Verify that all 8 categories are displayed in the Prompt Library and that selecting each category displays the correct prompts.\n2. Test the dynamic replacement system by generating prompts multiple times and ensuring that placeholders are replaced with different items from the respective categories.\n3. Open the modal and check that it is displayed at 80vw width, with reduced vertical space usage. Ensure navigation within the modal is intuitive and responsive on various devices.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          64,
+          42
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update UI Logic for Category Display",
+            "description": "Ensure all 8 categories are visible in the Prompt Library.",
+            "dependencies": [],
+            "details": "Modify the data fetching logic to retrieve all categories from the store and update the UI components to display them.",
+            "status": "done",
+            "testStrategy": "Verify that all 8 categories are displayed in the Prompt Library and that selecting each category displays the correct prompts."
+          },
+          {
+            "id": 2,
+            "title": "Implement Dynamic Replacement System",
+            "description": "Create a system for dynamic replacement of category placeholders.",
+            "dependencies": [],
+            "details": "Develop a randomization algorithm to select items from each category and integrate this system into the prompt generation workflow.",
+            "status": "done",
+            "testStrategy": "Test the dynamic replacement system by generating prompts multiple times and ensuring that placeholders are replaced with different items from the respective categories."
+          },
+          {
+            "id": 3,
+            "title": "Redesign Modal UI",
+            "description": "Optimize the modal UI for better usability and responsiveness.",
+            "dependencies": [],
+            "details": "Redesign the modal to be wider and reduce vertical space usage. Use CSS Grid or Flexbox for layout adjustments.",
+            "status": "done",
+            "testStrategy": "Ensure the modal UI is responsive and maintains usability across different screen sizes."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Navigation Elements",
+            "description": "Improve navigation flow within the modal UI.",
+            "dependencies": [
+              "66.3"
+            ],
+            "details": "Ensure intuitive navigation elements are present and accessible within the modal.",
+            "status": "pending",
+            "testStrategy": "Verify that navigation elements are easily accessible and improve the user experience."
+          },
+          {
+            "id": 5,
+            "title": "Test and Validate UI and Functionality",
+            "description": "Conduct comprehensive testing of the updated UI and functionality.",
+            "dependencies": [
+              "66.1",
+              "66.2",
+              "66.3",
+              "66.4"
+            ],
+            "details": "Perform end-to-end testing to ensure all updates function correctly and meet design specifications.",
+            "status": "pending",
+            "testStrategy": "Conduct user testing sessions to validate the effectiveness of the UI changes and functionality improvements."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-09-17T16:05:47.257Z",
+      "updated": "2025-09-18T18:52:29.873Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

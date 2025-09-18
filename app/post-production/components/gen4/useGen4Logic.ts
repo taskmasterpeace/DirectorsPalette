@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { Gen4Settings, Generation, ImageReference } from './types'
 import { saveImageToLibrary, referenceLibraryDB } from '@/lib/referenceLibrary'
+import { useTagPrompt } from '@/components/providers/PromptProvider'
 
 export function useGen4Logic(props: {
   gen4Generations: Generation[]
@@ -15,6 +16,7 @@ export function useGen4Logic(props: {
 }) {
   const [showPromptTemplates, setShowPromptTemplates] = useState(false)
   const [showLibraryBrowser, setShowLibraryBrowser] = useState(false)
+  const showTagPrompt = useTagPrompt()
 
   const handleSaveToLibrary = useCallback(async (generation: Generation) => {
     if (!generation.outputUrl) {
@@ -89,13 +91,13 @@ export function useGen4Logic(props: {
     })
   }, [])
 
-  const handleAddTag = useCallback((genId: string) => {
-    const tag = prompt('Enter a tag:')
+  const handleAddTag = useCallback(async (genId: string) => {
+    const tag = await showTagPrompt()
     if (tag && tag.trim()) {
       // This would normally call the addTagToGen4Image prop
       console.log('Add tag to generation', genId, tag)
     }
-  }, [])
+  }, [showTagPrompt])
 
   return {
     showPromptTemplates,
