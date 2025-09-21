@@ -27,6 +27,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
   Sparkles,
   Palette,
   Library,
@@ -36,10 +42,15 @@ import {
   ChevronUp,
   Shuffle,
   Copy,
-  Hash
+  Hash,
+  HelpCircle,
+  Download,
+  Upload,
+  BookOpen
 } from 'lucide-react'
 import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 import { PromptLibrary } from '@/components/prompt-library/PromptLibrary'
+import { PromptSyntaxFeedback } from './PromptSyntaxFeedback'
 import type { Gen4Settings } from '@/lib/post-production/enhanced-types'
 
 interface Gen4PromptSettingsProps {
@@ -99,11 +110,29 @@ export function Gen4PromptSettings({
 }: Gen4PromptSettingsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [cursorPosition, setCursorPosition] = useState(0)
-  const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false)
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const modelConfig = getModelConfig((gen4Settings.model || 'seedream-4') as ModelId)
   const isEditingMode = gen4Settings.model === 'qwen-image-edit'
+
+  // Handle cooldown timer
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCooldownSeconds(cooldownSeconds - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [cooldownSeconds])
+
+  // Handle generation with cooldown
+  const handleGenerate = useCallback(() => {
+    if (canGenerate && cooldownSeconds === 0) {
+      onGenerate()
+      setCooldownSeconds(3) // Start 3-second cooldown
+    }
+  }, [canGenerate, cooldownSeconds, onGenerate])
 
   // Generate random seed
   const generateRandomSeed = useCallback(() => {
@@ -215,6 +244,9 @@ export function Gen4PromptSettings({
               <Badge variant="secondary" className="text-xs">
                 @ for references
               </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Ctrl+Enter to generate
+              </Badge>
               <span className="text-xs text-slate-400">
                 {gen4Prompt.length}/1000
               </span>
@@ -235,8 +267,170 @@ export function Gen4PromptSettings({
               const target = e.target as HTMLTextAreaElement
               setCursorPosition(target.selectionStart)
             }}
+            onKeyDown={(e) => {
+              // Ctrl+Enter or Cmd+Enter to generate
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canGenerate && cooldownSeconds === 0) {
+                e.preventDefault()
+                handleGenerate()
+              }
+            }}
           />
+
+          {/* Prompt Syntax Feedback - Shows bracket/wildcard notifications */}
+          <div className="space-y-2">
+            <PromptSyntaxFeedback prompt={gen4Prompt} model={gen4Settings.model} />
+
+            {/* Help Tooltip */}
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <HelpCircle className="w-3 h-3" />
+              <span>Use [option1, option2] for variations, _wildcard_ for dynamic content, or | for chaining</span>
+            </div>
+          </div>
         </div>
+
+        {/* Action Buttons - Moved to top for better UX */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Generate Button */}
+          <Button
+            onClick={handleGenerate}
+            disabled={!canGenerate || cooldownSeconds > 0}
+            className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium disabled:opacity-50"
+          >
+            {cooldownSeconds > 0 ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Cooldown ({cooldownSeconds}s)
+              </>
+            ) : gen4Processing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                {isEditingMode ? 'Edit Image' : 'Generate'}
+              </>
+            )}
+          </Button>
+
+        </div>
+
+        {/* Accordion System for Help, Prompt Library, and Import/Export */}
+        <Accordion type="single" collapsible className="w-full">
+          {/* Help Section */}
+          <AccordionItem value="help" className="border-slate-700">
+            <AccordionTrigger className="text-slate-300 hover:text-white">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4" />
+                Prompting Language Guide
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="space-y-3 text-sm text-slate-300">
+                <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                  <div className="font-medium text-blue-400">🎯 Bracket Variations</div>
+                  <div className="text-xs text-slate-400">Generate multiple images with one prompt</div>
+                  <code className="block bg-slate-900 p-2 rounded text-xs text-green-400">
+                    A cat in [a garden, a car, space] looking happy
+                  </code>
+                  <div className="text-xs">→ Creates 3 images with different locations</div>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                  <div className="font-medium text-purple-400">✨ Wild Cards</div>
+                  <div className="text-xs text-slate-400">Use dynamic placeholders for creative variations</div>
+                  <code className="block bg-slate-900 p-2 rounded text-xs text-green-400">
+                    _character_ holding _object_ in _location_
+                  </code>
+                  <div className="text-xs">→ Randomly selects from your wild card libraries</div>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                  <div className="font-medium text-orange-400">🔗 Chain Prompting</div>
+                  <div className="text-xs text-slate-400">Build complex images step by step</div>
+                  <code className="block bg-slate-900 p-2 rounded text-xs text-green-400">
+                    sunset landscape | add flying birds | dramatic lighting
+                  </code>
+                  <div className="text-xs">→ Each step refines the previous result</div>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                  <div className="font-medium text-cyan-400">@ References</div>
+                  <div className="text-xs text-slate-400">Pull from Prompt Library categories</div>
+                  <code className="block bg-slate-900 p-2 rounded text-xs text-green-400">
+                    @cinematic shot with @lighting and @mood
+                  </code>
+                  <div className="text-xs">→ Randomly selects prompts from each category</div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Prompt Library Section */}
+          <AccordionItem value="library" className="border-slate-700">
+            <AccordionTrigger className="text-slate-300 hover:text-white">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Prompt Library
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4">
+              <div className="h-[400px] overflow-y-auto">
+                <PromptLibrary
+                  onSelectPrompt={handleSelectPrompt}
+                  showQuickAccess={true}
+                  className="h-full"
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Import/Export Section */}
+          <AccordionItem value="import-export" className="border-slate-700">
+            <AccordionTrigger className="text-slate-300 hover:text-white">
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Import / Export Prompts
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-4">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Trigger export from Prompt Library
+                    const exportBtn = document.querySelector('[data-export-prompts]') as HTMLButtonElement
+                    exportBtn?.click()
+                  }}
+                  className="flex-1 bg-slate-800 border-slate-600 hover:bg-slate-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export All Prompts
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Trigger import from Prompt Library
+                    const importInput = document.getElementById('import-prompts') as HTMLInputElement
+                    importInput?.click()
+                  }}
+                  className="flex-1 bg-slate-800 border-slate-600 hover:bg-slate-700"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Prompts
+                </Button>
+              </div>
+              <div className="text-xs text-slate-400 space-y-1">
+                <div>• Export your prompts as JSON for backup or sharing</div>
+                <div>• Import prompts from JSON files</div>
+                <div>• Edit prompts in bulk using any text editor</div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Basic Settings */}
         <div className="grid grid-cols-2 gap-4">
@@ -368,44 +562,6 @@ export function Gen4PromptSettings({
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Generate Button */}
-          <Button
-            onClick={onGenerate}
-            disabled={!canGenerate || gen4Processing}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
-          >
-            {gen4Processing ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                {isEditingMode ? 'Edit Image' : 'Generate'}
-              </>
-            )}
-          </Button>
-
-          {/* Prompt Library Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPromptLibraryOpen(true)}
-                className="bg-slate-800 border-slate-600 hover:bg-slate-700 text-slate-300"
-              >
-                <Hash className="w-4 h-4 mr-1" />
-                Prompts
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Open Prompt Library</TooltipContent>
-          </Tooltip>
-        </div>
-
         {/* Status Info */}
         <div className="flex items-center justify-between text-xs text-slate-400">
           <span>
@@ -419,24 +575,6 @@ export function Gen4PromptSettings({
         </div>
       </div>
 
-      {/* Prompt Library Dialog */}
-      <Dialog open={isPromptLibraryOpen} onOpenChange={setIsPromptLibraryOpen}>
-        <DialogContent className="bg-slate-900 border-purple-500/30 w-[80vw] max-w-none max-h-[90vh] overflow-hidden" aria-describedby="prompt-library-description">
-          <DialogHeader>
-            <DialogTitle className="text-white">Prompt Library</DialogTitle>
-            <DialogDescription id="prompt-library-description" className="text-gray-400">
-              Browse and select prompts from your library. Create custom prompts or use pre-made templates.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="h-[600px] overflow-y-auto">
-            <PromptLibrary
-              onSelectPrompt={handleSelectPrompt}
-              showQuickAccess={true}
-              className="h-full"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </TooltipProvider>
   )
 }
