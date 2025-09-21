@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { NanoBananaPromptLoader } from './NanoBananaPromptLoader'
+import { TablePromptLibrary } from './TablePromptLibrary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,7 +43,11 @@ import {
   Sparkles,
   BookOpen,
   X,
-  Check
+  Check,
+  Grid,
+  Table,
+  Download,
+  Upload
 } from 'lucide-react'
 
 interface PromptLibraryProps {
@@ -58,6 +63,7 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
   const [editingPrompt, setEditingPrompt] = useState<SavedPrompt | null>(null)
   const [isEditingCategories, setIsEditingCategories] = useState(false)
   const [activeTab, setActiveTab] = useState('categories')
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
   const [newPrompt, setNewPrompt] = useState({
     title: '',
     prompt: '',
@@ -243,86 +249,200 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
     handleCopyPrompt(processedPrompt)
   }
 
-  const renderPromptCard = (prompt: SavedPrompt) => (
-    <Card key={prompt.id} className="bg-slate-950 border-slate-700 hover:border-slate-600 transition-all shadow-md">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h4 className="font-medium text-white mb-1">{prompt.title}</h4>
-            {prompt.reference && (
-              <Badge variant="outline" className="text-xs border-slate-600 text-slate-400 mb-2">
-                {prompt.reference}
-              </Badge>
+  const handleExportPrompts = () => {
+    try {
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        prompts: prompts.map(p => ({
+          id: p.id,
+          title: p.title,
+          prompt: p.prompt,
+          categoryId: p.categoryId,
+          tags: p.tags,
+          reference: p.reference,
+          isQuickAccess: p.isQuickAccess,
+          metadata: p.metadata
+        })),
+        categories: categories.filter(c => c.isEditable).map(c => ({
+          id: c.id,
+          name: c.name,
+          icon: c.icon,
+          color: c.color,
+          order: c.order
+        }))
+      }
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `prompt-library-${Date.now()}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: 'Export Successful',
+        description: `Exported ${prompts.length} prompts`,
+      })
+    } catch (error) {
+      console.error('Export failed:', error)
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export prompts',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleImportPrompts = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const importData = JSON.parse(text)
+
+      if (!importData.prompts || !Array.isArray(importData.prompts)) {
+        throw new Error('Invalid import file format')
+      }
+
+      // Import custom categories first if they exist
+      if (importData.categories && Array.isArray(importData.categories)) {
+        for (const category of importData.categories) {
+          // Check if category already exists
+          const existingCategory = categories.find(c => c.id === category.id)
+          if (!existingCategory) {
+            await addCategory({
+              name: category.name,
+              icon: category.icon,
+              color: category.color,
+              order: category.order
+            })
+          }
+        }
+      }
+
+      // Import prompts
+      let importedCount = 0
+      for (const promptData of importData.prompts) {
+        // Check if prompt already exists
+        const existingPrompt = prompts.find(p =>
+          p.title === promptData.title && p.categoryId === promptData.categoryId
+        )
+
+        if (!existingPrompt) {
+          await addPrompt({
+            title: promptData.title,
+            prompt: promptData.prompt,
+            categoryId: promptData.categoryId,
+            tags: promptData.tags || [],
+            reference: promptData.reference,
+            isQuickAccess: promptData.isQuickAccess || false
+          })
+          importedCount++
+        }
+      }
+
+      toast({
+        title: 'Import Successful',
+        description: `Imported ${importedCount} new prompts`,
+      })
+
+      // Reset file input
+      event.target.value = ''
+    } catch (error) {
+      console.error('Import failed:', error)
+      toast({
+        title: 'Import Failed',
+        description: error instanceof Error ? error.message : 'Failed to import prompts',
+        variant: 'destructive',
+      })
+      // Reset file input
+      event.target.value = ''
+    }
+  }
+
+  const renderPromptCard = (prompt: SavedPrompt) => {
+    const category = categories.find(c => c.id === prompt.categoryId)
+
+    return (
+      <Card key={prompt.id} className="bg-slate-950 border-slate-700 hover:border-slate-600 transition-all shadow-md">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1">
+              <h4 className="font-medium text-white mb-1">{prompt.title}</h4>
+              {prompt.reference && (
+                <Badge variant="outline" className="text-xs border-slate-600 text-slate-400 mb-2">
+                  {prompt.reference}
+                </Badge>
+              )}
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                {category && (
+                  <>
+                    <span>{category.name}</span>
+                    <span>·</span>
+                  </>
+                )}
+                <span>{new Date(prompt.metadata.updatedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => toggleQuickAccess(prompt.id)}
+                className="h-8 w-8 p-0"
+              >
+                <Star className={`w-4 h-4 ${prompt.isQuickAccess ? 'fill-yellow-500 text-yellow-500' : 'text-slate-400'}`} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => deletePrompt(prompt.id)}
+                className="h-8 w-8 p-0"
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <p className="text-sm text-gray-300 line-clamp-2">{prompt.prompt}</p>
+            {prompt.prompt.includes('@') && (
+              <p className="text-xs text-blue-400 mt-1 italic">
+                Preview: {processPromptReplacements(prompt.prompt)}
+              </p>
             )}
           </div>
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => toggleQuickAccess(prompt.id)}
-              className="h-8 w-8 p-0"
-            >
-              {prompt.isQuickAccess ? (
-                <Star className="w-4 h-4 text-yellow-500" />
-              ) : (
-                <StarOff className="w-4 h-4 text-gray-400" />
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setEditingPrompt(prompt)
-                setIsEditPromptOpen(true)
-              }}
-              className="h-8 w-8 p-0"
-            >
-              <Edit className="w-4 h-4 text-gray-400" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => handleDeletePrompt(prompt.id)}
-              className="h-8 w-8 p-0"
-            >
-              <Trash2 className="w-4 h-4 text-red-400" />
-            </Button>
-          </div>
-        </div>
 
-        <div className="mb-3">
-          <p className="text-sm text-gray-300 line-clamp-2">{prompt.prompt}</p>
-          {prompt.prompt.includes('@') && (
-            <p className="text-xs text-blue-400 mt-1 italic">
-              Preview: {processPromptReplacements(prompt.prompt)}
-            </p>
+          {prompt.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-3">
+              {prompt.tags.map((tag, idx) => (
+                <Badge key={idx} variant="secondary" className="text-xs bg-slate-800 text-slate-400">
+                  <Hash className="w-3 h-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           )}
-        </div>
 
-        {prompt.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {prompt.tags.map((tag, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs bg-slate-800 text-slate-400">
-                <Hash className="w-3 h-3 mr-1" />
-                {tag}
-              </Badge>
-            ))}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleSelectPrompt(prompt)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Copy className="w-3 h-3 mr-1" />
+              Use Prompt
+            </Button>
           </div>
-        )}
-
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={() => handleSelectPrompt(prompt)}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Copy className="w-3 h-3 mr-1" />
-            Use Prompt
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
@@ -332,35 +452,95 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
           <CardTitle className="text-white flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-blue-400" />
-              Prompt Library
               <Badge variant="outline" className="text-xs">
                 {prompts.length} prompts
               </Badge>
             </div>
-            <Button
-              size="sm"
-              onClick={() => setIsAddPromptOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Prompt
-            </Button>
+            <div className="flex items-center gap-3">
+              {/* View Mode Toggle */}
+              <div className="flex rounded-lg border border-slate-700 bg-slate-800 p-1">
+                <Button
+                  size="sm"
+                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('cards')}
+                  className={`h-7 px-2 ${viewMode === 'cards' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                  <Grid className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('table')}
+                  className={`h-7 px-2 ${viewMode === 'table' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >
+                  <Table className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="h-6 w-px bg-slate-700" />
+
+              <Button
+                size="sm"
+                onClick={() => handleExportPrompts()}
+                variant="outline"
+                className="border-slate-600 hover:bg-slate-800"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => document.getElementById('import-prompts')?.click()}
+                variant="outline"
+                className="border-slate-600 hover:bg-slate-800"
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Import
+              </Button>
+
+              <input
+                id="import-prompts"
+                type="file"
+                accept=".json,.csv"
+                className="hidden"
+                onChange={handleImportPrompts}
+              />
+
+              <Button
+                size="sm"
+                onClick={() => setIsAddPromptOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-4">
-          {/* Search Bar */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search prompts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-800 border-slate-700 text-white placeholder-gray-400"
+          {/* Conditional rendering based on view mode */}
+          {viewMode === 'table' ? (
+            <TablePromptLibrary
+              onSelectPrompt={onSelectPrompt}
+              showQuickAccess={showQuickAccess}
+              className="flex-1"
             />
-          </div>
+          ) : (
+            <>
+              {/* Search Bar */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search prompts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-slate-800 border-slate-700 text-white placeholder-gray-400"
+                />
+              </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
             <TabsList className="bg-slate-800 border-slate-700">
               <TabsTrigger value="all">All Prompts</TabsTrigger>
               {showQuickAccess && <TabsTrigger value="quick">Quick Access</TabsTrigger>}
@@ -449,7 +629,9 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
                 </div>
               )}
             </TabsContent>
-          </Tabs>
+              </Tabs>
+            </>
+          )}
         </CardContent>
       </Card>
 
