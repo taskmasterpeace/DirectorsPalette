@@ -126,6 +126,14 @@ export function Gen4PromptSettings({
     }
   }, [cooldownSeconds])
 
+  // Reset cooldown when processing finishes
+  useEffect(() => {
+    if (!gen4Processing && cooldownSeconds > 0) {
+      // If processing finished but cooldown is still active, clear it
+      setCooldownSeconds(0)
+    }
+  }, [gen4Processing, cooldownSeconds])
+
   // Handle generation with cooldown
   const handleGenerate = useCallback(() => {
     if (canGenerate && cooldownSeconds === 0) {
@@ -269,7 +277,7 @@ export function Gen4PromptSettings({
             }}
             onKeyDown={(e) => {
               // Ctrl+Enter or Cmd+Enter to generate
-              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canGenerate && cooldownSeconds === 0) {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canGenerate && cooldownSeconds === 0 && !gen4Processing) {
                 e.preventDefault()
                 handleGenerate()
               }
@@ -293,7 +301,7 @@ export function Gen4PromptSettings({
           {/* Generate Button */}
           <Button
             onClick={handleGenerate}
-            disabled={!canGenerate || cooldownSeconds > 0}
+            disabled={!canGenerate || cooldownSeconds > 0 || gen4Processing}
             className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium disabled:opacity-50"
           >
             {cooldownSeconds > 0 ? (
@@ -506,25 +514,25 @@ export function Gen4PromptSettings({
               </div>
             </div>
 
-            {/* Model-specific settings */}
-            {gen4Settings.model === 'seedream-4' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm text-slate-300">Max Images</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="15"
-                    value={gen4Settings.maxImages || 1}
-                    onChange={(e) => setGen4Settings({
-                      ...gen4Settings,
-                      maxImages: parseInt(e.target.value)
-                    })}
-                    className="bg-slate-800 border-slate-600 text-white"
-                  />
-                </div>
+            {/* Number of generations control - available for all models */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-slate-300">Number of Images</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="4"
+                  value={gen4Settings.maxImages || 1}
+                  onChange={(e) => setGen4Settings({
+                    ...gen4Settings,
+                    maxImages: Math.min(4, Math.max(1, parseInt(e.target.value) || 1))
+                  })}
+                  className="bg-slate-800 border-slate-600 text-white"
+                  placeholder="1"
+                />
+                <p className="text-xs text-slate-400">Generate 1-4 images (uses more credits)</p>
               </div>
-            )}
+            </div>
 
             {gen4Settings.model?.includes('qwen') && (
               <div className="grid grid-cols-2 gap-4">

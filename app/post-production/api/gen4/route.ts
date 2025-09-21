@@ -147,7 +147,12 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       }
     }
     
-    const actualImageCount = isDynamicPrompt ? promptResult.expandedPrompts.length : (max_images || 1);
+    // Support both dynamic prompts and explicit maxImages parameter
+    // Free tier users limited to 1 image per request
+    const requestedImages = (userId === 'anonymous-dev-user') ? 1 : (max_images || 1);
+    const actualImageCount = isDynamicPrompt
+      ? Math.min(promptResult.expandedPrompts.length, (userId === 'anonymous-dev-user') ? 1 : 999)
+      : requestedImages;
     
     // Calculate actual credits needed (with profit markup)
     const creditsNeeded = calculateUserCredits(model, actualImageCount);
@@ -163,10 +168,16 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       console.log('📝 Expanded prompts:', promptResult.expandedPrompts);
     }
 
-    // Check user has sufficient credits (skip for anonymous users)
-    let userCredits = { current_points: 1000 }; // Default for anonymous users
+    // Check user has sufficient credits
+    let userCredits = { current_points: 0 }; // Default for anonymous users
+    let isFreeTier = false;
 
-    if (userId !== 'anonymous-dev-user') {
+    if (userId === 'anonymous-dev-user') {
+      // Free tier users get limited generations
+      userCredits = { current_points: 100 }; // Enough for 1-3 generations per request
+      isFreeTier = true;
+      // Free tier user - limited generations
+    } else {
       const { data: credits, error: creditsError } = await supabase
         .from('user_credits')
         .select('current_points')
@@ -207,16 +218,17 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
 
     console.log('✅ Credit check passed:', userCredits.current_points, 'available,', creditsNeeded, 'needed');
 
-    // Handle dynamic prompts - generate each variation
-    const promptsToGenerate = isDynamicPrompt ? promptResult.expandedPrompts : [prompt];
+    // Handle dynamic prompts OR multiple generations
+    const promptsToGenerate = isDynamicPrompt ? promptResult.expandedPrompts : Array(requestedImages).fill(prompt);
     const allGeneratedImages: string[] = [];
-    
-    console.log(`🎯 Processing ${promptsToGenerate.length} prompt${promptsToGenerate.length > 1 ? 's' : ''}`);
 
-    // Generate images for each prompt variation
+    console.log(`🎯 Processing ${promptsToGenerate.length} image${promptsToGenerate.length > 1 ? 's' : ''}`);
+
+    // Generate images for each prompt variation or multiple copies
     for (let promptIndex = 0; promptIndex < promptsToGenerate.length; promptIndex++) {
       const currentPrompt = promptsToGenerate[promptIndex];
-      console.log(`🔄 Generating image ${promptIndex + 1}/${promptsToGenerate.length}: "${currentPrompt}"`);
+      const imageNumber = promptIndex + 1;
+      console.log(`🔄 Generating image ${imageNumber}/${promptsToGenerate.length}: "${currentPrompt}"`);
 
     // Model-specific parameter mapping
     let body: any;

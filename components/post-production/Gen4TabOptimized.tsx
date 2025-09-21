@@ -8,6 +8,7 @@ import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { UnifiedImageGallery } from '@/components/post-production/image-gallery'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { canUseFreeTier, incrementFreeTierUsage, formatResetTime } from '@/lib/post-production/free-tier-tracker'
 import type { 
   Gen4ReferenceImage,
   Gen4Generation,
@@ -307,28 +308,62 @@ export function Gen4TabOptimized({
     }
 
     setGen4Processing(true)
-    
+
+    // Add placeholder image immediately for better UX
+    const placeholderId = `placeholder_${Date.now()}`
+    const numGenerations = gen4Settings.maxImages || 1
+
+    // Add placeholder(s) based on number of generations requested
+    for (let i = 0; i < numGenerations; i++) {
+      addImage({
+        id: `${placeholderId}_${i}`,
+        url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDM0MzQzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IiM4ODgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCI+R2VuZXJhdGluZy4uLjwvdGV4dD48L3N2Zz4=',
+        prompt: gen4Prompt,
+        source: 'shot-creator',
+        model: gen4Settings.model || 'nano-banana',
+        settings: {
+          aspectRatio: gen4Settings.aspectRatio,
+          resolution: gen4Settings.resolution,
+          seed: gen4Settings.seed
+        },
+        tags: ['generating', `placeholder-${placeholderId}`],
+        creditsUsed: 0,
+        metadata: {
+          isPlaceholder: true,
+          generationIndex: i,
+          totalGenerations: numGenerations
+        }
+      })
+    }
+
     try {
       // Get authentication token - required for API access
       const token = await getToken()
 
-      // For development/testing, we can use a fallback token
-      // In production, this should require proper authentication
+      // Check free tier usage for unauthenticated users
       if (!token) {
-        // Only allow unauthenticated access in development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          console.warn('⚠️ Development mode: Proceeding without authentication')
-          // Use a development token or empty string for local testing
-        } else {
-          // In production, authentication is required
+        const freeTier = canUseFreeTier()
+
+        if (!freeTier.allowed) {
+          // Free tier limit reached
           toast({
-            title: "Authentication Required",
-            description: "Please sign in to use the Shot Creator",
+            title: "Free Limit Reached",
+            description: `You've used all ${freeTier.remaining === 0 ? 'your' : ''} free generations. Reset in ${formatResetTime(freeTier.resetAt!)}. Sign in for unlimited access!`,
             variant: "destructive"
           })
           setGen4Processing(false)
           return
         }
+
+        // Show remaining free uses
+        if (freeTier.remaining <= 2) {
+          toast({
+            title: "Free Generation",
+            description: `${freeTier.remaining} free generation${freeTier.remaining !== 1 ? 's' : ''} remaining today`,
+          })
+        }
+
+        // Free tier user - continuing with limited generations
       }
 
       // Upload reference images
@@ -444,10 +479,16 @@ export function Gen4TabOptimized({
         return
       }
       
+      // Remove placeholder images before adding real ones
+      const placeholderImages = getImagesByTag(`placeholder-${placeholderId}`)
+      placeholderImages.forEach(placeholder => {
+        removeImage(placeholder.id)
+      })
+
       // Handle multi-image response with expanded prompts
       const images = result.images || (result.imageUrl ? [result.imageUrl] : [])
       const imageCount = images.length
-      
+
       // Handle both old format (strings) and new format (objects with prompt)
       const processedImages = images.map((item: any, index: number) => {
         if (typeof item === 'string') {
@@ -463,6 +504,12 @@ export function Gen4TabOptimized({
         }
       })
       
+      // Increment free tier usage if not authenticated
+      if (!token && processedImages.length > 0) {
+        incrementFreeTierUsage()
+        // Free tier usage incremented
+      }
+
       // Create a generation entry for each image
       processedImages.forEach((imageData, index: number) => {
         const newGeneration: Gen4Generation = {
@@ -474,7 +521,7 @@ export function Gen4TabOptimized({
           outputUrl: imageData.url,
           timestamp: Date.now() + index // Slightly different timestamps
         }
-        
+
         setGen4Generations(prev => [newGeneration, ...prev])
         
         // Save each image to unified gallery with specific prompt and persistence info
@@ -517,6 +564,12 @@ export function Gen4TabOptimized({
       })
     } catch (error) {
       console.error('Gen4 generation error:', error)
+
+      // Remove placeholder images on error
+      const placeholderImages = getImagesByTag(`placeholder-${placeholderId}`)
+      placeholderImages.forEach(placeholder => {
+        removeImage(placeholder.id)
+      })
 
       // Handle timeout errors specifically
       if (error.name === 'AbortError') {
