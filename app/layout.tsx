@@ -10,6 +10,7 @@ import { LayoutHeader } from "@/components/layout-header"
 import { AuthProvider } from "@/components/auth/AuthProvider"
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout"
 import { PromptProvider } from "@/components/providers/PromptProvider"
+import { PWAProvider } from "@/components/PWAProvider"
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
@@ -27,9 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <PromptProvider>
-              <ConditionalLayout>
-                {children}
-              </ConditionalLayout>
+              <PWAProvider>
+                <ConditionalLayout>
+                  {children}
+                </ConditionalLayout>
+              </PWAProvider>
             </PromptProvider>
           </AuthProvider>
           <Toaster />

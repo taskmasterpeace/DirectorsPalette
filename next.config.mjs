@@ -1,3 +1,5 @@
+import withPWA from 'next-pwa'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -45,4 +47,35 @@ const nextConfig = {
   } : {},
 }
 
-export default nextConfig
+// PWA configuration - only for production builds
+const pwaConfig = withPWA({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: false, // We'll manually register for mobile-only
+  skipWaiting: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https:.*\.(png|jpg|jpeg|webp|svg|gif)$/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'images',
+        expiration: {
+          maxEntries: 60,
+          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+        }
+      }
+    },
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200
+        }
+      }
+    }
+  ]
+})
+
+export default pwaConfig(nextConfig)

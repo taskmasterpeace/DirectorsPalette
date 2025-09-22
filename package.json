@@ -16,7 +16,7 @@
   "dependencies": {
     "@ai-sdk/openai": "latest",
     "@hookform/resolvers": "^3.10.0",
-    "@radix-ui/react-accordion": "1.2.2",
+    "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
     "@radix-ui/react-avatar": "1.1.2",
@@ -61,6 +61,7 @@
     "isomorphic-dompurify": "^2.26.0",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
+    "next-pwa": "^5.6.0",
     "next-themes": "latest",
     "react": "^19",
     "react-day-picker": "9.8.0",
@@ -73,6 +74,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.179.1",
     "vaul": "^1.1.2",
+    "workbox-webpack-plugin": "^7.3.0",
     "zod": "^3.25.76",
     "zustand": "^5.0.7"
   },
