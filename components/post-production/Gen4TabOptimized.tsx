@@ -84,9 +84,12 @@ export function Gen4TabOptimized({
   const modelConfig = getModelConfig((gen4Settings.model || 'nano-banana') as ModelId)
   
   // Different validation for editing vs generation modes
-  const canGenerate = isEditingMode 
+  // Nano-banana doesn't require reference images
+  const canGenerate = isEditingMode
     ? gen4Prompt.length > 0 && gen4ReferenceImages.length > 0 // Editing needs 1 input image + prompt
-    : gen4Prompt.length > 0 && gen4ReferenceImages.length > 0 // Generation needs reference images + prompt
+    : gen4Settings.model === 'nano-banana'
+      ? gen4Prompt.length > 0 // Nano-banana only needs prompt
+      : gen4Prompt.length > 0 && gen4ReferenceImages.length > 0 // Other models need reference images + prompt
 
   // Generation logic (simplified for space efficiency)
   // Simple content filter to avoid sensitive content errors
@@ -177,7 +180,7 @@ export function Gen4TabOptimized({
               aspect_ratio: gen4Settings.aspectRatio,
               resolution: gen4Settings.resolution,
               seed: gen4Settings.seed,
-              max_images: 1,
+              max_images: gen4Settings.maxImages || 1,
               _isPipelineStep: true,
               _stepNumber: i + 1,
               _variationNumber: v + 1
@@ -293,15 +296,30 @@ export function Gen4TabOptimized({
   }
 
   const handleGen4Generate = async () => {
+    console.log('[DEBUG] handleGen4Generate called, gen4Processing:', gen4Processing)
+    console.log('[DEBUG] gen4Settings.maxImages value:', gen4Settings.maxImages)
     // Prevent multiple simultaneous generations
     if (gen4Processing) {
+      console.log('[DEBUG] Already processing, returning early')
       return
     }
 
-    if (!gen4Prompt.trim() || gen4ReferenceImages.length === 0) {
+    // Nano-banana doesn't require reference images
+    const needsReferenceImages = gen4Settings.model !== 'nano-banana'
+
+    if (!gen4Prompt.trim()) {
       toast({
         title: "Cannot Generate",
-        description: "Please add reference images and enter a prompt",
+        description: "Please enter a prompt",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (needsReferenceImages && gen4ReferenceImages.length === 0) {
+      toast({
+        title: "Cannot Generate",
+        description: "Please add reference images for this model",
         variant: "destructive"
       })
       return
@@ -312,6 +330,7 @@ export function Gen4TabOptimized({
     // Add placeholder image immediately for better UX
     const placeholderId = `placeholder_${Date.now()}`
     const numGenerations = gen4Settings.maxImages || 1
+    console.log('[DEBUG] Gen4TabOptimized - numGenerations:', numGenerations, 'maxImages:', gen4Settings.maxImages)
 
     // Add placeholder(s) based on number of generations requested
     for (let i = 0; i < numGenerations; i++) {
@@ -366,6 +385,9 @@ export function Gen4TabOptimized({
         // Free tier user - continuing with limited generations
       }
 
+      console.log('[DEBUG] Gen4TabOptimized - About to upload reference images. Count:', gen4ReferenceImages.length)
+      console.log('[DEBUG] Gen4TabOptimized - Reference images:', gen4ReferenceImages)
+
       // Upload reference images
       const referenceUrls = await Promise.all(
         gen4ReferenceImages.map(async (img, index) => {
@@ -407,7 +429,10 @@ export function Gen4TabOptimized({
           }
         })
       )
-      
+
+      console.log('[DEBUG] Gen4TabOptimized - Reference images uploaded successfully. URLs:', referenceUrls)
+      console.log('[DEBUG] Gen4TabOptimized - Now preparing to call Gen4 API')
+
       // Generate with Gen4
       const headers = new Headers()
       headers.set('Content-Type', 'application/json')
@@ -420,32 +445,41 @@ export function Gen4TabOptimized({
       const genController = new AbortController()
       const genTimeoutId = setTimeout(() => genController.abort(), 120000) // 2 minute timeout for generation
 
+      const requestBody = {
+        prompt: filterPrompt(gen4Prompt),
+        aspect_ratio: gen4ReferenceImages[0]?.detectedAspectRatio || gen4Settings.aspectRatio,
+        resolution: gen4Settings.resolution,
+        seed: gen4Settings.seed,
+        reference_images: referenceUrls,
+        reference_tags: gen4ReferenceImages.map((img, index) =>
+          img.tags.length > 0 && img.tags[0].length >= 3 && img.tags[0].length <= 15
+            ? img.tags[0]
+            : `ref${index + 1}`
+        ),
+        model: gen4Settings.model || 'seedream-4',
+        // Seedream-4 specific parameters
+        max_images: gen4Settings.maxImages || 1,
+        custom_width: gen4Settings.customWidth,
+        custom_height: gen4Settings.customHeight,
+        sequential_generation: gen4Settings.sequentialGeneration || false
+      }
+
+      console.log('[DEBUG] Gen4TabOptimized - Sending request with max_images:', requestBody.max_images, 'model:', requestBody.model)
+      console.log('[DEBUG] Gen4TabOptimized - Full request body:', JSON.stringify(requestBody, null, 2))
+      console.log('[DEBUG] Gen4TabOptimized - About to make API call to /post-production/api/gen4')
+
       const response = await fetch('/post-production/api/gen4', {
         method: 'POST',
         headers: headers,
         signal: genController.signal,
-        body: JSON.stringify({
-          prompt: filterPrompt(gen4Prompt),
-          aspect_ratio: gen4ReferenceImages[0]?.detectedAspectRatio || gen4Settings.aspectRatio,
-          resolution: gen4Settings.resolution,
-          seed: gen4Settings.seed,
-          reference_images: referenceUrls,
-          reference_tags: gen4ReferenceImages.map((img, index) =>
-            img.tags.length > 0 && img.tags[0].length >= 3 && img.tags[0].length <= 15
-              ? img.tags[0]
-              : `ref${index + 1}`
-          ),
-          model: gen4Settings.model || 'seedream-4',
-          // Seedream-4 specific parameters
-          max_images: gen4Settings.maxImages || 1,
-          custom_width: gen4Settings.customWidth,
-          custom_height: gen4Settings.customHeight,
-          sequential_generation: gen4Settings.sequentialGeneration || false
-        })
+        body: JSON.stringify(requestBody)
       })
 
       clearTimeout(genTimeoutId) // Clear timeout on successful response
-      
+
+      console.log('[DEBUG] Gen4TabOptimized - API call completed. Response status:', response.status)
+      console.log('[DEBUG] Gen4TabOptimized - Response ok:', response.ok)
+
       if (!response.ok) {
         const errorData = await response.json()
         
@@ -470,6 +504,8 @@ export function Gen4TabOptimized({
       }
       
       const result = await response.json()
+      console.log('[DEBUG] Frontend - Received response:', result)
+      console.log('[DEBUG] Frontend - Images in response:', result.images?.length || 0)
 
       // Check if this is a pipeline response
       if (result.isPipeline) {
@@ -478,7 +514,7 @@ export function Gen4TabOptimized({
         await executePipelineSteps(result.pipelineResult, referenceUrls[0], token)
         return
       }
-      
+
       // Remove placeholder images before adding real ones
       const placeholderImages = getImagesByTag(`placeholder-${placeholderId}`)
       placeholderImages.forEach(placeholder => {
@@ -487,6 +523,7 @@ export function Gen4TabOptimized({
 
       // Handle multi-image response with expanded prompts
       const images = result.images || (result.imageUrl ? [result.imageUrl] : [])
+      console.log('[DEBUG] Frontend - Processing images:', images.length)
       const imageCount = images.length
 
       // Handle both old format (strings) and new format (objects with prompt)
@@ -563,6 +600,7 @@ export function Gen4TabOptimized({
         description: `Generated ${imageCount} image${imageCount > 1 ? 's' : ''} successfully!`
       })
     } catch (error) {
+      console.error('[DEBUG] Gen4TabOptimized - Caught error in handleGen4Generate:', error)
       console.error('Gen4 generation error:', error)
 
       // Remove placeholder images on error
