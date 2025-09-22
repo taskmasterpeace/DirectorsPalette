@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/use-toast'
 import type { Gen4ReferenceImage } from '@/lib/post-production/enhanced-types'
 import { getImageDimensions } from '@/lib/post-production/helpers'
 import InlineTagEditor from '@/app/post-production/components/InlineTagEditor'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 interface Gen4ReferenceManagerProps {
   gen4ReferenceImages: Gen4ReferenceImage[]
@@ -34,18 +35,30 @@ export function Gen4ReferenceManager({
   editingMode = false
 }: Gen4ReferenceManagerProps) {
   const { toast } = useToast()
+  const isMobile = useIsMobile()
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<Gen4ReferenceImage | null>(null)
 
-  // Progressive disclosure: Start with 3, expand to 6, then 9, then max
+  // Mobile-first progressive disclosure: Start with 1, show 2 when 1 is filled, show 3 when 2 is filled, etc.
   const getVisibleSlots = () => {
     const filledSlots = gen4ReferenceImages.length
-    if (filledSlots >= 9 && maxImages > 9) return maxImages // Show all when 9+ filled
-    if (filledSlots >= 6) return Math.min(9, maxImages) // Show 9 when 6+ filled  
+
+    if (!isMobile) {
+      // Desktop: Original logic with 3 minimum
+      if (filledSlots >= 9 && maxImages > 9) return maxImages // Show all when 9+ filled
+      if (filledSlots >= 6) return Math.min(9, maxImages) // Show 9 when 6+ filled
+      if (filledSlots >= 3) return Math.min(6, maxImages) // Show 6 when 3+ filled
+      return Math.min(3, maxImages) // Always start with 3 on desktop
+    }
+
+    // Mobile: Progressive disclosure starting with 1
+    if (filledSlots >= 6 && maxImages > 6) return Math.min(maxImages, 10) // Show up to 10 when 6+ filled
     if (filledSlots >= 3) return Math.min(6, maxImages) // Show 6 when 3+ filled
-    return Math.min(3, maxImages) // Always start with 3
+    if (filledSlots >= 2) return Math.min(3, maxImages) // Show 3 when 2 filled
+    if (filledSlots >= 1) return Math.min(2, maxImages) // Show 2 when 1 filled
+    return 1 // Start with 1 slot on mobile
   }
-  
+
   const visibleSlots = getVisibleSlots()
 
   // Handle file upload for reference images
@@ -386,16 +399,18 @@ export function Gen4ReferenceManager({
         </div>
         
         {/* Progressive Disclosure Indicator */}
-        {visibleSlots < maxImages && gen4ReferenceImages.length >= visibleSlots - 1 && (
+        {visibleSlots < maxImages && (
           <div className="text-center py-3 border-t border-slate-700">
             <div className="text-sm text-slate-400">
               <Plus className="w-4 h-4 mx-auto mb-1" />
               <span className="font-medium">
-                {maxImages - visibleSlots} more slots available
+                {isMobile && visibleSlots === 1 ? 'Add an image to unlock slot 2' :
+                 isMobile && visibleSlots === 2 ? 'Add another image to unlock slot 3' :
+                 `${maxImages - visibleSlots} more slots available`}
               </span>
               <br />
               <span className="text-xs">
-                Fill current slots to expand automatically
+                {isMobile ? 'Slots unlock as you add images' : 'Fill current slots to expand automatically'}
               </span>
             </div>
           </div>
