@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -126,27 +126,48 @@ export function Gen4PromptSettings({
     }
   }, [cooldownSeconds])
 
-  // Reset cooldown when processing finishes
-  useEffect(() => {
-    if (!gen4Processing && cooldownSeconds > 0) {
-      // If processing finished but cooldown is still active, clear it
-      setCooldownSeconds(0)
-    }
-  }, [gen4Processing, cooldownSeconds])
+  // Don't reset cooldown when processing finishes - let it complete naturally
+  // The cooldown should be independent of processing state to prevent rapid clicking
+  // Removed the effect that was clearing cooldown on processing finish
 
-  // Handle generation with cooldown
+  // Handle generation with cooldown - using ref for immediate updates
+  const isGeneratingRef = useRef(false)
+  const [isGenerating, setIsGenerating] = React.useState(false)
   const handleGenerate = useCallback(() => {
-    if (canGenerate && cooldownSeconds === 0) {
-      onGenerate()
-      setCooldownSeconds(3) // Start 3-second cooldown
+    console.log('[DEBUG] Gen4PromptSettings - handleGenerate called, canGenerate:', canGenerate, 'cooldownSeconds:', cooldownSeconds, 'isGeneratingRef:', isGeneratingRef.current, 'gen4Processing:', gen4Processing)
+
+    // Check the ref for immediate blocking of rapid clicks
+    if (isGeneratingRef.current || gen4Processing || cooldownSeconds > 0) {
+      console.log('[DEBUG] Gen4PromptSettings - Blocked: already generating or in cooldown')
+      return
     }
-  }, [canGenerate, cooldownSeconds, onGenerate])
+
+    if (canGenerate) {
+      console.log('[DEBUG] Gen4PromptSettings - Calling onGenerate() with maxImages:', gen4Settings.maxImages)
+
+      // Immediately set the ref to block further clicks
+      isGeneratingRef.current = true
+      setIsGenerating(true)
+
+      // Call the generation function ONCE
+      onGenerate()
+
+      // Start 5-second cooldown (increased from 3 for better rate limiting)
+      setCooldownSeconds(5)
+
+      // Reset the generation flag after a short delay
+      setTimeout(() => {
+        isGeneratingRef.current = false
+        setIsGenerating(false)
+      }, 500)
+    }
+  }, [canGenerate, cooldownSeconds, onGenerate, gen4Processing, gen4Settings.maxImages])
 
   // Generate random seed
   const generateRandomSeed = useCallback(() => {
     const newSeed = Math.floor(Math.random() * 1000000)
-    setGen4Settings({ ...gen4Settings, seed: newSeed })
-  }, [gen4Settings, setGen4Settings])
+    setGen4Settings(prev => ({ ...prev, seed: newSeed }))
+  }, [setGen4Settings])
 
   // Insert preset into prompt at cursor position
   const insertPreset = useCallback((presetPrompt: string) => {
@@ -277,7 +298,7 @@ export function Gen4PromptSettings({
             }}
             onKeyDown={(e) => {
               // Ctrl+Enter or Cmd+Enter to generate
-              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canGenerate && cooldownSeconds === 0 && !gen4Processing) {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canGenerate && cooldownSeconds === 0 && !gen4Processing && !isGenerating) {
                 e.preventDefault()
                 handleGenerate()
               }
@@ -301,7 +322,7 @@ export function Gen4PromptSettings({
           {/* Generate Button */}
           <Button
             onClick={handleGenerate}
-            disabled={!canGenerate || cooldownSeconds > 0 || gen4Processing}
+            disabled={!canGenerate || cooldownSeconds > 0 || gen4Processing || isGenerating}
             className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium disabled:opacity-50"
           >
             {cooldownSeconds > 0 ? (
@@ -446,7 +467,7 @@ export function Gen4PromptSettings({
             <Label className="text-sm text-slate-300">Aspect Ratio</Label>
             <Select
               value={gen4Settings.aspectRatio}
-              onValueChange={(value) => setGen4Settings({ ...gen4Settings, aspectRatio: value })}
+              onValueChange={(value) => setGen4Settings(prev => ({ ...prev, aspectRatio: value }))}
             >
               <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
                 <SelectValue />
@@ -465,7 +486,7 @@ export function Gen4PromptSettings({
             <Label className="text-sm text-slate-300">Resolution</Label>
             <Select
               value={gen4Settings.resolution}
-              onValueChange={(value) => setGen4Settings({ ...gen4Settings, resolution: value })}
+              onValueChange={(value) => setGen4Settings(prev => ({ ...prev, resolution: value }))}
             >
               <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
                 <SelectValue />
@@ -481,6 +502,28 @@ export function Gen4PromptSettings({
           </div>
         </div>
 
+        {/* Number of Images - Always visible since it's a core feature */}
+        <div className="space-y-2 border-t border-slate-700 pt-4">
+          <Label className="text-sm text-slate-300">Number of Images</Label>
+          <Input
+            type="number"
+            min="1"
+            max="4"
+            value={gen4Settings.maxImages || 1}
+            onChange={(e) => {
+              const value = Math.min(4, Math.max(1, parseInt(e.target.value) || 1))
+              console.log('[DEBUG] Gen4PromptSettings - Setting maxImages:', value, 'from:', gen4Settings.maxImages)
+              setGen4Settings(prev => ({
+                ...prev,
+                maxImages: value
+              }))
+            }}
+            className="bg-slate-800 border-slate-600 text-white"
+            placeholder="1"
+          />
+          <p className="text-xs text-slate-400">Generate 1-4 images (uses more credits)</p>
+        </div>
+
         {/* Advanced Settings */}
         {showAdvanced && (
           <div className="space-y-4 border-t border-slate-700 pt-4">
@@ -491,10 +534,10 @@ export function Gen4PromptSettings({
                 <Input
                   type="number"
                   value={gen4Settings.seed || ''}
-                  onChange={(e) => setGen4Settings({
-                    ...gen4Settings,
+                  onChange={(e) => setGen4Settings(prev => ({
+                    ...prev,
                     seed: e.target.value ? parseInt(e.target.value) : undefined
-                  })}
+                  }))}
                   placeholder="Random"
                   className="bg-slate-800 border-slate-600 text-white"
                 />
@@ -514,26 +557,6 @@ export function Gen4PromptSettings({
               </div>
             </div>
 
-            {/* Number of generations control - available for all models */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm text-slate-300">Number of Images</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="4"
-                  value={gen4Settings.maxImages || 1}
-                  onChange={(e) => setGen4Settings({
-                    ...gen4Settings,
-                    maxImages: Math.min(4, Math.max(1, parseInt(e.target.value) || 1))
-                  })}
-                  className="bg-slate-800 border-slate-600 text-white"
-                  placeholder="1"
-                />
-                <p className="text-xs text-slate-400">Generate 1-4 images (uses more credits)</p>
-              </div>
-            </div>
-
             {gen4Settings.model?.includes('qwen') && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -544,10 +567,10 @@ export function Gen4PromptSettings({
                     max="10"
                     step="0.1"
                     value={gen4Settings.guidance || 7.5}
-                    onChange={(e) => setGen4Settings({
-                      ...gen4Settings,
+                    onChange={(e) => setGen4Settings(prev => ({
+                      ...prev,
                       guidance: parseFloat(e.target.value)
-                    })}
+                    }))}
                     className="bg-slate-800 border-slate-600 text-white"
                   />
                 </div>
@@ -558,10 +581,10 @@ export function Gen4PromptSettings({
                     min="10"
                     max="50"
                     value={gen4Settings.num_inference_steps || 20}
-                    onChange={(e) => setGen4Settings({
-                      ...gen4Settings,
+                    onChange={(e) => setGen4Settings(prev => ({
+                      ...prev,
                       num_inference_steps: parseInt(e.target.value)
-                    })}
+                    }))}
                     className="bg-slate-800 border-slate-600 text-white"
                   />
                 </div>

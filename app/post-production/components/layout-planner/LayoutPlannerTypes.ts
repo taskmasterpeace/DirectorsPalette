@@ -9,6 +9,16 @@ export interface LayoutImage {
   zIndex: number;
   originalWidth?: number;
   originalHeight?: number;
+  cropData?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation?: number;
+    flipH?: boolean;
+    flipV?: boolean;
+    zoom?: number;
+  };
 }
 
 export interface LayoutText {

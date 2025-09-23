@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "exportDate": "2025-09-21T00:00:00Z",
+  "prompts": [
+    {
+      "title": "Epic Hero Shot",
+      "prompt": "A heroic character standing on a cliff edge, dramatic lighting, cinematic composition",
+      "categoryId": "cinematic",
+      "tags": ["hero", "epic", "dramatic"],
+      "isQuickAccess": true
+    },
+    {
+      "title": "Mysterious Forest",
+      "prompt": "Dense foggy forest with shafts of light breaking through the canopy",
+      "categoryId": "environments",
+      "tags": ["forest", "mysterious", "atmospheric"],
+      "isQuickAccess": false
+    }
+  ],
+  "categories": []
+}

@@ -44,6 +44,7 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       console.warn('⚠️ No auth token provided, using anonymous mode');
     }
     const requestBody = await request.json();
+    console.log('[DEBUG] API - Received request with max_images:', requestBody.max_images, 'model:', requestBody.model);
     const {
       prompt,
       aspect_ratio,
@@ -80,9 +81,12 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
-    if (!reference_images || reference_images.length === 0) {
+    // Nano-banana doesn't require reference images
+    const needsReferenceImages = model !== 'nano-banana';
+
+    if (needsReferenceImages && (!reference_images || reference_images.length === 0)) {
       return NextResponse.json(
-        { error: "At least one reference image is required" },
+        { error: "At least one reference image is required for this model" },
         { status: 400 }
       );
     }
@@ -148,11 +152,13 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
     }
     
     // Support both dynamic prompts and explicit maxImages parameter
-    // Free tier users limited to 1 image per request
-    const requestedImages = (userId === 'anonymous-dev-user') ? 1 : (max_images || 1);
+    // Allow free tier users to request multiple images (up to their limits)
+    const requestedImages = max_images || 1;
     const actualImageCount = isDynamicPrompt
-      ? Math.min(promptResult.expandedPrompts.length, (userId === 'anonymous-dev-user') ? 1 : 999)
+      ? Math.min(promptResult.expandedPrompts.length, 999)
       : requestedImages;
+
+    console.log('[DEBUG] API - max_images:', max_images, 'requestedImages:', requestedImages, 'actualImageCount:', actualImageCount, 'isDynamicPrompt:', isDynamicPrompt);
     
     // Calculate actual credits needed (with profit markup)
     const creditsNeeded = calculateUserCredits(model, actualImageCount);
@@ -222,26 +228,34 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
     const promptsToGenerate = isDynamicPrompt ? promptResult.expandedPrompts : Array(requestedImages).fill(prompt);
     const allGeneratedImages: string[] = [];
 
+    console.log('[DEBUG] API - promptsToGenerate.length:', promptsToGenerate.length);
+    console.log('[DEBUG] API - promptsToGenerate:', promptsToGenerate);
+    console.log('[DEBUG] API - reference_images:', reference_images);
+    console.log('[DEBUG] API - model:', model, 'max_images:', max_images);
     console.log(`🎯 Processing ${promptsToGenerate.length} image${promptsToGenerate.length > 1 ? 's' : ''}`);
 
     // Generate images for each prompt variation or multiple copies
     for (let promptIndex = 0; promptIndex < promptsToGenerate.length; promptIndex++) {
       const currentPrompt = promptsToGenerate[promptIndex];
       const imageNumber = promptIndex + 1;
+      console.log(`[DEBUG] 🔄 Loop iteration ${promptIndex + 1}/${promptsToGenerate.length}`);
       console.log(`🔄 Generating image ${imageNumber}/${promptsToGenerate.length}: "${currentPrompt}"`);
+      console.log(`[DEBUG] 🔄 Model: ${model}, Making API call #${promptIndex + 1}`);
 
     // Model-specific parameter mapping
     let body: any;
     let modelEndpoint: string;
 
     if (model === 'nano-banana') {
-      // Nano-banana format
+      // Nano-banana format - only include image_input if there are reference images
+      // IMPORTANT: nano-banana generates ONE image per call, so we loop for max_images
+      console.log(`[DEBUG] 🍌 Nano-banana API call ${promptIndex + 1} - generating 1 image`);
       body = {
         input: {
           prompt: currentPrompt,
-          image_input: reference_images, // maps from reference_images
+          ...(reference_images && reference_images.length > 0 && { image_input: reference_images }),
           output_format: "png"
-          // Note: nano-banana doesn't support reference_tags, aspect_ratio, or seed
+          // Note: nano-banana doesn't support reference_tags, aspect_ratio, seed, or max_images
         }
       };
       modelEndpoint = 'google/nano-banana';
@@ -256,7 +270,7 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
             height: custom_height || 2048
           }),
           aspect_ratio: aspect_ratio || "16:9",
-          max_images: max_images || 1, // 1-15 range
+          max_images: 1, // Always generate 1 image per loop iteration
           image_input: reference_images, // 1-10 reference images
           sequential_image_generation: sequential_generation ? 'auto' : 'disabled'
         }
@@ -408,6 +422,7 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       const images = Array.isArray(result.output) ? result.output : [result.output];
 
       console.log(`✅ Generated ${images.length} image(s) for prompt ${promptIndex + 1}`);
+      console.log(`[DEBUG] ✅ Model: ${model}, Prompt index: ${promptIndex + 1}, Images received:`, images);
       console.log('📥 Starting automatic download and permanent storage...');
 
       // Download and save each image to permanent storage
@@ -525,7 +540,7 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       });
     }
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       images: allGeneratedImages,
       originalPrompt: prompt,
@@ -536,7 +551,17 @@ async function handleGen4Request(request: NextRequest, context: { apiKey: any })
       referenceCount: reference_images.length,
       creditsUsed: totalCreditsToDeduct,
       remainingCredits: updatedCredits?.current_points || userCredits.current_points - totalCreditsToDeduct
-    });
+    };
+
+    console.log('[DEBUG] API - Returning response with', allGeneratedImages.length, 'images');
+    console.log('[DEBUG] API - Response images:', allGeneratedImages.map((img: any) => ({
+      url: img.url?.substring(0, 50) + '...',
+      prompt: img.prompt?.substring(0, 30) + '...',
+      isPermanent: img.isPermanent
+    })));
+    console.log(`[DEBUG] API - Final count: Requested ${requestedImages} images, Generated ${allGeneratedImages.length} images`);
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("Gen 4 generation error:", error);
     const errorResponse = NextResponse.json(

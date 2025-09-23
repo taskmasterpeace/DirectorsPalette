@@ -18,7 +18,12 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: "Directors Palette",
   description: "Visual story and music video breakdown tool",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

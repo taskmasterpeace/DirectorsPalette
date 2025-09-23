@@ -5,6 +5,7 @@ import { LayoutPlannerControls } from "./LayoutPlannerControls";
 import { LayoutCanvas } from "./LayoutCanvas";
 import { ElementPropertyPanel } from "./ElementPropertyPanel";
 import { useLayoutPlanner } from "./LayoutPlannerHooks";
+import { ImageCropper } from "./ImageCropper";
 import type { LayoutImage, LayoutText, LayoutArrow } from "./LayoutPlannerTypes";
 
 export default function EnhancedLayoutPlannerRefactored() {
@@ -19,11 +20,13 @@ export default function EnhancedLayoutPlannerRefactored() {
     isAddingText,
     isAddingArrow,
     dragState,
-    
+    isCropping,
+    croppingImageId,
+
     // Refs
     canvasRef,
     fileInputRef,
-    
+
     // Setters
     setAspectRatio,
     setImages,
@@ -33,13 +36,16 @@ export default function EnhancedLayoutPlannerRefactored() {
     setIsAddingText,
     setIsAddingArrow,
     setDragState,
-    
+
     // Actions
     handleAddImage,
     handleAddText,
     deleteSelectedElement,
     clearAll,
-    exportLayout
+    exportLayout,
+    startCropImage,
+    handleCropComplete,
+    cancelCrop
   } = useLayoutPlanner();
 
   const hasElements = images.length > 0 || texts.length > 0 || arrows.length > 0;
@@ -190,8 +196,27 @@ export default function EnhancedLayoutPlannerRefactored() {
           onDeleteElement={deleteSelectedElement}
           onBringForward={handleBringForward}
           onSendBack={handleSendBack}
+          onCropImage={startCropImage}
         />
       </div>
+
+      {/* Image Cropper Modal */}
+      {isCropping && croppingImageId && (() => {
+        const image = images.find(img => img.id === croppingImageId);
+        if (!image) return null;
+        return (
+          <ImageCropper
+            imageSrc={image.src}
+            imageId={image.id}
+            originalWidth={image.originalWidth || image.width}
+            originalHeight={image.originalHeight || image.height}
+            onCropComplete={(croppedImageUrl, cropArea) =>
+              handleCropComplete(image.id, croppedImageUrl, cropArea)
+            }
+            onCancel={cancelCrop}
+          />
+        );
+      })()}
 
       {/* Hidden file input */}
       <input

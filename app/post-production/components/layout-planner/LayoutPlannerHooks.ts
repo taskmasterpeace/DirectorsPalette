@@ -20,6 +20,8 @@ export function useLayoutPlanner() {
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [isAddingText, setIsAddingText] = useState(false);
   const [isAddingArrow, setIsAddingArrow] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
+  const [croppingImageId, setCroppingImageId] = useState<string | null>(null);
 
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
@@ -120,7 +122,7 @@ export function useLayoutPlanner() {
       arrows,
       timestamp: new Date().toISOString()
     };
-    
+
     const dataStr = JSON.stringify(layout, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -129,9 +131,39 @@ export function useLayoutPlanner() {
     link.download = `layout-${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    
+
     toast({ title: "Layout Exported", description: "Layout saved as JSON file" });
   }, [canvasSize, aspectRatio, images, texts, arrows]);
+
+  const startCropImage = useCallback((imageId: string) => {
+    setIsCropping(true);
+    setCroppingImageId(imageId);
+    setSelectedElement(null);
+  }, []);
+
+  const handleCropComplete = useCallback((imageId: string, croppedImageUrl: string, cropData: any) => {
+    setImages(prev => prev.map(img => {
+      if (img.id === imageId) {
+        return {
+          ...img,
+          src: croppedImageUrl,
+          cropData: cropData,
+          // Update dimensions to match cropped size
+          width: Math.min(200, cropData.width),
+          height: Math.min(200, cropData.height * (Math.min(200, cropData.width) / cropData.width)),
+        };
+      }
+      return img;
+    }));
+    setIsCropping(false);
+    setCroppingImageId(null);
+    toast({ title: "Image Cropped", description: "Image has been cropped and updated" });
+  }, []);
+
+  const cancelCrop = useCallback(() => {
+    setIsCropping(false);
+    setCroppingImageId(null);
+  }, []);
 
   return {
     // State
@@ -144,11 +176,13 @@ export function useLayoutPlanner() {
     isAddingText,
     isAddingArrow,
     dragState,
-    
+    isCropping,
+    croppingImageId,
+
     // Refs
     canvasRef,
     fileInputRef,
-    
+
     // Setters
     setAspectRatio,
     setImages,
@@ -158,12 +192,15 @@ export function useLayoutPlanner() {
     setIsAddingText,
     setIsAddingArrow,
     setDragState,
-    
+
     // Actions
     handleAddImage,
     handleAddText,
     deleteSelectedElement,
     clearAll,
-    exportLayout
+    exportLayout,
+    startCropImage,
+    handleCropComplete,
+    cancelCrop
   };
 }

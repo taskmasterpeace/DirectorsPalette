@@ -223,9 +223,9 @@ export function ImageCard({
         </div>
       )}
 
-      {/* Hover tooltip with prompt */}
-      <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <p className="text-xs text-white truncate">
+      {/* Hover tooltip with prompt - improved for mobile */}
+      <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 md:transition-opacity md:pointer-events-none">
+        <p className="text-xs text-white line-clamp-2 break-words">
           {image.prompt || 'No prompt available'}
         </p>
       </div>

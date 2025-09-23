@@ -42,6 +42,7 @@ export default function EnhancedPostProductionPage() {
   const [activeTab, setActiveTab] = useState('shot-list')
   const [mode, setMode] = useState<'seedance'>('seedance')
   const [images, setImages] = useState<ImageData[]>([])
+  const [isMobile, setIsMobile] = useState(false)
   
   // Gen4 state
   const [gen4ReferenceImages, setGen4ReferenceImages] = useState<Gen4ReferenceImage[]>([])
@@ -54,6 +55,21 @@ export default function EnhancedPostProductionPage() {
     maxImages: 1, // Default single image
     sequentialGeneration: false
   })
+
+  // Debug logging for gen4Settings changes
+  useEffect(() => {
+    console.log('[DEBUG] page.tsx - gen4Settings updated:', gen4Settings)
+  }, [gen4Settings])
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   const [gen4Generations, setGen4Generations] = useState<Gen4Generation[]>([])
   const [gen4Processing, setGen4Processing] = useState(false)
   
@@ -322,12 +338,14 @@ export default function EnhancedPostProductionPage() {
                       Shot List Manager
                     </div>
                   </SelectItem>
-                  <SelectItem value="image-edit">
-                    <div className="flex items-center gap-2">
-                      <Film className="w-4 h-4" />
-                      Shot Editor
-                    </div>
-                  </SelectItem>
+                  {!isMobile && (
+                    <SelectItem value="image-edit">
+                      <div className="flex items-center gap-2">
+                        <Film className="w-4 h-4" />
+                        Shot Editor
+                      </div>
+                    </SelectItem>
+                  )}
                   <SelectItem value="gen4">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />

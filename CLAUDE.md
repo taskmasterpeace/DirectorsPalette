@@ -187,3 +187,4 @@ npx playwright test --ui
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
 @./.taskmaster/CLAUDE.md
+- always open playwrite to verify your changes and to allow me to use it

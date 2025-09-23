@@ -296,6 +296,21 @@ const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>(({
         drawingStateRef.current.startPoint = { x: e.pointer.x, y: e.pointer.y }
         
       } else if (tool === 'text') {
+        // Check if clicking on an existing text element
+        const target = canvas.findTarget(e.e, false)
+        if (target && target.type === 'i-text') {
+          // Select and enter editing mode for existing text
+          canvas.setActiveObject(target)
+          if ('enterEditing' in target && typeof target.enterEditing === 'function') {
+            target.enterEditing()
+            if ('selectAll' in target && typeof target.selectAll === 'function') {
+              target.selectAll()
+            }
+          }
+          return
+        }
+
+        // Only create new text if not clicking on existing text
         const text = new IText('Click to edit', {
           left: e.pointer.x,
           top: e.pointer.y,

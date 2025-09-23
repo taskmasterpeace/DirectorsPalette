@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  Trash, 
+import {
+  Trash,
   Copy,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Crop
 } from "lucide-react";
 import type { LayoutImage, LayoutText, LayoutArrow, LayoutElement } from "./LayoutPlannerTypes";
 
@@ -24,6 +25,7 @@ interface ElementPropertyPanelProps {
   onDeleteElement: () => void;
   onBringForward: () => void;
   onSendBack: () => void;
+  onCropImage?: (imageId: string) => void;
 }
 
 export function ElementPropertyPanel({
@@ -36,7 +38,8 @@ export function ElementPropertyPanel({
   onUpdateArrow,
   onDeleteElement,
   onBringForward,
-  onSendBack
+  onSendBack,
+  onCropImage
 }: ElementPropertyPanelProps) {
   if (!selectedElement) {
     return (
@@ -97,6 +100,19 @@ export function ElementPropertyPanel({
         {/* Image Properties */}
         {selectedImage && (
           <div className="space-y-3">
+            {/* Crop Button for Images */}
+            {onCropImage && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onCropImage(selectedElement)}
+                className="w-full border-yellow-600 text-yellow-400 hover:bg-yellow-600 hover:text-white"
+              >
+                <Crop className="w-3 h-3 mr-1" />
+                Crop Image
+              </Button>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-slate-300 text-xs">X Position</Label>

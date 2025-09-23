@@ -63,7 +63,10 @@
       "mcp__playwright__browser_navigate_back",
       "Bash(git log:*)",
       "Bash(echo \"Please run ''gh auth login'' manually to authenticate with GitHub, then create the PR with:\ngh pr create --title ''Complete UX Overhaul: Enhanced Genre Selection, Whisper Integration & Layout System'' --body ''Major release with enhanced genre selection (430+ genres), Whisper audio-to-lyrics integration, advanced layout system, nano-banana model, and comprehensive UX improvements. Fixes critical navigation bugs and adds professional design system.''\")",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(task-master add-task:*)",
+      "Bash(task-master expand:*)",
+      "Bash(task-master list:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

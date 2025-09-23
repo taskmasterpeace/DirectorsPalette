@@ -1,0 +1,843 @@
+{
+  "version": "1.0",
+  "exportDate": "2025-09-22T01:22:27.735Z",
+  "prompts": [
+    {
+      "id": "style-005",
+      "title": "Retro 80s",
+      "prompt": "80s retro style, synthwave aesthetic, neon colors, vintage film look, nostalgic atmosphere",
+      "categoryId": "styles",
+      "tags": [
+        "retro",
+        "80s",
+        "synthwave"
+      ],
+      "reference": "@prompt_1758504108360",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.360Z",
+        "updatedAt": "2025-09-22T01:21:48.360Z"
+      }
+    },
+    {
+      "id": "style-004",
+      "title": "Watercolor Dream",
+      "prompt": "watercolor painting style, soft edges, artistic brushstrokes, dreamy quality, painterly aesthetic",
+      "categoryId": "styles",
+      "tags": [
+        "watercolor",
+        "painterly",
+        "artistic"
+      ],
+      "reference": "@prompt_1758504108359",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.359Z",
+        "updatedAt": "2025-09-22T01:21:48.359Z"
+      }
+    },
+    {
+      "id": "style-003",
+      "title": "Graphic Novel",
+      "prompt": "graphic novel style, comic book aesthetic, bold lines, dramatic shading, illustrated look",
+      "categoryId": "styles",
+      "tags": [
+        "comic",
+        "graphic",
+        "illustrated"
+      ],
+      "reference": "@prompt_1758504108358",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.358Z",
+        "updatedAt": "2025-09-22T01:21:48.358Z"
+      }
+    },
+    {
+      "id": "style-002",
+      "title": "Stylized Animation",
+      "prompt": "stylized 3D animation, Pixar quality, expressive characters, vibrant colors, animated film aesthetic",
+      "categoryId": "styles",
+      "tags": [
+        "animated",
+        "stylized",
+        "pixar"
+      ],
+      "reference": "@prompt_1758504108356",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.356Z",
+        "updatedAt": "2025-09-22T01:21:48.356Z"
+      }
+    },
+    {
+      "id": "style-001",
+      "title": "Cinematic Realism",
+      "prompt": "photorealistic rendering, cinematic quality, high detail, professional color grading, filmic look",
+      "categoryId": "styles",
+      "tags": [
+        "realistic",
+        "cinematic",
+        "detailed"
+      ],
+      "reference": "@prompt_1758504108355",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.355Z",
+        "updatedAt": "2025-09-22T01:21:48.355Z"
+      }
+    },
+    {
+      "id": "cam-005",
+      "title": "Handheld Documentary",
+      "prompt": "handheld camera style, documentary feel, raw authentic movement, cinema verite, realistic camera shake",
+      "categoryId": "camera",
+      "tags": [
+        "handheld",
+        "documentary",
+        "authentic"
+      ],
+      "reference": "@prompt_1758504108354",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.354Z",
+        "updatedAt": "2025-09-22T01:21:48.354Z"
+      }
+    },
+    {
+      "id": "cam-004",
+      "title": "Aerial Drone Shot",
+      "prompt": "aerial drone shot, sweeping landscape, bird's eye view, cinematic overhead, dynamic height perspective",
+      "categoryId": "camera",
+      "tags": [
+        "aerial",
+        "drone",
+        "landscape"
+      ],
+      "reference": "@prompt_1758504108352",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.352Z",
+        "updatedAt": "2025-09-22T01:21:48.352Z"
+      }
+    },
+    {
+      "id": "cam-003",
+      "title": "Over the Shoulder",
+      "prompt": "over the shoulder shot, POV perspective, conversation framing, intimate dialogue, character interaction",
+      "categoryId": "camera",
+      "tags": [
+        "ots",
+        "pov",
+        "dialogue"
+      ],
+      "reference": "@prompt_1758504108351",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.351Z",
+        "updatedAt": "2025-09-22T01:21:48.351Z"
+      }
+    },
+    {
+      "id": "cam-001",
+      "title": "Low Angle Power",
+      "prompt": "low angle shot, looking up, powerful perspective, heroic framing, dramatic sky background, imposing presence",
+      "categoryId": "camera",
+      "tags": [
+        "low",
+        "angle",
+        "power"
+      ],
+      "reference": "@prompt_1758504108350",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.350Z",
+        "updatedAt": "2025-09-22T01:21:48.350Z"
+      }
+    },
+    {
+      "id": "cam-002",
+      "title": "High Angle Overview",
+      "prompt": "high angle shot, looking down, bird's eye perspective, overview composition, vulnerable subject position",
+      "categoryId": "camera",
+      "tags": [
+        "high",
+        "angle",
+        "overview"
+      ],
+      "reference": "@prompt_1758504108350",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.350Z",
+        "updatedAt": "2025-09-22T01:21:48.350Z"
+      }
+    },
+    {
+      "id": "mood-004",
+      "title": "Horror Tension",
+      "prompt": "horror atmosphere, creepy environment, unsettling mood, dark corners, psychological fear, suspenseful lighting",
+      "categoryId": "moods",
+      "tags": [
+        "horror",
+        "creepy",
+        "suspense"
+      ],
+      "reference": "@prompt_1758504108347",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.347Z",
+        "updatedAt": "2025-09-22T01:21:48.347Z"
+      }
+    },
+    {
+      "id": "mood-005",
+      "title": "Epic Adventure",
+      "prompt": "adventure mood, epic scale, heroic atmosphere, grand landscapes, journey feeling, inspirational tone",
+      "categoryId": "moods",
+      "tags": [
+        "epic",
+        "adventure",
+        "heroic"
+      ],
+      "reference": "@prompt_1758504108347",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.347Z",
+        "updatedAt": "2025-09-22T01:21:48.347Z"
+      }
+    },
+    {
+      "id": "mood-003",
+      "title": "Romantic Atmosphere",
+      "prompt": "romantic mood, soft lighting, warm colors, intimate atmosphere, gentle bokeh, love story aesthetic",
+      "categoryId": "moods",
+      "tags": [
+        "romantic",
+        "soft",
+        "warm"
+      ],
+      "reference": "@prompt_1758504108346",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.346Z",
+        "updatedAt": "2025-09-22T01:21:48.346Z"
+      }
+    },
+    {
+      "id": "mood-001",
+      "title": "Dark & Moody",
+      "prompt": "dark atmosphere, moody lighting, psychological thriller mood, tension, shadowy environment, noir aesthetic",
+      "categoryId": "moods",
+      "tags": [
+        "dark",
+        "moody",
+        "thriller"
+      ],
+      "reference": "@prompt_1758504108343",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.343Z",
+        "updatedAt": "2025-09-22T01:21:48.343Z"
+      }
+    },
+    {
+      "id": "mood-002",
+      "title": "Dreamlike Surreal",
+      "prompt": "dreamlike quality, surreal atmosphere, soft focus, ethereal mood, fantasy elements, otherworldly feeling",
+      "categoryId": "moods",
+      "tags": [
+        "dream",
+        "surreal",
+        "ethereal"
+      ],
+      "reference": "@prompt_1758504108343",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.343Z",
+        "updatedAt": "2025-09-22T01:21:48.343Z"
+      }
+    },
+    {
+      "id": "fx-005",
+      "title": "Time Distortion",
+      "prompt": "time manipulation effect, motion trails, temporal distortion, clock elements, surreal time bending",
+      "categoryId": "effects",
+      "tags": [
+        "time",
+        "distortion",
+        "surreal"
+      ],
+      "reference": "@prompt_1758504108342",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.342Z",
+        "updatedAt": "2025-09-22T01:21:48.342Z"
+      }
+    },
+    {
+      "id": "fx-004",
+      "title": "Weather Effects",
+      "prompt": "heavy rain effect, lightning strike, storm atmosphere, weather dynamics, atmospheric conditions",
+      "categoryId": "effects",
+      "tags": [
+        "weather",
+        "rain",
+        "storm"
+      ],
+      "reference": "@prompt_1758504108339",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.339Z",
+        "updatedAt": "2025-09-22T01:21:48.339Z"
+      }
+    },
+    {
+      "id": "fx-003",
+      "title": "Holographic Display",
+      "prompt": "holographic projection, futuristic interface, sci-fi technology, translucent display, digital effects",
+      "categoryId": "effects",
+      "tags": [
+        "hologram",
+        "scifi",
+        "tech"
+      ],
+      "reference": "@prompt_1758504108331",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.331Z",
+        "updatedAt": "2025-09-22T01:21:48.331Z"
+      }
+    },
+    {
+      "id": "fx-002",
+      "title": "Magic Spell Effect",
+      "prompt": "magical energy effect, glowing particles, spell casting, mystical aura, fantasy VFX, ethereal light trails",
+      "categoryId": "effects",
+      "tags": [
+        "magic",
+        "spell",
+        "fantasy"
+      ],
+      "reference": "@prompt_1758504108327",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.327Z",
+        "updatedAt": "2025-09-22T01:21:48.327Z"
+      }
+    },
+    {
+      "id": "fx-001",
+      "title": "Particle Explosion",
+      "prompt": "particle effects, explosive debris, dynamic destruction, slow motion explosion, cinematic VFX, dramatic impact",
+      "categoryId": "effects",
+      "tags": [
+        "explosion",
+        "particles",
+        "vfx"
+      ],
+      "reference": "@prompt_1758504108322",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.322Z",
+        "updatedAt": "2025-09-22T01:21:48.322Z"
+      }
+    },
+    {
+      "id": "env-006",
+      "title": "Underwater Scene",
+      "prompt": "underwater environment, coral reef, caustic light patterns, marine life, deep sea atmosphere, aquatic lighting",
+      "categoryId": "environments",
+      "tags": [
+        "underwater",
+        "ocean",
+        "aquatic"
+      ],
+      "reference": "@prompt_1758504108321",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.321Z",
+        "updatedAt": "2025-09-22T01:21:48.321Z"
+      }
+    },
+    {
+      "id": "env-005",
+      "title": "Alien Landscape",
+      "prompt": "alien planet surface, otherworldly terrain, strange rock formations, multiple moons, exotic atmosphere",
+      "categoryId": "environments",
+      "tags": [
+        "alien",
+        "planet",
+        "scifi"
+      ],
+      "reference": "@prompt_1758504108320",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.320Z",
+        "updatedAt": "2025-09-22T01:21:48.320Z"
+      }
+    },
+    {
+      "id": "env-003",
+      "title": "Futuristic Metropolis",
+      "prompt": "futuristic city skyline, flying vehicles, holographic billboards, neon lights, cyberpunk architecture, sci-fi urban",
+      "categoryId": "environments",
+      "tags": [
+        "futuristic",
+        "city",
+        "scifi"
+      ],
+      "reference": "@prompt_1758504108319",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.319Z",
+        "updatedAt": "2025-09-22T01:21:48.319Z"
+      }
+    },
+    {
+      "id": "env-004",
+      "title": "Victorian London",
+      "prompt": "Victorian era London, gaslight streets, fog, cobblestones, period architecture, industrial revolution atmosphere",
+      "categoryId": "environments",
+      "tags": [
+        "victorian",
+        "london",
+        "period"
+      ],
+      "reference": "@prompt_1758504108319",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.319Z",
+        "updatedAt": "2025-09-22T01:21:48.319Z"
+      }
+    },
+    {
+      "id": "env-002",
+      "title": "Fantasy Forest",
+      "prompt": "enchanted forest, magical atmosphere, bioluminescent plants, mystical fog, fantasy environment, ethereal lighting",
+      "categoryId": "environments",
+      "tags": [
+        "fantasy",
+        "forest",
+        "magical"
+      ],
+      "reference": "@prompt_1758504108318",
+      "isQuickAccess": true,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.318Z",
+        "updatedAt": "2025-09-22T01:21:48.318Z"
+      }
+    },
+    {
+      "id": "light-006",
+      "title": "Moonlight Scene",
+      "prompt": "moonlight illumination, blue tones, night scene, soft shadows, ethereal glow, nocturnal atmosphere",
+      "categoryId": "lighting",
+      "tags": [
+        "moon",
+        "night",
+        "blue"
+      ],
+      "reference": "@prompt_1758504108317",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.317Z",
+        "updatedAt": "2025-09-22T01:21:48.317Z"
+      }
+    },
+    {
+      "id": "env-001",
+      "title": "Post-Apocalyptic City",
+      "prompt": "abandoned cityscape, post-apocalyptic environment, overgrown vegetation, destroyed buildings, atmospheric fog",
+      "categoryId": "environments",
+      "tags": [
+        "apocalyptic",
+        "city",
+        "abandoned"
+      ],
+      "reference": "@prompt_1758504108317",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.317Z",
+        "updatedAt": "2025-09-22T01:21:48.317Z"
+      }
+    },
+    {
+      "id": "light-005",
+      "title": "Soft Box Studio",
+      "prompt": "studio lighting, soft box setup, even illumination, professional photography, clean shadows, commercial quality",
+      "categoryId": "lighting",
+      "tags": [
+        "studio",
+        "soft",
+        "professional"
+      ],
+      "reference": "@prompt_1758504108316",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.316Z",
+        "updatedAt": "2025-09-22T01:21:48.316Z"
+      }
+    },
+    {
+      "id": "light-003",
+      "title": "Rembrandt Lighting",
+      "prompt": "Rembrandt lighting, triangle light on face, classical portrait lighting, chiaroscuro, dramatic single source",
+      "categoryId": "lighting",
+      "tags": [
+        "rembrandt",
+        "portrait",
+        "classical"
+      ],
+      "reference": "@prompt_1758504108315",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.315Z",
+        "updatedAt": "2025-09-22T01:21:48.315Z"
+      }
+    },
+    {
+      "id": "light-004",
+      "title": "Neon Cyberpunk",
+      "prompt": "neon lighting, cyberpunk aesthetic, colorful glow, urban night scene, LED reflections, futuristic atmosphere",
+      "categoryId": "lighting",
+      "tags": [
+        "neon",
+        "cyberpunk",
+        "colorful"
+      ],
+      "reference": "@prompt_1758504108315",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.315Z",
+        "updatedAt": "2025-09-22T01:21:48.315Z"
+      }
+    },
+    {
+      "id": "light-002",
+      "title": "Film Noir Lighting",
+      "prompt": "film noir lighting, high contrast, venetian blind shadows, black and white aesthetic, dramatic shadows",
+      "categoryId": "lighting",
+      "tags": [
+        "noir",
+        "contrast",
+        "shadows"
+      ],
+      "reference": "@prompt_1758504108314",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.314Z",
+        "updatedAt": "2025-09-22T01:21:48.314Z"
+      }
+    },
+    {
+      "id": "char-006",
+      "title": "Sci-Fi Character",
+      "prompt": "@character futuristic outfit, sci-fi aesthetic, holographic elements, cyberpunk style, neon accents, tech wear",
+      "categoryId": "characters",
+      "tags": [
+        "scifi",
+        "futuristic",
+        "cyberpunk"
+      ],
+      "reference": "@prompt_1758504108313",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.313Z",
+        "updatedAt": "2025-09-22T01:21:48.313Z"
+      }
+    },
+    {
+      "id": "light-001",
+      "title": "Golden Hour Magic",
+      "prompt": "golden hour lighting, warm tones, long shadows, sun flare, magic hour cinematography, soft warm light",
+      "categoryId": "lighting",
+      "tags": [
+        "golden",
+        "warm",
+        "sunset"
+      ],
+      "reference": "@prompt_1758504108313",
+      "isQuickAccess": true,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.313Z",
+        "updatedAt": "2025-09-22T01:21:48.313Z"
+      }
+    },
+    {
+      "id": "char-005",
+      "title": "Period Character",
+      "prompt": "@character period costume, historical accuracy, vintage aesthetic, classical portrait style, authentic details",
+      "categoryId": "characters",
+      "tags": [
+        "period",
+        "historical",
+        "vintage"
+      ],
+      "reference": "@prompt_1758504108312",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.312Z",
+        "updatedAt": "2025-09-22T01:21:48.312Z"
+      }
+    },
+    {
+      "id": "char-004",
+      "title": "Character in Action",
+      "prompt": "@character mid-action pose, dynamic movement, motion blur, athletic form, intense concentration, action hero shot",
+      "categoryId": "characters",
+      "tags": [
+        "action",
+        "dynamic",
+        "athletic"
+      ],
+      "reference": "@prompt_1758504108311",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.311Z",
+        "updatedAt": "2025-09-22T01:21:48.311Z"
+      }
+    },
+    {
+      "id": "char-003",
+      "title": "Emotional Character",
+      "prompt": "@character emotional expression, tears, vulnerable moment, soft lighting, intimate framing, raw emotion",
+      "categoryId": "characters",
+      "tags": [
+        "emotional",
+        "vulnerable",
+        "intimate"
+      ],
+      "reference": "@prompt_1758504108310",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.310Z",
+        "updatedAt": "2025-09-22T01:21:48.310Z"
+      }
+    },
+    {
+      "id": "char-002",
+      "title": "Villain Reveal",
+      "prompt": "@character sinister expression, dramatic shadows, low key lighting, menacing presence, dark atmosphere, villain aesthetic",
+      "categoryId": "characters",
+      "tags": [
+        "villain",
+        "dark",
+        "menacing"
+      ],
+      "reference": "@prompt_1758504108309",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.309Z",
+        "updatedAt": "2025-09-22T01:21:48.309Z"
+      }
+    },
+    {
+      "id": "char-001",
+      "title": "Hero Portrait",
+      "prompt": "@character heroic pose, confident expression, dramatic backlighting, superhero aesthetic, powerful stance, cinematic portrait",
+      "categoryId": "characters",
+      "tags": [
+        "hero",
+        "portrait",
+        "powerful"
+      ],
+      "reference": "@prompt_1758504108308",
+      "isQuickAccess": true,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.308Z",
+        "updatedAt": "2025-09-22T01:21:48.308Z"
+      }
+    },
+    {
+      "id": "cin-006",
+      "title": "Tracking Shot",
+      "prompt": "smooth tracking shot, steadicam movement, following subject, dynamic camera motion, cinematic flow, professional dolly work",
+      "categoryId": "cinematic",
+      "tags": [
+        "tracking",
+        "movement",
+        "dolly"
+      ],
+      "reference": "@prompt_1758504108306",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.306Z",
+        "updatedAt": "2025-09-22T01:21:48.306Z"
+      }
+    },
+    {
+      "id": "cin-005",
+      "title": "Dutch Angle Drama",
+      "prompt": "dutch angle shot, tilted camera, psychological tension, dramatic composition, film noir influence, unsettling perspective",
+      "categoryId": "cinematic",
+      "tags": [
+        "dutch",
+        "angle",
+        "dramatic"
+      ],
+      "reference": "@prompt_1758504108305",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.305Z",
+        "updatedAt": "2025-09-22T01:21:48.305Z"
+      }
+    },
+    {
+      "id": "cin-004",
+      "title": "Establishing Shot",
+      "prompt": "establishing shot, wide angle lens, deep focus, location reveal, environmental storytelling, cinematic composition",
+      "categoryId": "cinematic",
+      "tags": [
+        "establishing",
+        "wide",
+        "location"
+      ],
+      "reference": "@prompt_1758504108303",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.303Z",
+        "updatedAt": "2025-09-22T01:21:48.303Z"
+      }
+    },
+    {
+      "id": "cin-003",
+      "title": "Action Sequence",
+      "prompt": "dynamic action shot, motion blur, high speed cinematography, dramatic angles, intense movement, cinematic tension",
+      "categoryId": "cinematic",
+      "tags": [
+        "action",
+        "dynamic",
+        "motion"
+      ],
+      "reference": "@prompt_1758504108302",
+      "isQuickAccess": false,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.302Z",
+        "updatedAt": "2025-09-22T01:21:48.302Z"
+      }
+    },
+    {
+      "id": "cin-002",
+      "title": "Intimate Close-Up",
+      "prompt": "extreme close-up shot, shallow depth of field, bokeh, intimate lighting, emotional portrait, cinematic color grading",
+      "categoryId": "cinematic",
+      "tags": [
+        "closeup",
+        "portrait",
+        "intimate"
+      ],
+      "reference": "@prompt_1758504108301",
+      "isQuickAccess": true,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.301Z",
+        "updatedAt": "2025-09-22T01:21:48.301Z"
+      }
+    },
+    {
+      "id": "cin-001",
+      "title": "Epic Wide Shot",
+      "prompt": "cinematic wide shot, epic scale, dramatic lighting, anamorphic lens flare, film grain, 70mm IMAX, professional cinematography",
+      "categoryId": "cinematic",
+      "tags": [
+        "wide",
+        "epic",
+        "dramatic"
+      ],
+      "reference": "Dune, Lawrence of Arabia style cinematography",
+      "isQuickAccess": true,
+      "metadata": {
+        "model": "nano-banana",
+        "source": "preset",
+        "createdAt": "2025-09-22T01:21:48.297Z",
+        "updatedAt": "2025-09-22T01:21:48.297Z"
+      }
+    }
+  ],
+  "categories": []
+}

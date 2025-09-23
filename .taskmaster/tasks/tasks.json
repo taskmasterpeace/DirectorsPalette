@@ -2079,11 +2079,874 @@
             "testStrategy": "Conduct user testing sessions to validate the effectiveness of the UI changes and functionality improvements."
           }
         ]
+      },
+      {
+        "id": 67,
+        "title": "Redesign Prompt Library for Bulk Viewing and Editing",
+        "description": "Transform the Prompt Library from a card view to a table/list view with bulk operations for efficient management.",
+        "details": "To redesign the Prompt Library, start by analyzing the current card view implementation and identify key data points that need to be displayed in a table or list format. Use a modern UI framework like React with a data grid component (e.g., Material-UI DataGrid or AG Grid) to facilitate the transformation. Implement features for sorting, filtering, and searching prompts within the table. Add bulk operations such as select all, delete, and edit to enhance user efficiency. Ensure the UI is responsive and accessible, adhering to WCAG standards. Consider integrating with existing backend services to support bulk operations and maintain data integrity. Collaborate with the design team to ensure the new layout aligns with the updated design system documentation (Task 59).",
+        "testStrategy": "1. Verify the table/list view displays all necessary prompt data correctly and is responsive across different screen sizes. 2. Test sorting, filtering, and searching functionalities to ensure they work as expected. 3. Perform bulk operations (select all, delete, edit) and confirm they execute correctly without errors. 4. Ensure the UI meets accessibility standards by testing with screen readers and keyboard navigation. 5. Conduct user testing sessions to gather feedback on usability and make necessary adjustments.",
+        "status": "pending",
+        "dependencies": [
+          59,
+          61
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Current Card View Implementation",
+            "description": "Examine the existing card view of the Prompt Library to identify key data points for the new table/list view.",
+            "dependencies": [],
+            "details": "Review the current card view layout and determine which data points are essential for display in the new format.\n<info added on 2025-09-18T22:51:53.047Z>\nAnalyze the current implementation in components/prompt-library/PromptLibrary.tsx and stores/prompt-library-store.ts to identify limitations of the card view. Document the following issues: only 3-4 prompts visible at once, lack of bulk operations, excessive spacing, need for individual clicking for editing, and absence of CSV export/import functionality. Develop a requirements document outlining new table view features to address these limitations.\n</info added on 2025-09-18T22:51:53.047Z>",
+            "status": "pending",
+            "testStrategy": "Ensure all necessary data points are identified and documented for the transition to a table/list view."
+          },
+          {
+            "id": 2,
+            "title": "Select and Integrate Data Grid Component",
+            "description": "Choose a suitable data grid component and integrate it into the Prompt Library using React.",
+            "dependencies": [
+              "67.1"
+            ],
+            "details": "Evaluate options like Material-UI DataGrid or AG Grid and implement the chosen component in the library.\n<info added on 2025-09-18T22:52:06.126Z>\nBuild a new TablePromptLibrary.tsx component using React Table or TanStack Table for data grid functionality. Implement columns for checkbox selection, title, prompt preview (truncated), category, tags, quick access indicator, usage count, and action buttons. Support both compact and expanded row views. Add density controls for compact, normal, and comfortable views.\n</info added on 2025-09-18T22:52:06.126Z>",
+            "status": "pending",
+            "testStrategy": "Verify the data grid component is integrated correctly and displays data as expected."
+          },
+          {
+            "id": 3,
+            "title": "Implement Sorting, Filtering, and Searching",
+            "description": "Add sorting, filtering, and searching functionalities to the table/list view for efficient prompt management.",
+            "dependencies": [
+              "67.2"
+            ],
+            "details": "Develop features that allow users to sort, filter, and search through prompts within the new view.\n<info added on 2025-09-18T22:52:17.368Z>\nImplement advanced filtering and search functionalities, including a global text search across all fields, multi-select category filter, tag-based filtering with autocomplete, and a date range filter for last used. Add a usage count range filter and column-specific sorting options such as title A-Z, usage count, and last used date. Develop features for saved filter presets and quick filter buttons to enhance user efficiency.\n</info added on 2025-09-18T22:52:17.368Z>",
+            "status": "pending",
+            "testStrategy": "Test sorting, filtering, and searching functionalities to ensure they work correctly and efficiently."
+          },
+          {
+            "id": 4,
+            "title": "Develop Bulk Operations",
+            "description": "Create bulk operations such as select all, delete, and edit for enhanced user efficiency.",
+            "dependencies": [
+              "67.3"
+            ],
+            "details": "Implement bulk operations to allow users to perform actions on multiple prompts simultaneously.\n<info added on 2025-09-18T22:52:28.419Z>\nImplement comprehensive bulk operations including select all, none, and inverse selection. Add functionality for bulk delete with a confirmation dialog, bulk edit for categories, tags, and quick access, and bulk export to CSV/JSON. Enable bulk import from CSV with validation and preview. Introduce inline editing for title, prompt text, and tags directly in table cells. Implement undo/redo functionality for bulk operations.\n</info added on 2025-09-18T22:52:28.419Z>",
+            "status": "pending",
+            "testStrategy": "Perform bulk operations and confirm they execute correctly without data loss or errors."
+          },
+          {
+            "id": 5,
+            "title": "Ensure Responsiveness and Accessibility",
+            "description": "Make sure the new UI is responsive and adheres to WCAG standards for accessibility.",
+            "dependencies": [
+              "67.4"
+            ],
+            "details": "Test the UI across different devices and screen sizes, ensuring compliance with accessibility standards.\n<info added on 2025-09-18T22:52:40.552Z>\nAdd UI enhancements including keyboard shortcuts (Ctrl+A for select all, Delete for bulk delete, Ctrl+E for edit mode), virtual scrolling to handle over 1000 prompts, and a pagination option as an alternative to scrolling. Implement column resizing and reordering, and save user preferences such as column widths, density, and filter presets to localStorage. Add support for dark/light themes and ensure the design is mobile responsive with horizontal scrolling.\n</info added on 2025-09-18T22:52:40.552Z>",
+            "status": "pending",
+            "testStrategy": "Verify the UI is responsive and accessible, meeting WCAG guidelines across various devices."
+          }
+        ]
+      },
+      {
+        "id": 68,
+        "title": "Develop CSV Export/Import Utilities for Prompt Library",
+        "description": "Create utilities for exporting and importing data in CSV format for the Prompt Library, including field mapping, validation, error handling, and preview features.",
+        "details": "To implement CSV export/import utilities for the Prompt Library, start by designing a CSV schema that matches the library's data structure, including fields for prompts, categories, and metadata. Develop a utility to export data from the library into a CSV file, ensuring that all relevant fields are included and properly formatted. For the import utility, implement a feature that allows users to upload a CSV file, map CSV columns to library fields, and validate the data for consistency and completeness. Include error handling to manage invalid data entries and provide feedback to the user. Implement a preview feature that displays a summary of the data to be imported, allowing users to confirm before finalizing the import. Use libraries such as Papaparse for CSV parsing and validation. Ensure the utilities are integrated into the existing Prompt Library interface and accessible via a user-friendly dialog.",
+        "testStrategy": "1. Test the CSV export functionality by exporting data from the Prompt Library and verifying the CSV file's structure and content. 2. Test the import functionality by uploading various CSV files, including those with correct and incorrect data formats, and verify the field mapping and validation processes. 3. Check the error handling by attempting to import CSV files with missing or invalid data and ensure appropriate error messages are displayed. 4. Test the preview feature by confirming that the data summary accurately reflects the CSV content before import. 5. Conduct user testing to ensure the utilities are intuitive and integrate seamlessly with the Prompt Library interface.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          39,
+          "67"
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 69,
+        "title": "Integrate Table-Based Prompt Library with Shot Creator and Other Components",
+        "description": "Integrate the newly designed table-based Prompt Library with the Shot Creator and other relevant components, ensuring prompt selection interfaces are updated and backward compatibility is maintained.",
+        "details": "To integrate the new table-based Prompt Library with the Shot Creator and other components, start by reviewing the existing prompt selection interfaces within the Shot Creator and other related modules. Update these interfaces to utilize the new table-based design, ensuring that all functionalities such as sorting, filtering, and bulk operations are supported. Migrate existing prompt data to the new format, ensuring data integrity and consistency. Implement a compatibility layer to support legacy prompts and interfaces, allowing for a seamless transition without disrupting existing workflows. Use a modern UI framework like React with a data grid component to facilitate the integration and ensure a responsive design. Collaborate with the UI/UX team to maintain visual consistency across the application. Conduct thorough testing to ensure all components interact correctly with the new Prompt Library.",
+        "testStrategy": "1. Verify that the Shot Creator and other components correctly display the new table-based Prompt Library interface.\n2. Test prompt selection, sorting, filtering, and bulk operations to ensure they function as expected.\n3. Confirm that existing prompt data is correctly migrated and accessible in the new format.\n4. Check that legacy prompts and interfaces remain functional, ensuring backward compatibility.\n5. Conduct cross-browser testing to ensure consistent behavior across different environments.\n6. Collaborate with QA to perform user acceptance testing, focusing on usability and performance.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          61,
+          67
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 70,
+        "title": "Adjust Prompt Library Modal Width",
+        "description": "Increase the width of the Prompt Library modal from 80vw to 95vw in the Gen4PromptSettings.tsx Dialog component to ensure all content, including the categories column, is visible.",
+        "details": "To adjust the width of the Prompt Library modal, locate the Dialog component within the Gen4PromptSettings.tsx file. Modify the 'width' property of the Dialog component from '80vw' to '95vw'. This change will ensure that the modal is wide enough to display all content, including the categories column on the right. Ensure that the modal remains responsive and does not overflow on smaller screens. Test the changes across different screen sizes to maintain usability and accessibility.",
+        "testStrategy": "1. Open the Prompt Library modal and verify that the width is now set to 95vw.\n2. Check that all content, including the categories column, is fully visible without horizontal scrolling.\n3. Test the modal on various screen sizes to ensure it remains responsive and does not cause layout issues.\n4. Verify that the modal's appearance is consistent across different browsers.",
+        "status": "done",
+        "dependencies": [
+          42,
+          64
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 71,
+        "title": "Enhance Prompt Library UX with Export/Import and UI Improvements",
+        "description": "Improve the Prompt Library user experience by adding export/import functionality, fixing redundant text, adjusting modal width, repositioning the Generate button, and adding a keyboard shortcut for prompt generation.",
+        "details": "To enhance the Prompt Library UX, implement the following improvements: 1) Develop export/import functionality for bulk editing using JSON or CSV formats, ensuring data integrity and user-friendly interfaces. 2) Remove redundant 'Prompt Library' text appearing multiple times by refactoring the UI components responsible for rendering these elements. 3) Adjust the modal width to ensure all columns are visible, building on the changes from Task 70. 4) Move the Generate button to the top of the prompt settings section, just below the prompt window, for better accessibility. 5) Implement a Ctrl+Enter keyboard shortcut for prompt generation, ensuring it is intuitive and does not conflict with existing shortcuts. 6) Introduce a 3-second cooldown between image generations to improve performance and user experience. Use React for UI updates and ensure all changes are responsive and accessible. Consider using libraries like React-CSV for export/import functionality and ensure compliance with accessibility standards.",
+        "testStrategy": "1) Test the export/import functionality by exporting data to JSON/CSV and re-importing it, verifying data integrity and usability. 2) Verify that redundant 'Prompt Library' text is removed and the UI is clean. 3) Check the modal width adjustment to ensure all columns are visible without horizontal scrolling. 4) Confirm the Generate button is repositioned correctly and is easily accessible. 5) Test the Ctrl+Enter shortcut for prompt generation, ensuring it works consistently across browsers. 6) Implement automated tests to verify the 3-second cooldown between image generations is functioning as expected. Conduct user testing to ensure all UI changes enhance the user experience.",
+        "status": "done",
+        "dependencies": [
+          64,
+          70
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Develop Export/Import Functionality",
+            "description": "Create export/import functionality for bulk editing using JSON or CSV formats.",
+            "dependencies": [],
+            "details": "Implement export/import features using libraries like React-CSV, ensuring data integrity and user-friendly interfaces.\n<info added on 2025-09-19T02:45:41.877Z>\nAdd buttons for Export (to JSON/CSV) and Import. Include bulk editing capabilities. Ensure data validation on import and preserve all prompt metadata including categories, tags, and references.\n</info added on 2025-09-19T02:45:41.877Z>",
+            "status": "done",
+            "testStrategy": "Test the export/import functionality by exporting data to JSON/CSV and re-importing it, verifying data integrity and usability."
+          },
+          {
+            "id": 2,
+            "title": "Remove Redundant Text",
+            "description": "Refactor UI components to remove redundant 'Prompt Library' text.",
+            "dependencies": [],
+            "details": "Identify and refactor UI components responsible for rendering redundant text to ensure a clean interface.",
+            "status": "done",
+            "testStrategy": "Verify that redundant 'Prompt Library' text is removed and the UI is clean."
+          },
+          {
+            "id": 3,
+            "title": "Adjust Modal Width",
+            "description": "Modify modal width to ensure all columns are visible.",
+            "dependencies": [
+              "71.2"
+            ],
+            "details": "Adjust the modal width based on changes from Task 70 to ensure all columns are visible without horizontal scrolling.",
+            "status": "done",
+            "testStrategy": "Check the modal width adjustment to ensure all columns are visible without horizontal scrolling."
+          },
+          {
+            "id": 4,
+            "title": "Reposition Generate Button",
+            "description": "Move the Generate button for better accessibility.",
+            "dependencies": [
+              "71.3"
+            ],
+            "details": "Reposition the Generate button to the top of the prompt settings section, just below the prompt window.",
+            "status": "done",
+            "testStrategy": "Verify the new position of the Generate button and ensure it is accessible and intuitive."
+          },
+          {
+            "id": 5,
+            "title": "Implement Keyboard Shortcut",
+            "description": "Add a Ctrl+Enter keyboard shortcut for prompt generation.",
+            "dependencies": [
+              "71.4"
+            ],
+            "details": "Implement a Ctrl+Enter keyboard shortcut for prompt generation, ensuring it is intuitive and does not conflict with existing shortcuts.\n<info added on 2025-09-19T02:45:57.306Z>\nAdd a 3-second cooldown between image generations, allowing users to submit new generation requests after 3 seconds instead of waiting for previous images to complete. This enhancement aims to improve workflow efficiency for rapid prototyping.\n</info added on 2025-09-19T02:45:57.306Z>",
+            "status": "done",
+            "testStrategy": "Test the Ctrl+Enter shortcut for prompt generation and ensure it does not conflict with existing shortcuts."
+          },
+          {
+            "id": 6,
+            "title": "Develop Export/Import Functionality",
+            "description": "Implement export/import functionality for the Prompt Library using JSON and CSV formats.",
+            "dependencies": [],
+            "details": "Use React and libraries like React-CSV to create a user-friendly interface for exporting and importing prompt data. Ensure data integrity during the export/import process by validating the data structure and content. Provide clear instructions and feedback to users during these operations.",
+            "status": "done",
+            "testStrategy": "Test by exporting data to both JSON and CSV formats, then re-importing it to verify data integrity and usability. Ensure the interface is intuitive and provides appropriate feedback."
+          },
+          {
+            "id": 7,
+            "title": "Remove Redundant 'Prompt Library' Text",
+            "description": "Refactor UI components to eliminate redundant 'Prompt Library' text appearing multiple times.",
+            "dependencies": [
+              "71.6"
+            ],
+            "details": "Identify UI components responsible for rendering the 'Prompt Library' text. Refactor these components to ensure the text appears only where necessary, maintaining a clean and concise UI.",
+            "status": "done",
+            "testStrategy": "Verify that the redundant text is removed and the UI is clean. Check across different sections of the application to ensure consistency."
+          },
+          {
+            "id": 8,
+            "title": "Adjust Modal Width for Visibility",
+            "description": "Modify the modal width to ensure all columns are visible without horizontal scrolling.",
+            "dependencies": [
+              "71.7"
+            ],
+            "details": "Adjust the CSS styles of the modal component to increase its width, ensuring that all columns are visible. Test the changes on various screen sizes to maintain responsiveness.",
+            "status": "done",
+            "testStrategy": "Check the modal on different screen sizes to ensure all columns are visible and the layout is responsive. Verify that no horizontal scrolling is required."
+          },
+          {
+            "id": 9,
+            "title": "Reposition Generate Button",
+            "description": "Move the Generate button to the top of the prompt settings section for better accessibility.",
+            "dependencies": [
+              "71.8"
+            ],
+            "details": "Reposition the Generate button by updating the layout of the prompt settings section. Place it just below the prompt window to improve accessibility and user experience.",
+            "status": "done",
+            "testStrategy": "Ensure the Generate button is easily accessible and positioned correctly. Test the button's functionality to confirm it works as expected after repositioning."
+          },
+          {
+            "id": 10,
+            "title": "Implement Keyboard Shortcut for Prompt Generation",
+            "description": "Add a Ctrl+Enter keyboard shortcut for prompt generation, ensuring it is intuitive and non-conflicting.",
+            "dependencies": [
+              "71.9"
+            ],
+            "details": "Implement the keyboard shortcut using React's event handling. Ensure the shortcut does not conflict with existing shortcuts and is intuitive for users. Provide a brief tooltip or guide to inform users of the new shortcut.",
+            "status": "done",
+            "testStrategy": "Test the keyboard shortcut across different browsers and platforms to ensure it functions correctly. Verify that it does not interfere with other shortcuts and is easy to use."
+          }
+        ]
+      },
+      {
+        "id": 72,
+        "title": "Enhance Shot Creator Prompt Interface with Accordion Help System",
+        "description": "Integrate an accordion help system into the Shot Creator Prompt Interface, including tooltips and organized sections for help, prompt library, and import/export.",
+        "details": "To enhance the Shot Creator Prompt Interface, implement an accordion system that organizes help resources and existing features into a more accessible format. Begin by adding a tooltip feature that highlights the importance of using specific prompting language features such as bracket syntax, wildcards, and chain prompting. Use Playwright MCP to view and test the UI during development. Create an accordion with three main sections: 1) A Help section providing examples and explanations of bracket syntax, wildcards, and chain prompting. 2) A Prompt Library section that relocates existing library features into the accordion for better organization. 3) An Import/Export section that consolidates existing functionalities into the accordion. Ensure the accordion is responsive and maintains usability across different devices and screen sizes. Follow best practices for UI/UX design, ensuring the interface is intuitive and visually appealing.",
+        "testStrategy": "1. Use Playwright MCP to test the accordion interface, ensuring each section expands and collapses correctly. 2. Verify the tooltip displays correctly and provides accurate information about prompting language features. 3. Check that the Help section includes comprehensive examples of bracket syntax, wildcards, and chain prompting. 4. Ensure the Prompt Library and Import/Export sections are fully functional within the accordion. 5. Test the interface on various devices and screen sizes to confirm responsiveness and usability. 6. Conduct user testing to gather feedback on the new interface layout and make adjustments as necessary.",
+        "status": "done",
+        "dependencies": [
+          27,
+          28,
+          71
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Tooltip Feature",
+            "description": "Develop a tooltip feature to highlight the importance of specific prompting language features.",
+            "dependencies": [],
+            "details": "Create tooltips that explain bracket syntax, wildcards, and chain prompting. Ensure tooltips are context-sensitive and appear on hover or focus.",
+            "status": "done",
+            "testStrategy": "Verify tooltips display correctly and provide accurate information using Playwright MCP."
+          },
+          {
+            "id": 2,
+            "title": "Develop Help Section in Accordion",
+            "description": "Create a Help section within the accordion to provide examples and explanations of prompting language features.",
+            "dependencies": [
+              "72.1"
+            ],
+            "details": "Include comprehensive examples of bracket syntax, wildcards, and chain prompting in the Help section.",
+            "status": "done",
+            "testStrategy": "Ensure the Help section expands and collapses correctly and contains accurate and helpful content."
+          },
+          {
+            "id": 3,
+            "title": "Integrate Prompt Library into Accordion",
+            "description": "Relocate existing prompt library features into the accordion for better organization.",
+            "dependencies": [
+              "72.1"
+            ],
+            "details": "Move existing prompt library features into a dedicated section within the accordion.",
+            "status": "done",
+            "testStrategy": "Verify the prompt library section functions correctly and is easily accessible within the accordion."
+          },
+          {
+            "id": 4,
+            "title": "Consolidate Import/Export Features",
+            "description": "Consolidate existing import/export functionalities into the accordion system.",
+            "dependencies": [
+              "72.1"
+            ],
+            "details": "Create an Import/Export section in the accordion to house all related functionalities.",
+            "status": "done",
+            "testStrategy": "Test the Import/Export section to ensure all functionalities are accessible and work as expected."
+          },
+          {
+            "id": 5,
+            "title": "Ensure Responsive Design",
+            "description": "Ensure the accordion system is responsive and maintains usability across different devices and screen sizes.",
+            "dependencies": [
+              "72.2",
+              "72.3",
+              "72.4"
+            ],
+            "details": "Apply responsive design principles to the accordion system to ensure it adapts to various screen sizes.",
+            "status": "done",
+            "testStrategy": "Test the accordion interface on multiple devices and screen sizes to verify responsiveness and usability."
+          }
+        ]
+      },
+      {
+        "id": 73,
+        "title": "Fix Prompt Library Table Column Visibility Issue",
+        "description": "Resolve the issue where the rightmost columns in the Prompt Library table view are cut off or not visible by adjusting the table layout and column widths.",
+        "status": "pending",
+        "dependencies": [
+          67,
+          70
+        ],
+        "priority": "medium",
+        "details": "To fix the column visibility issue in the Prompt Library table view, start by investigating the current table implementation to identify the cause of the columns being cut off. This involves inspecting CSS styles related to table layout, column widths, and overflow properties. Adjust the CSS to ensure that all columns, including the Actions column, are fully visible without horizontal scrolling. Implement a responsive design approach to ensure the table adapts to different screen sizes. Test the changes across various browsers and devices to ensure consistent behavior. After implementing the changes, push the updates to the development branch for further testing and integration.",
+        "testStrategy": "1. Open the Prompt Library table view and verify that all columns, including the rightmost ones, are fully visible without horizontal scrolling.\n2. Test the table layout on different screen sizes and resolutions to ensure it remains responsive and usable.\n3. Check the table view in multiple browsers (e.g., Chrome, Firefox, Safari) to confirm consistent behavior.\n4. Verify that the Actions column is accessible and functional in all tested environments.\n5. Ensure that the changes are committed and pushed to the development branch for further testing.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Investigate and Screenshot Current Prompt Library Table Issue",
+            "description": "Analyze the existing table layout and CSS to identify the cause of the column visibility issue and document it with screenshots.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "Inspect the HTML structure and CSS styles applied to the Prompt Library table. Focus on properties related to table layout, column widths, and overflow. Take screenshots to document any findings that might contribute to the columns being cut off.",
+            "testStrategy": "Verify that the current table structure and styles are correctly identified and documented with screenshots."
+          },
+          {
+            "id": 2,
+            "title": "Fix Column Widths and Table Layout",
+            "description": "Modify the CSS to ensure all columns are fully visible without horizontal scrolling.",
+            "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "details": "Based on the findings from the investigation, update the CSS styles to adjust the table layout and column widths. Ensure that the table is responsive and adapts to different screen sizes. Consider using CSS properties like 'flex', 'grid', or 'table-layout: fixed' to manage column widths effectively.",
+            "testStrategy": "Check that all columns, including the rightmost ones, are visible without horizontal scrolling on various screen sizes."
+          },
+          {
+            "id": 3,
+            "title": "Test the Fix Thoroughly Across Browsers and Screen Sizes",
+            "description": "Ensure the table layout is responsive and adapts to different screen sizes.",
+            "status": "pending",
+            "dependencies": [
+              2
+            ],
+            "details": "Conduct testing on major browsers such as Chrome, Firefox, Safari, and Edge. Verify that the table layout and column visibility are consistent and that no browser-specific issues arise. Test the table on different devices and screen resolutions to confirm that it maintains usability and visibility across all platforms.",
+            "testStrategy": "Test the table on multiple devices and screen sizes to ensure it remains fully functional and visually consistent across all tested browsers."
+          },
+          {
+            "id": 4,
+            "title": "Commit Changes and Push to Development Branch",
+            "description": "Integrate the changes into the development branch for further testing and integration.",
+            "status": "pending",
+            "dependencies": [
+              3
+            ],
+            "details": "Commit the changes to the version control system and push them to the development branch. Coordinate with the team to ensure the changes are reviewed and tested as part of the integration process.",
+            "testStrategy": "Verify that the changes are successfully merged and do not introduce any new issues in the development environment."
+          }
+        ]
+      },
+      {
+        "id": 74,
+        "title": "Fix Shot Creator Image Generation Issues",
+        "description": "Address issues in the Shot Creator image generation by adding placeholder images, fixing cooldown reset, controlling number of generations, and allowing limited free generations for unauthenticated users.",
+        "details": "To fix the Shot Creator image generation issues, implement the following solutions: 1) Add placeholder images during the generation process to improve user experience. This can be done by displaying a default image or animation while the actual image is being generated. 2) Investigate and fix the cooldown reset mechanism to ensure it functions correctly, preventing users from bypassing intended cooldown periods. 3) Introduce a control mechanism to limit the number of image generations per session or time period, configurable via user settings. 4) Implement a feature that allows unauthenticated users to have a limited number of free generations, encouraging them to sign up for more extensive use. This will involve updating the user session management system to track generation counts and cooldowns. Ensure all changes are backward compatible and do not disrupt existing functionalities.",
+        "testStrategy": "1) Test the placeholder image functionality by initiating image generation and verifying that placeholders are displayed until the final image is ready. 2) Validate the cooldown reset mechanism by attempting multiple generations in quick succession and ensuring cooldowns are enforced. 3) Test the generation control by setting limits and verifying that users cannot exceed these limits within the specified time frame. 4) For unauthenticated users, verify that the system allows a limited number of free generations and prompts for signup when the limit is reached. 5) Conduct regression testing to ensure existing features are unaffected by these changes.",
+        "status": "pending",
+        "dependencies": [
+          40,
+          72
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Placeholder Images",
+            "description": "Implement placeholder images during the image generation process to enhance user experience.",
+            "dependencies": [],
+            "details": "Display a default image or animation while the actual image is being generated to improve user experience.",
+            "status": "pending",
+            "testStrategy": "Test the placeholder image functionality by initiating image generation and verifying that placeholders are displayed until the final image is ready."
+          },
+          {
+            "id": 2,
+            "title": "Fix Cooldown Reset Mechanism",
+            "description": "Investigate and fix the cooldown reset mechanism to ensure it functions correctly.",
+            "dependencies": [],
+            "details": "Ensure the cooldown reset mechanism prevents users from bypassing intended cooldown periods.",
+            "status": "pending",
+            "testStrategy": "Validate the cooldown reset mechanism by attempting multiple generations in quick succession and ensuring cooldowns are enforced."
+          },
+          {
+            "id": 3,
+            "title": "Control Number of Image Generations",
+            "description": "Introduce a control mechanism to limit the number of image generations per session or time period.",
+            "dependencies": [],
+            "details": "Implement a configurable control mechanism via user settings to limit image generations.",
+            "status": "pending",
+            "testStrategy": "Test the control mechanism by setting limits and verifying that the system enforces these limits during image generation."
+          },
+          {
+            "id": 4,
+            "title": "Allow Limited Free Generations for Unauthenticated Users",
+            "description": "Implement a feature that allows unauthenticated users to have a limited number of free generations.",
+            "dependencies": [],
+            "details": "Update the user session management system to track generation counts and cooldowns for unauthenticated users.",
+            "status": "pending",
+            "testStrategy": "Test the feature by creating unauthenticated sessions and verifying that the system allows a limited number of free generations."
+          },
+          {
+            "id": 5,
+            "title": "Ensure Backward Compatibility",
+            "description": "Ensure all changes are backward compatible and do not disrupt existing functionalities.",
+            "dependencies": [
+              "74.1",
+              "74.2",
+              "74.3",
+              "74.4"
+            ],
+            "details": "Review all implemented changes to ensure they are backward compatible with existing functionalities.",
+            "status": "pending",
+            "testStrategy": "Conduct regression testing to verify that existing functionalities are not disrupted by the new changes."
+          }
+        ]
+      },
+      {
+        "id": 75,
+        "title": "Debug and Fix Multi-Image Generation Feature in Shot Creator",
+        "description": "Investigate and resolve issues preventing the Shot Creator from generating the correct number of images as configured.",
+        "details": "To debug and fix the multi-image generation feature in the Shot Creator, start by reviewing the current implementation of the image generation logic. Check the configuration settings to ensure they are correctly passed to the generation function. Investigate any discrepancies between the requested and actual number of images generated. This may involve checking the backend service responsible for image generation, as well as any frontend logic that might be interfering with the process. Ensure that the settings are correctly applied and that the generation loop or process is not prematurely terminating. Additionally, verify that any user interface elements related to image generation are correctly reflecting the user's settings and intentions. Collaborate with the team responsible for the backend service if necessary to identify any server-side issues. Once the issue is identified, implement a fix and conduct thorough testing to ensure the problem is resolved.",
+        "testStrategy": "1. Configure the Shot Creator to generate a specific number of images and initiate the generation process. Verify that the exact number of images is generated as requested. 2. Test with various configurations to ensure consistency across different settings. 3. Check the user interface to ensure it accurately reflects the configured settings and the actual number of images generated. 4. Conduct regression testing to ensure that the fix does not introduce new issues in related functionalities. 5. If applicable, review server logs to confirm that the backend service is processing requests correctly and without errors.",
+        "status": "pending",
+        "dependencies": [
+          40,
+          74
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review Current Image Generation Logic",
+            "description": "Examine the existing code responsible for image generation in the Shot Creator to identify potential issues.",
+            "dependencies": [],
+            "details": "Access the Shot Creator's codebase and locate the module or function responsible for image generation. Review the logic to ensure that it correctly interprets configuration settings and initiates the appropriate number of image generation processes. Document any anomalies or areas that require further investigation.\n<info added on 2025-09-22T08:31:17.847Z>\nAdd comprehensive debug logging to trace the multi-image generation flow. Log the following events: when the maxImages setting is configured in the UI, when this setting is included in the API request, when the backend receives the request, the number of images requested versus the number generated in the loop, and the final response returned.\n</info added on 2025-09-22T08:31:17.847Z>\n<info added on 2025-09-22T10:04:16.927Z>\nThe review of the image generation logic is complete. The backend correctly handles multiple image generation by iterating through the promptsToGenerate array. However, a state management issue exists on the frontend where the maxImages value is not updated correctly when the user changes the Number of Images input field. Although the onChange handler is defined correctly, the state update is not persisting. Backend logs confirm that maxImages is received as 1, even when the UI displays 3.\n</info added on 2025-09-22T10:04:16.927Z>",
+            "status": "done",
+            "testStrategy": "Verify that the code correctly interprets configuration settings by running the function with known inputs and checking the outputs."
+          },
+          {
+            "id": 2,
+            "title": "Verify Configuration Settings Transmission",
+            "description": "Ensure that the configuration settings for image generation are correctly passed from the frontend to the backend.",
+            "dependencies": [
+              "75.1"
+            ],
+            "details": "Trace the flow of configuration settings from the user interface through to the backend service. Check for any discrepancies or data loss during transmission. Use logging or debugging tools to confirm that the settings received by the backend match those specified by the user.\n<info added on 2025-09-22T08:31:30.062Z>\nIdentify the exact breaking point by checking if the `maxImages` parameter is properly passed from `Gen4PromptSettings` to `Gen4TabOptimized`. Verify if it is included in the fetch body and ensure the backend loop executes the correct number of times. Focus on models other than `seedream-4` since it has special handling.\n</info added on 2025-09-22T08:31:30.062Z>",
+            "status": "pending",
+            "testStrategy": "Simulate various configuration settings in the UI and verify that the backend receives the correct parameters."
+          },
+          {
+            "id": 3,
+            "title": "Investigate Backend Image Generation Service",
+            "description": "Analyze the backend service responsible for generating images to identify any issues that might prevent the correct number of images from being generated.",
+            "dependencies": [
+              "75.2"
+            ],
+            "details": "Review the backend service code to ensure it processes requests correctly and generates the specified number of images. Check for any errors or exceptions that might cause the process to terminate prematurely. Collaborate with the backend team if necessary to address any server-side issues.\n<info added on 2025-09-22T08:31:41.640Z>\nFix the backend generation loop to ensure it runs for the requested number of images, not just for dynamic prompts. Investigate why the backend only generates one image for non-dynamic prompts when max_images is greater than one. Focus on line 222 in route.ts where promptsToGenerate is set, and make necessary adjustments to ensure correct image generation.\n</info added on 2025-09-22T08:31:41.640Z>",
+            "status": "pending",
+            "testStrategy": "Run backend service tests to ensure it handles requests correctly and generates the expected number of images."
+          },
+          {
+            "id": 4,
+            "title": "Examine Frontend Logic for Interference",
+            "description": "Check the frontend logic for any interference that might affect the image generation process.",
+            "dependencies": [
+              "75.3"
+            ],
+            "details": "Review the frontend code to ensure it does not inadvertently alter or interrupt the image generation process. Look for any scripts or functions that might modify the configuration settings or prematurely stop the generation process. Ensure that the user interface elements accurately reflect the user's settings and intentions.\n<info added on 2025-09-22T08:31:52.077Z>\nTest the fix thoroughly with different models (nano-banana, gen4-image, qwen-image) and different image counts (1-4). Verify that the UI properly displays all generated images, placeholders function correctly, and the gallery updates with all results.\n</info added on 2025-09-22T08:31:52.077Z>",
+            "status": "pending",
+            "testStrategy": "Test the UI to ensure it behaves as expected and does not interfere with the image generation process."
+          },
+          {
+            "id": 5,
+            "title": "Implement Fixes and Conduct Thorough Testing",
+            "description": "Apply necessary fixes to the identified issues and perform comprehensive testing to ensure the multi-image generation feature works correctly.",
+            "dependencies": [
+              "75.4"
+            ],
+            "details": "Based on the findings from previous subtasks, implement code changes to address any identified issues. Ensure that the fixes are applied both in the frontend and backend as needed. Conduct thorough testing by configuring the Shot Creator to generate various numbers of images and verifying that the correct number is produced each time.\n<info added on 2025-09-22T08:32:02.438Z>\nClean up all debug logging after confirming the fix works. Create unit tests for the multi-generation feature to prevent regression. Document the fix in comments explaining how multi-generation works differently from dynamic prompts.\n</info added on 2025-09-22T08:32:02.438Z>",
+            "status": "pending",
+            "testStrategy": "Perform end-to-end testing with different configurations to ensure the feature consistently generates the correct number of images. Validate that the UI reflects the correct settings and outcomes."
+          }
+        ]
+      },
+      {
+        "id": 76,
+        "title": "Implement Progressive Web App (PWA) for Director's Palette with Mobile-Only Activation",
+        "description": "Develop a Progressive Web App (PWA) for Director's Palette that activates only on mobile devices, ensuring the desktop experience remains unchanged.",
+        "details": "To implement the PWA, start by configuring the web app manifest to define the app's name, icons, and display properties. Use service workers to enable offline capabilities and caching strategies specific to mobile devices. Ensure the PWA is only activated on mobile by detecting the user's device type and conditionally registering the service worker. Maintain the desktop experience by excluding PWA features when accessed from non-mobile devices. Leverage responsive design techniques to optimize the mobile interface, ensuring it is touch-friendly and performant. Consider using modern frameworks like React or Vue.js to facilitate component-based development and ensure a smooth user experience. Test the PWA using tools like Lighthouse to ensure compliance with PWA standards and performance benchmarks.",
+        "testStrategy": "1. Verify that the PWA manifest is correctly configured and includes all necessary metadata for mobile devices. 2. Test the service worker registration to ensure it only activates on mobile devices and provides offline capabilities. 3. Use Lighthouse to audit the PWA for compliance with best practices, performance, and accessibility. 4. Test the mobile interface for responsiveness and touch-friendliness across various screen sizes and devices. 5. Ensure the desktop experience remains unchanged by accessing the app from a desktop and verifying the absence of PWA features.",
+        "status": "pending",
+        "dependencies": [
+          6,
+          33
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Web App Manifest",
+            "description": "Set up the web app manifest to define the app's name, icons, and display properties for mobile devices.",
+            "dependencies": [],
+            "details": "Create a manifest.json file with appropriate metadata such as app name, short name, icons, start URL, and display mode tailored for mobile devices.\n<info added on 2025-09-22T21:28:32.383Z>\nEnsure the manifest.json includes all required PWA fields for Next.js 15, such as icons, theme colors, start_url, display mode set to standalone, and orientation set to portrait. Implement conditional logic to serve the manifest only to mobile devices.\n</info added on 2025-09-22T21:28:32.383Z>",
+            "status": "pending",
+            "testStrategy": "Verify that the manifest.json is correctly configured and recognized by mobile browsers, ensuring all metadata is accurate and functional."
+          },
+          {
+            "id": 2,
+            "title": "Implement Service Workers for Mobile",
+            "description": "Develop service workers to enable offline capabilities and caching strategies specifically for mobile devices.",
+            "dependencies": [
+              "76.1"
+            ],
+            "details": "Write a service worker script to handle caching of essential resources, ensuring the app can function offline and load efficiently on mobile devices.\n<info added on 2025-09-22T21:28:42.040Z>\nImplement the service worker using Workbox for Next.js 15 with the next-pwa package. Include an offline caching strategy, precaching of critical assets, and runtime caching for API routes. Ensure the service worker registers only on mobile devices.\n</info added on 2025-09-22T21:28:42.040Z>",
+            "status": "pending",
+            "testStrategy": "Test the service worker registration and offline functionality on mobile devices, ensuring resources are cached and available offline."
+          },
+          {
+            "id": 3,
+            "title": "Device Type Detection and Conditional Activation",
+            "description": "Implement logic to detect the user's device type and conditionally activate the PWA only on mobile devices.",
+            "dependencies": [
+              "76.2"
+            ],
+            "details": "Use JavaScript to detect device type and conditionally register the service worker only if the user is on a mobile device, ensuring the desktop experience remains unchanged.\n<info added on 2025-09-22T21:28:51.909Z>\nCreate a mobile detection hook using user agent and touch capability detection. Implement conditional PWA initialization in _app.tsx that only loads the manifest and registers the service worker for mobile devices. Ensure the desktop experience remains completely unchanged.\n</info added on 2025-09-22T21:28:51.909Z>",
+            "status": "pending",
+            "testStrategy": "Verify that the PWA features activate only on mobile devices and remain inactive on desktops, ensuring seamless user experience across platforms."
+          },
+          {
+            "id": 4,
+            "title": "Optimize Mobile Interface with Responsive Design",
+            "description": "Leverage responsive design techniques to optimize the mobile interface, ensuring it is touch-friendly and performant.",
+            "dependencies": [
+              "76.3"
+            ],
+            "details": "Utilize CSS media queries and flexible layouts to create a mobile-friendly interface that adapts to various screen sizes and orientations.\n<info added on 2025-09-22T21:29:01.893Z>\nCreate mobile-specific components and layouts using Tailwind CSS responsive utilities. Focus on touch-friendly interfaces, proper viewport meta tags, mobile navigation patterns such as bottom tabs, and optimized images for mobile. Test the implementation using Chrome DevTools mobile emulation to ensure functionality and performance.\n</info added on 2025-09-22T21:29:01.893Z>",
+            "status": "pending",
+            "testStrategy": "Test the mobile interface on different devices and screen sizes to ensure responsiveness and usability, focusing on touch interactions and performance."
+          },
+          {
+            "id": 5,
+            "title": "PWA Compliance and Performance Testing",
+            "description": "Use tools like Lighthouse to audit the PWA for compliance with standards and performance benchmarks.",
+            "dependencies": [
+              "76.4"
+            ],
+            "details": "Run Lighthouse audits to evaluate the PWA's performance, accessibility, best practices, and SEO, making necessary adjustments to meet benchmarks.\n<info added on 2025-09-22T21:29:13.656Z>\nTest the PWA using Playwright mobile emulation for iPhone and Android devices. Conduct a Lighthouse PWA audit specifically for mobile. Verify the installation prompt and offline functionality, ensuring that desktop functionality remains unchanged. Develop a test suite for features unique to the mobile experience.\n</info added on 2025-09-22T21:29:13.656Z>",
+            "status": "pending",
+            "testStrategy": "Analyze Lighthouse reports to identify areas for improvement and verify that the PWA meets all compliance and performance standards."
+          }
+        ]
+      },
+      {
+        "id": 77,
+        "title": "Implement Image Cropping UI for Post-Production Layout Editor",
+        "description": "Develop a user interface for cropping images within the post-production layout editor, featuring visual crop handles and a real-time preview.",
+        "details": "To implement the image cropping UI, start by designing a user-friendly interface that allows users to select and crop images on the canvas. Use HTML5 Canvas or a similar technology to overlay crop handles on the image, enabling users to adjust the crop area interactively. Implement real-time preview functionality to show the cropped result as users adjust the handles. Ensure the cropping tool supports various aspect ratios and maintains image quality. Consider using libraries like Cropper.js for efficient implementation. Integrate this feature into the existing layout editor, ensuring compatibility with other image manipulation tools. Pay attention to performance optimization to handle large images smoothly.",
+        "testStrategy": "1. Add an image to the canvas and activate the cropping tool to verify that crop handles appear correctly. 2. Adjust the crop area and check that the real-time preview updates accurately. 3. Test cropping with different aspect ratios and ensure the final cropped image maintains quality. 4. Verify that the cropping tool integrates seamlessly with other image manipulation features in the layout editor. 5. Test the feature across various browsers and devices to ensure consistent performance and UI behavior.",
+        "status": "done",
+        "dependencies": [
+          6,
+          26
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design User Interface for Image Cropping",
+            "description": "Create a user-friendly interface for selecting and cropping images on the canvas.",
+            "dependencies": [],
+            "details": "Design the layout and elements for the cropping tool, ensuring intuitive interaction for users.",
+            "status": "done",
+            "testStrategy": "Verify that the UI elements are accessible and intuitive, and that users can easily select and adjust the crop area."
+          },
+          {
+            "id": 2,
+            "title": "Implement Crop Handles with HTML5 Canvas",
+            "description": "Develop interactive crop handles using HTML5 Canvas or similar technology.",
+            "dependencies": [
+              "77.1"
+            ],
+            "details": "Overlay crop handles on the image to allow users to adjust the crop area interactively.",
+            "status": "done",
+            "testStrategy": "Test the responsiveness and accuracy of the crop handles, ensuring they move smoothly and adjust the crop area correctly."
+          },
+          {
+            "id": 3,
+            "title": "Develop Real-Time Preview Functionality",
+            "description": "Implement functionality to show a real-time preview of the cropped image.",
+            "dependencies": [
+              "77.2"
+            ],
+            "details": "Ensure the preview updates dynamically as users adjust the crop handles, maintaining image quality.",
+            "status": "done",
+            "testStrategy": "Check that the real-time preview updates accurately with each adjustment and maintains the image's quality."
+          },
+          {
+            "id": 4,
+            "title": "Support Various Aspect Ratios",
+            "description": "Ensure the cropping tool supports multiple aspect ratios.",
+            "dependencies": [
+              "77.3"
+            ],
+            "details": "Implement options for users to select different aspect ratios while cropping, ensuring flexibility and precision.",
+            "status": "done",
+            "testStrategy": "Test cropping with different aspect ratios and verify that the final cropped image maintains the selected aspect ratio."
+          },
+          {
+            "id": 5,
+            "title": "Integrate Cropping Tool into Layout Editor",
+            "description": "Integrate the image cropping tool into the existing post-production layout editor.",
+            "dependencies": [
+              "77.4"
+            ],
+            "details": "Ensure compatibility with other image manipulation tools and optimize performance for handling large images.",
+            "status": "done",
+            "testStrategy": "Verify that the cropping tool integrates seamlessly with the layout editor and performs efficiently with large images."
+          }
+        ]
+      },
+      {
+        "id": 78,
+        "title": "Export Prompt Library Data to CSV Format",
+        "description": "Modify the export functionality of the Prompt Library to output data in CSV format instead of JSON for improved usability.",
+        "details": "To change the export format from JSON to CSV, first identify the current export function within the Prompt Library codebase. This function likely serializes data into JSON format. Replace this serialization logic with CSV serialization. Use a library like 'csv-writer' or 'papaparse' in JavaScript to facilitate CSV creation. Ensure that all relevant prompt data fields are included in the CSV, such as prompt ID, category, and content. Update the UI to reflect this change, ensuring users are informed about the new export format. Consider adding a download button that triggers the CSV export, and ensure the file is named appropriately with a .csv extension. Test the CSV export functionality to ensure all data is correctly formatted and exported.",
+        "testStrategy": "1. Trigger the export functionality and verify that a CSV file is generated and downloaded.\n2. Open the CSV file in a spreadsheet application (e.g., Excel) to ensure data is correctly formatted and all fields are present.\n3. Compare the CSV data with the original JSON data to ensure completeness and accuracy.\n4. Test the export functionality across different browsers to ensure compatibility and consistent behavior.",
+        "status": "done",
+        "dependencies": [
+          64,
+          67,
+          73
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify Current Export Function",
+            "description": "Locate the existing export function within the Prompt Library codebase that currently outputs data in JSON format.",
+            "dependencies": [],
+            "details": "Search through the codebase to find the function responsible for exporting data. This function likely serializes data into JSON format. Document its location and understand its current implementation to prepare for modification.",
+            "status": "done",
+            "testStrategy": "Ensure the identified function is the one being used by triggering the current export and verifying the output format."
+          },
+          {
+            "id": 2,
+            "title": "Implement CSV Serialization Logic",
+            "description": "Replace the JSON serialization logic with CSV serialization using a library like 'csv-writer' or 'papaparse'.",
+            "dependencies": [
+              "78.1"
+            ],
+            "details": "Integrate a CSV library into the project. Modify the identified export function to use this library to serialize data into CSV format. Ensure that all relevant fields such as prompt ID, category, and content are included in the CSV output.",
+            "status": "done",
+            "testStrategy": "Run the modified export function and verify that a CSV file is generated with the correct structure and data."
+          },
+          {
+            "id": 3,
+            "title": "Update User Interface for CSV Export",
+            "description": "Modify the user interface to reflect the change in export format from JSON to CSV.",
+            "dependencies": [
+              "78.2"
+            ],
+            "details": "Update any UI elements that reference the export functionality to indicate that data will now be exported in CSV format. This may include changing labels, tooltips, or help text. Add a download button if necessary, ensuring it triggers the CSV export.",
+            "status": "done",
+            "testStrategy": "Check the UI to ensure all references to export format are updated and that the download button functions correctly."
+          },
+          {
+            "id": 4,
+            "title": "Ensure Proper File Naming and Extension",
+            "description": "Ensure that the exported CSV file is named appropriately and has a .csv extension.",
+            "dependencies": [
+              "78.2",
+              "78.3"
+            ],
+            "details": "Modify the export function to set the file name dynamically based on relevant data, such as the current date or library name, and ensure it ends with a .csv extension.",
+            "status": "done",
+            "testStrategy": "Export a file and verify that it is named correctly and has the correct file extension."
+          },
+          {
+            "id": 5,
+            "title": "Test CSV Export Functionality",
+            "description": "Conduct thorough testing of the CSV export functionality to ensure data integrity and usability.",
+            "dependencies": [
+              "78.4"
+            ],
+            "details": "Perform tests by exporting data and opening the CSV file in a spreadsheet application like Excel. Verify that all data fields are present and correctly formatted. Compare the CSV data with the original JSON data to ensure completeness and accuracy.",
+            "status": "done",
+            "testStrategy": "Use various datasets to test the export functionality, ensuring that edge cases and large datasets are handled correctly."
+          }
+        ]
+      },
+      {
+        "id": 79,
+        "title": "Fix Mobile UI Issues",
+        "description": "Address mobile UI issues by removing the Shot Editor from mobile view, fixing text overflow, adjusting thumbnail sizes, and implementing progressive image slots.",
+        "details": "To fix the mobile UI issues, first, remove the Shot Editor component from the mobile view by using CSS media queries to hide it on smaller screens. Next, address text overflow issues by implementing CSS solutions such as 'overflow-wrap: break-word;' and 'text-overflow: ellipsis;' to ensure text fits within its container. Adjust thumbnail sizes by using responsive design techniques, such as setting max-width and height properties relative to the viewport size. Finally, implement progressive image slots by using the 'loading=\"lazy\"' attribute for images to improve performance and user experience on mobile devices. Consider using a library like 'react-lazyload' for more advanced lazy loading features.",
+        "testStrategy": "1. Test the mobile view to ensure the Shot Editor is not visible on devices with smaller screens. 2. Verify that text does not overflow its container by resizing the browser window and checking on various mobile devices. 3. Check that thumbnails resize appropriately by testing on different screen sizes and orientations. 4. Use browser developer tools to confirm that images are loading progressively by simulating slow network conditions. 5. Conduct user testing on multiple mobile devices to ensure a smooth and responsive UI experience.",
+        "status": "done",
+        "dependencies": [
+          63,
+          74
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Remove Shot Editor from Mobile View",
+            "description": "Hide the Shot Editor component on mobile devices using CSS media queries.",
+            "dependencies": [],
+            "details": "Use CSS media queries to apply 'display: none;' to the Shot Editor component when the screen width is below a certain threshold, such as 768px. Ensure that the Shot Editor is only hidden on mobile devices and remains visible on larger screens.",
+            "status": "done",
+            "testStrategy": "Test on various mobile devices and screen sizes to ensure the Shot Editor is not visible on smaller screens."
+          },
+          {
+            "id": 2,
+            "title": "Fix Text Overflow Issues",
+            "description": "Implement CSS solutions to prevent text from overflowing its container on mobile devices.",
+            "dependencies": [
+              "79.1"
+            ],
+            "details": "Apply CSS properties such as 'overflow-wrap: break-word;' and 'text-overflow: ellipsis;' to text elements that are prone to overflow. Ensure that these styles are applied conditionally based on screen size using media queries.",
+            "status": "done",
+            "testStrategy": "Resize the browser window and test on various mobile devices to verify that text does not overflow its container."
+          },
+          {
+            "id": 3,
+            "title": "Adjust Thumbnail Sizes for Mobile",
+            "description": "Use responsive design techniques to adjust thumbnail sizes on mobile devices.",
+            "dependencies": [
+              "79.2"
+            ],
+            "details": "Set CSS properties like 'max-width' and 'height' to percentages or relative units such as 'vw' and 'vh' to ensure thumbnails resize appropriately based on the viewport size. Test across different devices to ensure consistency.",
+            "status": "done",
+            "testStrategy": "Check that thumbnails resize appropriately by testing on different screen sizes and devices."
+          },
+          {
+            "id": 4,
+            "title": "Implement Progressive Image Slots",
+            "description": "Use lazy loading techniques to improve image loading performance on mobile devices.",
+            "dependencies": [
+              "79.3"
+            ],
+            "details": "Add the 'loading=\"lazy\"' attribute to image elements to enable native lazy loading. Consider using a library like 'react-lazyload' for more advanced features if necessary. Ensure that images load progressively as the user scrolls.",
+            "status": "done",
+            "testStrategy": "Verify that images load only when they enter the viewport by scrolling through the page on mobile devices."
+          },
+          {
+            "id": 5,
+            "title": "Test and Validate Mobile UI Fixes",
+            "description": "Conduct comprehensive testing to ensure all mobile UI issues have been addressed and fixed.",
+            "dependencies": [
+              "79.4"
+            ],
+            "details": "Perform manual testing on various mobile devices and screen sizes to ensure all changes are effective. Use automated testing tools to verify that no new issues have been introduced. Document any remaining issues or areas for improvement.",
+            "status": "done",
+            "testStrategy": "Use a combination of manual testing and automated tools to validate the fixes. Ensure that all aspects of the mobile UI function as expected."
+          }
+        ]
+      },
+      {
+        "id": 80,
+        "title": "Fix Generation Button Cooldown",
+        "description": "Ensure the generation button is re-enabled after the cooldown period expires, rather than staying disabled until generation completes.",
+        "details": "To address the issue with the generation button cooldown, first, review the current implementation of the cooldown mechanism. Identify where the button's state is managed and ensure that the cooldown timer is correctly resetting the button's enabled state once the cooldown period has expired. This may involve setting a timeout or interval that updates the button's state after the cooldown duration. Ensure that the button's state is independent of the generation process completion. Use JavaScript's setTimeout or a similar mechanism to manage the cooldown period. Consider edge cases such as rapid successive clicks and ensure the button does not become re-enabled prematurely. Update any UI feedback (e.g., button color or text) to clearly indicate when the button is in cooldown versus when it is ready for use. Review related components or services that might affect the button's state, ensuring they are correctly integrated.",
+        "testStrategy": "1. Simulate a generation request and observe the button's state transition to disabled. 2. Verify that the button becomes enabled again exactly after the cooldown period, regardless of the generation process completion. 3. Test rapid successive clicks to ensure the cooldown is enforced correctly. 4. Check UI feedback to confirm it accurately reflects the button's state. 5. Conduct tests across different browsers and devices to ensure consistent behavior.",
+        "status": "done",
+        "dependencies": [
+          74
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review Current Cooldown Mechanism",
+            "description": "Analyze the existing implementation of the cooldown mechanism for the generation button.",
+            "dependencies": [],
+            "details": "Examine the current codebase to identify where the cooldown logic is implemented. Focus on the parts of the code that manage the button's enabled/disabled state and the timing mechanism used for the cooldown. Document the current flow and identify any issues or areas for improvement.",
+            "status": "done",
+            "testStrategy": "Verify understanding by outlining the current cooldown logic and identifying any discrepancies with expected behavior."
+          },
+          {
+            "id": 2,
+            "title": "Implement Cooldown Timer Using setTimeout",
+            "description": "Modify the cooldown mechanism to use JavaScript's setTimeout to re-enable the button after the cooldown period.",
+            "dependencies": [
+              "80.1"
+            ],
+            "details": "Replace or adjust the existing cooldown logic to use setTimeout. Ensure that the timer is set to the desired cooldown duration and that the button's state is updated to enabled once the timer expires. Ensure the button's state change is independent of the generation process completion.",
+            "status": "done",
+            "testStrategy": "Simulate a generation request and verify that the button is re-enabled exactly after the cooldown period."
+          },
+          {
+            "id": 3,
+            "title": "Handle Rapid Successive Clicks",
+            "description": "Ensure the cooldown mechanism correctly handles rapid successive clicks without prematurely re-enabling the button.",
+            "dependencies": [
+              "80.2"
+            ],
+            "details": "Implement logic to prevent the button from being re-enabled if clicked rapidly. This may involve resetting the cooldown timer if a new click is detected before the current cooldown period expires. Ensure the logic is robust against multiple quick interactions.",
+            "status": "done",
+            "testStrategy": "Test the button by clicking rapidly and verify that the cooldown is enforced correctly without premature re-enabling."
+          },
+          {
+            "id": 4,
+            "title": "Update UI Feedback for Cooldown State",
+            "description": "Enhance the user interface to clearly indicate when the button is in cooldown versus when it is ready for use.",
+            "dependencies": [
+              "80.2"
+            ],
+            "details": "Modify the button's appearance (e.g., color, text) to reflect its current state. Use CSS classes or inline styles to change the button's look during the cooldown period. Ensure that the UI feedback is intuitive and provides clear visual cues to the user.",
+            "status": "done",
+            "testStrategy": "Observe the button's appearance during and after the cooldown period to ensure it provides clear feedback to the user."
+          },
+          {
+            "id": 5,
+            "title": "Review and Integrate Related Components",
+            "description": "Ensure all related components or services that might affect the button's state are correctly integrated with the new cooldown logic.",
+            "dependencies": [
+              "80.3",
+              "80.4"
+            ],
+            "details": "Review any components or services that interact with the generation button. Ensure they are compatible with the new cooldown logic and do not interfere with the button's state management. Update any necessary integration points or event handlers.",
+            "status": "done",
+            "testStrategy": "Conduct end-to-end testing to ensure all components work seamlessly with the updated cooldown mechanism."
+          }
+        ]
+      },
+      {
+        "id": 81,
+        "title": "Clean Up Bloatware and Redundant Code from Recent Changes",
+        "description": "Identify and remove duplicate components, unused imports, redundant functionality, and oversized files from recent code changes.",
+        "details": "Begin by auditing the recent code changes to identify duplicate components and unused imports. Use static analysis tools to detect redundant functionality and oversized files. Focus on components and imports that were added or modified in recent tasks, such as those related to the Shot Creator and canvas annotation improvements. Consolidate duplicate components into shared utilities and remove any unused code. Optimize oversized files by breaking them into smaller, more manageable pieces. Ensure that all changes maintain existing functionality and do not introduce new bugs. Backup the codebase before making any changes to ensure recovery in case of issues.",
+        "testStrategy": "1. Run static analysis tools to identify duplicate components and unused imports before and after cleanup.\n2. Verify that all removed components and imports are indeed unused by running the full test suite.\n3. Check that the functionality of the Shot Creator and canvas annotation system remains intact after cleanup.\n4. Monitor bundle size before and after cleanup to ensure a reduction.\n5. Conduct performance testing to verify no degradation in application performance.\n6. Perform manual testing of key features to ensure no new bugs are introduced.",
+        "status": "in-progress",
+        "dependencies": [
+          55,
+          63,
+          22
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 82,
+        "title": "Fix Layout Generator Text Tool Issue",
+        "description": "Prevent the creation of duplicate text elements when clicking on existing text elements in the Layout Generator.",
+        "details": "To fix the issue where clicking on an existing text element creates a new text element instead of editing the existing one, first review the event handling logic in the Layout Generator's text tool. Ensure that the click event correctly identifies whether the click is on an existing text element. If so, trigger the edit mode instead of creating a new element. This may involve checking the DOM structure or using a data attribute to distinguish between new and existing elements. Update the event listeners to handle this logic and test thoroughly to ensure no new elements are created when editing existing text.",
+        "testStrategy": "1. Open the Layout Generator and click on an existing text element to verify it enters edit mode without creating a new text element. 2. Attempt to edit the text and ensure changes are saved correctly. 3. Click on various text elements to ensure consistent behavior across different elements. 4. Verify that clicking outside of text elements still allows for new text creation. 5. Check for any console errors or unexpected behavior during the process.",
+        "status": "pending",
+        "dependencies": [
+          38,
+          40
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-09-17T16:05:47.257Z",
-      "updated": "2025-09-18T18:52:29.873Z",
+      "updated": "2025-09-23T04:14:16.611Z",
       "description": "Tasks for master context"
     }
   }

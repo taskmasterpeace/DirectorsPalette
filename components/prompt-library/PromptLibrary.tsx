@@ -251,33 +251,36 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
 
   const handleExportPrompts = () => {
     try {
-      const exportData = {
-        version: '1.0',
-        exportDate: new Date().toISOString(),
-        prompts: prompts.map(p => ({
-          id: p.id,
-          title: p.title,
-          prompt: p.prompt,
-          categoryId: p.categoryId,
-          tags: p.tags,
-          reference: p.reference,
-          isQuickAccess: p.isQuickAccess,
-          metadata: p.metadata
-        })),
-        categories: categories.filter(c => c.isEditable).map(c => ({
-          id: c.id,
-          name: c.name,
-          icon: c.icon,
-          color: c.color,
-          order: c.order
-        }))
-      }
+      // Create CSV header
+      const csvHeaders = ['ID', 'Title', 'Prompt', 'Category', 'Tags', 'Reference', 'Quick Access', 'Created Date']
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+      // Convert prompts to CSV rows
+      const csvRows = prompts.map(p => {
+        const category = categories.find(c => c.id === p.categoryId)
+        return [
+          p.id,
+          `"${(p.title || '').replace(/"/g, '""')}"`, // Escape quotes in title
+          `"${(p.prompt || '').replace(/"/g, '""')}"`, // Escape quotes in prompt
+          category?.name || '',
+          (p.tags || []).join('; '),
+          p.reference || '',
+          p.isQuickAccess ? 'Yes' : 'No',
+          p.metadata?.createdAt ? new Date(p.metadata.createdAt).toLocaleDateString() : ''
+        ]
+      })
+
+      // Combine headers and rows
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.join(','))
+      ].join('\n')
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `prompt-library-${Date.now()}.json`
+      a.download = `prompt-library-${Date.now()}.csv`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -285,7 +288,7 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
 
       toast({
         title: 'Export Successful',
-        description: `Exported ${prompts.length} prompts`,
+        description: `Exported ${prompts.length} prompts as CSV`,
       })
     } catch (error) {
       console.error('Export failed:', error)
@@ -303,46 +306,96 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
 
     try {
       const text = await file.text()
-      const importData = JSON.parse(text)
+      let importedCount = 0
 
-      if (!importData.prompts || !Array.isArray(importData.prompts)) {
-        throw new Error('Invalid import file format')
-      }
+      // Check if it's a CSV file
+      if (file.name.endsWith('.csv')) {
+        // Parse CSV
+        const lines = text.split('\n').filter(line => line.trim())
+        if (lines.length <= 1) {
+          throw new Error('CSV file is empty or only has headers')
+        }
 
-      // Import custom categories first if they exist
-      if (importData.categories && Array.isArray(importData.categories)) {
-        for (const category of importData.categories) {
-          // Check if category already exists
-          const existingCategory = categories.find(c => c.id === category.id)
-          if (!existingCategory) {
-            await addCategory({
-              name: category.name,
-              icon: category.icon,
-              color: category.color,
-              order: category.order
-            })
+        // Skip header row and process data
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(val => {
+            // Remove quotes and unescape double quotes
+            if (val.startsWith('"') && val.endsWith('"')) {
+              return val.slice(1, -1).replace(/""/g, '"')
+            }
+            return val
+          })
+
+          if (values.length >= 3) {
+            const [id, title, prompt, categoryName, tags, reference, quickAccess] = values
+
+            // Find or create category
+            let categoryId = categories.find(c => c.name === categoryName)?.id
+            if (!categoryId && categoryName) {
+              // Use a default category if the category doesn't exist
+              categoryId = 'cinematic-shots'
+            }
+
+            // Check if prompt already exists
+            const existingPrompt = prompts.find(p =>
+              p.title === title && p.categoryId === categoryId
+            )
+
+            if (!existingPrompt && title && prompt) {
+              await addPrompt({
+                title,
+                prompt,
+                categoryId: categoryId || 'cinematic-shots',
+                tags: tags ? tags.split('; ').filter(t => t) : [],
+                reference: reference || undefined,
+                isQuickAccess: quickAccess?.toLowerCase() === 'yes'
+              })
+              importedCount++
+            }
           }
         }
-      }
+      } else {
+        // Parse JSON (legacy support)
+        const importData = JSON.parse(text)
 
-      // Import prompts
-      let importedCount = 0
-      for (const promptData of importData.prompts) {
-        // Check if prompt already exists
-        const existingPrompt = prompts.find(p =>
-          p.title === promptData.title && p.categoryId === promptData.categoryId
-        )
+        if (!importData.prompts || !Array.isArray(importData.prompts)) {
+          throw new Error('Invalid import file format')
+        }
 
-        if (!existingPrompt) {
-          await addPrompt({
-            title: promptData.title,
-            prompt: promptData.prompt,
-            categoryId: promptData.categoryId,
-            tags: promptData.tags || [],
-            reference: promptData.reference,
-            isQuickAccess: promptData.isQuickAccess || false
-          })
-          importedCount++
+        // Import custom categories first if they exist
+        if (importData.categories && Array.isArray(importData.categories)) {
+          for (const category of importData.categories) {
+            // Check if category already exists
+            const existingCategory = categories.find(c => c.id === category.id)
+            if (!existingCategory) {
+              await addCategory({
+                name: category.name,
+                icon: category.icon,
+                color: category.color,
+                order: category.order
+              })
+            }
+          }
+        }
+
+        // Import prompts
+        for (const promptData of importData.prompts) {
+          // Check if prompt already exists
+          const existingPrompt = prompts.find(p =>
+            p.title === promptData.title && p.categoryId === promptData.categoryId
+          )
+
+          if (!existingPrompt) {
+            await addPrompt({
+              title: promptData.title,
+              prompt: promptData.prompt,
+              categoryId: promptData.categoryId,
+              tags: promptData.tags || [],
+              reference: promptData.reference,
+              isQuickAccess: promptData.isQuickAccess || false
+            })
+            importedCount++
+          }
         }
       }
 
@@ -484,9 +537,10 @@ export function PromptLibrary({ onSelectPrompt, showQuickAccess = true, classNam
                 onClick={() => handleExportPrompts()}
                 variant="outline"
                 className="border-slate-600 hover:bg-slate-800"
+                title="Export prompts as CSV file"
               >
                 <Download className="w-4 h-4 mr-1" />
-                Export
+                Export CSV
               </Button>
 
               <Button
