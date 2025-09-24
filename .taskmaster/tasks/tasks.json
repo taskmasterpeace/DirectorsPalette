@@ -2942,11 +2942,215 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 83,
+        "title": "Clean Up and Deduplicate Prompt Library",
+        "description": "Identify and remove duplicate and test prompts from the Prompt Library, implement deduplication logic, and ensure a curated set of production-ready prompts.",
+        "status": "pending",
+        "dependencies": [
+          34,
+          65
+        ],
+        "priority": "high",
+        "details": "1. **Identify Duplicate Prompts**: Use a combination of text similarity algorithms (e.g., Levenshtein distance, cosine similarity) to identify prompts with similar content. Consider using a library like `fuzzywuzzy` in Python or `string-similarity` in JavaScript to automate this process.\n\n2. **Remove Test Prompts**: Develop a script to scan for and remove test prompts. These can be identified by specific tags or metadata used during development.\n\n3. **Implement Deduplication Logic**: Integrate deduplication checks into the prompt creation workflow. This can be done by adding a middleware or service that checks new prompts against existing ones using the similarity algorithms.\n\n4. **Curate Production-Ready Prompts**: After cleaning, manually review the remaining prompts to ensure they meet quality standards. Create a checklist for prompt quality, including clarity, relevance, and completeness.\n\n5. **Add Validation for New Prompts**: Enhance the prompt submission form with validation logic to prevent duplicates. Use client-side validation with libraries like `Formik` or `React Hook Form` combined with server-side checks for robustness.",
+        "testStrategy": "1. Run the duplicate identification script and manually verify a sample of flagged prompts to ensure accuracy.\n2. Execute the test prompt removal script and confirm that all test prompts are deleted without affecting production data.\n3. Test the deduplication logic by attempting to add known duplicate prompts and verifying they are rejected.\n4. Conduct a manual review of the curated prompt set to ensure all prompts are production-ready.\n5. Validate the prompt submission form by attempting to submit duplicate prompts and confirming they are blocked both client-side and server-side.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify Duplicate Prompts",
+            "description": "Use text similarity algorithms to identify prompts with similar content.",
+            "dependencies": [],
+            "details": "Utilize libraries like `fuzzywuzzy` in Python or `string-similarity` in JavaScript to automate the identification of duplicate prompts.",
+            "status": "pending",
+            "testStrategy": "Run the duplicate identification script and manually verify a sample of flagged prompts to ensure accuracy."
+          },
+          {
+            "id": 2,
+            "title": "Remove Test Prompts",
+            "description": "Develop a script to scan for and remove test prompts identified by specific tags or metadata.",
+            "dependencies": [],
+            "details": "Create a script that identifies test prompts based on development tags or metadata and removes them from the library.",
+            "status": "pending",
+            "testStrategy": "Execute the test prompt removal script and confirm that all test prompts are deleted without affecting production data."
+          },
+          {
+            "id": 3,
+            "title": "Implement Deduplication Logic",
+            "description": "Integrate deduplication checks into the prompt creation workflow.",
+            "dependencies": [
+              "83.1"
+            ],
+            "details": "Add middleware or service that checks new prompts against existing ones using similarity algorithms.",
+            "status": "pending",
+            "testStrategy": "Test the deduplication logic by attempting to add known duplicate prompts and ensuring they are flagged."
+          },
+          {
+            "id": 4,
+            "title": "Curate Production-Ready Prompts",
+            "description": "Manually review remaining prompts to ensure they meet quality standards.",
+            "dependencies": [
+              "83.1",
+              "83.2"
+            ],
+            "details": "Create a checklist for prompt quality, including clarity, relevance, and completeness, and review each prompt accordingly.",
+            "status": "pending",
+            "testStrategy": "Review a sample of curated prompts to ensure they meet the established quality checklist."
+          },
+          {
+            "id": 5,
+            "title": "Add Validation for New Prompts",
+            "description": "Enhance the prompt submission form with validation logic to prevent duplicates.",
+            "dependencies": [
+              "83.3"
+            ],
+            "details": "Use client-side validation with libraries like `Formik` or `React Hook Form` combined with server-side checks for robustness.",
+            "status": "pending",
+            "testStrategy": "Submit new prompts through the form and verify that duplicates are correctly identified and flagged."
+          }
+        ]
+      },
+      {
+        "id": 84,
+        "title": "Implement Mobile Image Viewer with Advanced Features",
+        "description": "Develop a mobile image viewer for the Shot Creator that supports pinch-to-zoom, swipe navigation, and full-screen viewing.",
+        "status": "pending",
+        "dependencies": [
+          26,
+          79
+        ],
+        "priority": "high",
+        "details": "To implement the mobile image viewer, use a combination of HTML5, CSS, and JavaScript to create a responsive and interactive image viewing experience. Leverage libraries such as Hammer.js for touch gesture recognition to enable pinch-to-zoom and swipe navigation. Use a modal or overlay component to display images in full-screen mode, ensuring the viewer is optimized for performance on mobile devices. Consider using lazy loading techniques to improve load times and reduce memory usage. Ensure the viewer maintains image aspect ratios and supports high-resolution displays. Implement accessibility features such as keyboard navigation and ARIA roles for screen readers. Test the viewer on various mobile devices and screen sizes to ensure consistent functionality and performance. Address critical UX issues that prevent mobile users from viewing or interacting with images properly.",
+        "testStrategy": "1. Test the image viewer on multiple mobile devices to ensure pinch-to-zoom and swipe navigation work smoothly. 2. Verify that images open in full-screen mode and maintain their aspect ratio. 3. Check the performance of the viewer, ensuring it loads quickly and uses minimal memory. 4. Test accessibility features, including keyboard navigation and screen reader support. 5. Conduct cross-browser testing to ensure compatibility with major mobile browsers. 6. Specifically test for and resolve any critical UX issues that block core functionality for mobile users.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Project Environment",
+            "description": "Initialize the project environment using HTML5, CSS, and JavaScript. Integrate Hammer.js for touch gesture recognition.",
+            "dependencies": [],
+            "details": "Create a new project directory and set up the basic structure with HTML, CSS, and JavaScript files. Install and configure Hammer.js for handling touch gestures.",
+            "status": "pending",
+            "testStrategy": "Verify that the project environment is correctly set up by running a simple HTML page with Hammer.js integrated."
+          },
+          {
+            "id": 2,
+            "title": "Implement Pinch-to-Zoom and Swipe Navigation",
+            "description": "Develop functionality for pinch-to-zoom and swipe navigation using Hammer.js.",
+            "dependencies": [
+              "84.1"
+            ],
+            "details": "Utilize Hammer.js to detect pinch and swipe gestures. Implement JavaScript functions to handle zooming and navigation between images.",
+            "status": "pending",
+            "testStrategy": "Test pinch-to-zoom and swipe navigation on various mobile devices to ensure smooth and responsive interactions."
+          },
+          {
+            "id": 3,
+            "title": "Develop Full-Screen Viewing Mode",
+            "description": "Create a modal or overlay component for displaying images in full-screen mode.",
+            "dependencies": [
+              "84.1"
+            ],
+            "details": "Design and implement a full-screen viewing mode using CSS and JavaScript. Ensure the modal maintains image aspect ratios and supports high-resolution displays.",
+            "status": "pending",
+            "testStrategy": "Verify that images open in full-screen mode, maintain their aspect ratio, and display correctly on different screen sizes."
+          },
+          {
+            "id": 4,
+            "title": "Optimize Performance with Lazy Loading",
+            "description": "Implement lazy loading techniques to improve load times and reduce memory usage.",
+            "dependencies": [
+              "84.2",
+              "84.3"
+            ],
+            "details": "Use JavaScript to load images only when they are about to enter the viewport. Optimize image loading to minimize memory usage on mobile devices.",
+            "status": "pending",
+            "testStrategy": "Check the performance of the viewer, ensuring it loads quickly and uses minimal memory, especially on devices with limited resources."
+          },
+          {
+            "id": 5,
+            "title": "Implement Accessibility Features",
+            "description": "Add accessibility features such as keyboard navigation and ARIA roles for screen readers.",
+            "dependencies": [
+              "84.3"
+            ],
+            "details": "Enhance the image viewer with keyboard navigation support and ARIA roles to improve accessibility for users with disabilities.",
+            "status": "pending",
+            "testStrategy": "Test the viewer with screen readers and keyboard navigation to ensure it is accessible to users with disabilities."
+          }
+        ]
+      },
+      {
+        "id": 85,
+        "title": "Fix Mobile Side Panel Button Functionality",
+        "description": "Resolve issues with side panel buttons in Shot Creator on mobile devices by fixing event handlers and ensuring proper touch event registration.",
+        "status": "pending",
+        "dependencies": [
+          38,
+          79
+        ],
+        "priority": "high",
+        "details": "To fix the mobile side panel button functionality, first review the current implementation of event handlers for the buttons in the Shot Creator. Ensure that touch events are properly registered using modern JavaScript practices, such as using 'touchstart' and 'touchend' events in addition to 'click' events. Consider using libraries like Hammer.js to handle touch gestures more effectively. Test the buttons on various mobile devices to ensure they respond correctly to touch inputs. Additionally, verify that the buttons' actions are correctly linked to their intended functionalities, such as sending images to Shot Creator, downloading, or deleting. Refactor the code to ensure it is clean, maintainable, and follows best practices for mobile web development. Ensure compatibility across different mobile browsers and screen sizes. Given the critical nature of these buttons for user functionality, prioritize this task to ensure users can download images, send to other tools, and manage their generated content effectively.",
+        "testStrategy": "1. Test each side panel button on multiple mobile devices to ensure they respond to touch inputs correctly. 2. Verify that each button performs its intended action, such as sending an image to Shot Creator or downloading an image. 3. Use browser developer tools to simulate touch events and ensure event handlers are triggered as expected. 4. Test across different mobile browsers (e.g., Chrome, Safari) to ensure consistent behavior. 5. Check for any JavaScript errors in the console during interaction with the buttons. 6. Conduct user testing to ensure that the functionality meets user expectations and does not block critical actions.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review Current Event Handlers",
+            "description": "Analyze the existing implementation of event handlers for the side panel buttons in Shot Creator.",
+            "dependencies": [],
+            "details": "Examine the current JavaScript code to identify how event handlers are set up for the side panel buttons. Document any issues or outdated practices.",
+            "status": "pending",
+            "testStrategy": "Ensure all current event handlers are identified and documented for further analysis."
+          },
+          {
+            "id": 2,
+            "title": "Implement Touch Event Registration",
+            "description": "Ensure touch events are properly registered using modern JavaScript practices.",
+            "dependencies": [
+              "85.1"
+            ],
+            "details": "Add 'touchstart' and 'touchend' event listeners to the side panel buttons, in addition to 'click' events. Consider using a library like Hammer.js for better touch gesture handling.",
+            "status": "pending",
+            "testStrategy": "Test touch responsiveness on various mobile devices to ensure events are registered correctly."
+          },
+          {
+            "id": 3,
+            "title": "Verify Button Functionality",
+            "description": "Ensure that each button's actions are correctly linked to their intended functionalities.",
+            "dependencies": [
+              "85.2"
+            ],
+            "details": "Check that each button performs its intended action, such as sending images to Shot Creator, downloading, or deleting.",
+            "status": "pending",
+            "testStrategy": "Test each button's functionality on multiple devices to confirm correct behavior."
+          },
+          {
+            "id": 4,
+            "title": "Refactor Code for Maintainability",
+            "description": "Refactor the code to ensure it is clean, maintainable, and follows best practices for mobile web development.",
+            "dependencies": [
+              "85.3"
+            ],
+            "details": "Organize the codebase to improve readability and maintainability. Ensure the use of modern JavaScript standards and practices.",
+            "status": "pending",
+            "testStrategy": "Review the refactored code to ensure it meets coding standards and is easy to maintain."
+          },
+          {
+            "id": 5,
+            "title": "Test Compatibility Across Devices",
+            "description": "Ensure compatibility of the side panel buttons across different mobile browsers and screen sizes.",
+            "dependencies": [
+              "85.4"
+            ],
+            "details": "Test the side panel buttons on various mobile devices and browsers to ensure consistent functionality and appearance.",
+            "status": "pending",
+            "testStrategy": "Conduct cross-browser testing on multiple devices to verify consistent behavior and appearance."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-09-17T16:05:47.257Z",
-      "updated": "2025-09-23T04:14:16.611Z",
+      "updated": "2025-09-23T06:11:10.352Z",
       "description": "Tasks for master context"
     }
   }

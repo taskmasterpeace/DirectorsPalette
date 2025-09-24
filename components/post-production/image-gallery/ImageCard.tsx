@@ -99,14 +99,30 @@ export function ImageCard({
     })
   }
 
+  // Handle image click/touch with proper event management
+  const handleImageClick = (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent any parent event handlers
+    e.stopPropagation()
+    // Call the zoom function
+    onZoom()
+  }
+
+  // Handle dropdown button click/touch
+  const handleDropdownClick = (e: React.MouseEvent | React.TouchEvent) => {
+    // Stop propagation to prevent image click
+    e.stopPropagation()
+    // The dropdown will handle its own state
+  }
+
   return (
     <div className="relative group rounded-lg overflow-hidden bg-slate-800 border border-slate-700 transition-all hover:border-purple-600/50">
       {/* Main image - show in native aspect ratio */}
       <img
         src={image.url}
         alt={image.prompt?.slice(0, 50) || 'Generated image'}
-        className="w-full h-auto cursor-zoom-in"
-        onClick={onZoom}
+        className="w-full h-auto cursor-zoom-in touch-manipulation"
+        onClick={handleImageClick}
+        onTouchEnd={handleImageClick}
       />
 
       {/* Model icon - transparent background */}
@@ -126,38 +142,39 @@ export function ImageCard({
 
       {/* Action menu button - always visible in bottom right */}
       {showActions && (
-        <div className="absolute bottom-2 right-2">
+        <div className="absolute bottom-2 right-2 z-10">
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-8 w-8 p-0 bg-slate-700/90 hover:bg-slate-600 border-slate-600"
-                onClick={(e) => e.stopPropagation()}
+                className="h-11 w-11 p-0 bg-slate-700/95 hover:bg-slate-600 border-slate-600 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                onClick={handleDropdownClick}
+                onTouchEnd={handleDropdownClick}
               >
-                <MoreVertical className="h-4 w-4 text-white" />
+                <MoreVertical className="h-5 w-5 text-white" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-slate-800 border-slate-700 text-white" align="end">
+            <DropdownMenuContent className="bg-slate-800 border-slate-700 text-white z-50" align="end">
               <DropdownMenuItem
                 onClick={handleCopyPrompt}
-                className="hover:bg-slate-700 cursor-pointer"
+                className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
               >
-                <FileText className="mr-2 h-4 w-4" />
+                <FileText className="mr-3 h-4 w-4" />
                 Copy Prompt
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleCopyUrl}
-                className="hover:bg-slate-700 cursor-pointer"
+                className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
               >
-                <Copy className="mr-2 h-4 w-4" />
+                <Copy className="mr-3 h-4 w-4" />
                 Copy Image URL
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDownload}
-                className="hover:bg-slate-700 cursor-pointer"
+                className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
               >
-                <Download className="mr-2 h-4 w-4" />
+                <Download className="mr-3 h-4 w-4" />
                 Download
               </DropdownMenuItem>
 
@@ -166,9 +183,9 @@ export function ImageCard({
               {onSetReference && (
                 <DropdownMenuItem
                   onClick={onSetReference}
-                  className="hover:bg-slate-700 cursor-pointer"
+                  className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
                 >
-                  <Tag className="mr-2 h-4 w-4" />
+                  <Tag className="mr-3 h-4 w-4" />
                   Set Reference
                 </DropdownMenuItem>
               )}
@@ -177,23 +194,23 @@ export function ImageCard({
                 <>
                   <DropdownMenuItem
                     onClick={() => onSendTo('shot-creator')}
-                    className="hover:bg-slate-700 cursor-pointer"
+                    className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
                   >
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-3 h-4 w-4" />
                     Send to Shot Creator
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onSendTo('shot-animator')}
-                    className="hover:bg-slate-700 cursor-pointer"
+                    className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
                   >
-                    <Film className="mr-2 h-4 w-4" />
+                    <Film className="mr-3 h-4 w-4" />
                     Send to Shot Animator
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onSendTo('layout-annotation')}
-                    className="hover:bg-slate-700 cursor-pointer"
+                    className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
                   >
-                    <Layout className="mr-2 h-4 w-4" />
+                    <Layout className="mr-3 h-4 w-4" />
                     Send to Layout
                   </DropdownMenuItem>
                 </>
@@ -202,9 +219,9 @@ export function ImageCard({
               {onAddToLibrary && (
                 <DropdownMenuItem
                   onClick={onAddToLibrary}
-                  className="hover:bg-slate-700 cursor-pointer"
+                  className="hover:bg-slate-700 cursor-pointer min-h-[44px] touch-manipulation flex items-center px-4 py-3"
                 >
-                  <Library className="mr-2 h-4 w-4" />
+                  <Library className="mr-3 h-4 w-4" />
                   Add to Library
                 </DropdownMenuItem>
               )}
@@ -213,9 +230,9 @@ export function ImageCard({
 
               <DropdownMenuItem
                 onClick={onDelete}
-                className="hover:bg-red-700 cursor-pointer text-red-400"
+                className="hover:bg-red-700 cursor-pointer text-red-400 min-h-[44px] touch-manipulation flex items-center px-4 py-3"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-3 h-4 w-4" />
                 Delete Image
               </DropdownMenuItem>
             </DropdownMenuContent>

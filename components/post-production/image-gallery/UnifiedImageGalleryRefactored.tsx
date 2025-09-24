@@ -202,23 +202,39 @@ export function UnifiedImageGalleryRefactored({
 
       {/* Fullscreen Image Modal */}
       {fullscreenImage && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 touch-manipulation"
+          onClick={(e) => {
+            // Close modal if clicking on backdrop (not the content)
+            if (e.target === e.currentTarget) {
+              setFullscreenImage(null)
+            }
+          }}
+          onTouchEnd={(e) => {
+            // Close modal if tapping on backdrop (not the content)
+            if (e.target === e.currentTarget) {
+              setFullscreenImage(null)
+            }
+          }}
+        >
           <div className="relative max-w-[90vw] w-full">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute -top-10 right-0 text-white hover:bg-white/20"
+              className="absolute -top-12 md:-top-10 right-0 text-white hover:bg-white/20 h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
               onClick={() => setFullscreenImage(null)}
+              onTouchEnd={() => setFullscreenImage(null)}
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </Button>
 
             {/* Navigation hint */}
-            <div className="absolute -top-10 left-0 text-white/60 text-sm">
-              Use arrow keys to navigate • ESC to close
+            <div className="absolute -top-12 md:-top-10 left-0 text-white/60 text-sm">
+              <span className="hidden md:inline">Use arrow keys to navigate • ESC to close</span>
+              <span className="md:hidden">Tap buttons to navigate • Tap X to close</span>
             </div>
 
-            <div className="flex gap-6">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
               {/* Image with navigation buttons */}
               <div className="flex-1 relative">
                 <img
@@ -233,20 +249,22 @@ export function UnifiedImageGalleryRefactored({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70"
+                      className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 h-12 w-12 min-h-[44px] min-w-[44px] touch-manipulation"
                       onClick={() => navigateToImage('previous')}
+                      onTouchEnd={() => navigateToImage('previous')}
                     >
-                      <ChevronLeft className="h-6 w-6" />
+                      <ChevronLeft className="h-7 w-7" />
                     </Button>
 
                     {/* Next button */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70"
+                      className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 h-12 w-12 min-h-[44px] min-w-[44px] touch-manipulation"
                       onClick={() => navigateToImage('next')}
+                      onTouchEnd={() => navigateToImage('next')}
                     >
-                      <ChevronRight className="h-6 w-6" />
+                      <ChevronRight className="h-7 w-7" />
                     </Button>
 
                     {/* Image counter */}
@@ -258,7 +276,7 @@ export function UnifiedImageGalleryRefactored({
               </div>
 
               {/* Details Panel */}
-              <div className="w-96 bg-slate-900/90 rounded-lg p-6 max-h-[80vh] overflow-y-auto">
+              <div className="w-full md:w-96 bg-slate-900/90 rounded-lg p-4 md:p-6 max-h-[80vh] overflow-y-auto">
                 <h3 className="text-white font-semibold mb-4">Generation Details</h3>
 
                 {/* Prompt */}
@@ -381,39 +399,50 @@ export function UnifiedImageGalleryRefactored({
                 )}
 
                 {/* Actions */}
-                <div className="mt-6 space-y-2">
+                <div className="mt-6 space-y-3">
                   {/* Primary action row */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => handleCopyImage(fullscreenImage.url)}
+                      onTouchEnd={() => handleCopyImage(fullscreenImage.url)}
                       title="Copy to Clipboard"
                     >
-                      <Copy className="w-3.5 h-3.5 mr-1" />
+                      <Copy className="w-4 h-4 mr-2" />
                       Copy
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => handleDownloadImage(fullscreenImage.url)}
+                      onTouchEnd={() => handleDownloadImage(fullscreenImage.url)}
                       title="Download Image"
                     >
-                      <Download className="w-3.5 h-3.5 mr-1" />
+                      <Download className="w-4 h-4 mr-2" />
                       Download
                     </Button>
                   </div>
 
                   {/* Secondary actions */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => {
+                        if (fullscreenImage.prompt) {
+                          navigator.clipboard.writeText(fullscreenImage.prompt)
+                          toast({
+                            title: "Prompt Copied",
+                            description: "Prompt copied to clipboard"
+                          })
+                        }
+                      }}
+                      onTouchEnd={() => {
                         if (fullscreenImage.prompt) {
                           navigator.clipboard.writeText(fullscreenImage.prompt)
                           toast({
@@ -424,15 +453,22 @@ export function UnifiedImageGalleryRefactored({
                       }}
                       title="Copy Prompt"
                     >
-                      <FileText className="w-3.5 h-3.5 mr-1" />
+                      <FileText className="w-4 h-4 mr-2" />
                       Copy Prompt
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => {
+                        navigator.clipboard.writeText(fullscreenImage.url)
+                        toast({
+                          title: "URL Copied",
+                          description: "Image URL copied to clipboard"
+                        })
+                      }}
+                      onTouchEnd={() => {
                         navigator.clipboard.writeText(fullscreenImage.url)
                         toast({
                           title: "URL Copied",
@@ -441,17 +477,17 @@ export function UnifiedImageGalleryRefactored({
                       }}
                       title="Copy Image URL"
                     >
-                      <Link className="w-3.5 h-3.5 mr-1" />
+                      <Link className="w-4 h-4 mr-2" />
                       Copy URL
                     </Button>
                   </div>
 
                   {/* Send to options */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={async () => {
                         const newRef = await showReferenceNamePrompt()
                         if (newRef) {
@@ -464,54 +500,64 @@ export function UnifiedImageGalleryRefactored({
                       }}
                       title="Set as Reference"
                     >
-                      <Tag className="w-3.5 h-3.5 mr-1" />
+                      <Tag className="w-4 h-4 mr-2" />
                       Reference
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => handleSendTo(fullscreenImage.url, 'shot-creator')}
+                      onTouchEnd={() => handleSendTo(fullscreenImage.url, 'shot-creator')}
                       title="Send to Shot Creator"
                     >
-                      <Sparkles className="w-3.5 h-3.5 mr-1" />
+                      <Sparkles className="w-4 h-4 mr-2" />
                       Creator
                     </Button>
                   </div>
 
                   {/* More send options */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => handleSendTo(fullscreenImage.url, 'shot-animator')}
+                      onTouchEnd={() => handleSendTo(fullscreenImage.url, 'shot-animator')}
                       title="Send to Shot Animator"
                     >
-                      <Film className="w-3.5 h-3.5 mr-1" />
+                      <Film className="w-4 h-4 mr-2" />
                       Animator
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => handleSendTo(fullscreenImage.url, 'layout-annotation')}
+                      onTouchEnd={() => handleSendTo(fullscreenImage.url, 'layout-annotation')}
                       title="Send to Layout"
                     >
-                      <Layout className="w-3.5 h-3.5 mr-1" />
+                      <Layout className="w-4 h-4 mr-2" />
                       Layout
                     </Button>
                   </div>
 
                   {/* Library and delete */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 text-white border-slate-600"
+                      className="flex-1 text-white border-slate-600 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => {
+                        onSendToLibrary?.(fullscreenImage.url)
+                        toast({
+                          title: "Added to Library",
+                          description: "Image saved to reference library"
+                        })
+                      }}
+                      onTouchEnd={() => {
                         onSendToLibrary?.(fullscreenImage.url)
                         toast({
                           title: "Added to Library",
@@ -520,15 +566,40 @@ export function UnifiedImageGalleryRefactored({
                       }}
                       title="Add to Library"
                     >
-                      <Save className="w-3.5 h-3.5 mr-1" />
+                      <Save className="w-4 h-4 mr-2" />
                       Add to Library
                     </Button>
 
                     <Button
                       size="sm"
                       variant="destructive"
-                      className="flex-1"
+                      className="flex-1 h-11 min-h-[44px] touch-manipulation"
                       onClick={() => {
+                        const currentIndex = images.findIndex(img => img.url === fullscreenImage.url)
+
+                        // Delete the image from the gallery
+                        handleDeleteImage(fullscreenImage.url)
+
+                        // If there are other images, show the next/previous one
+                        if (images.length > 1) {
+                          // Calculate remaining images after deletion
+                          const remainingImages = images.filter(img => img.url !== fullscreenImage.url)
+
+                          if (remainingImages.length > 0) {
+                            // Prefer showing the image at the same index position
+                            // If we deleted the last image, show the previous one
+                            const nextIndex = Math.min(currentIndex, remainingImages.length - 1)
+                            setFullscreenImage(remainingImages[nextIndex])
+                          } else {
+                            // No images left, close modal
+                            setFullscreenImage(null)
+                          }
+                        } else {
+                          // This was the only image, close modal
+                          setFullscreenImage(null)
+                        }
+                      }}
+                      onTouchEnd={() => {
                         const currentIndex = images.findIndex(img => img.url === fullscreenImage.url)
 
                         // Delete the image from the gallery
@@ -555,7 +626,7 @@ export function UnifiedImageGalleryRefactored({
                       }}
                       title="Delete Image"
                     >
-                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      <Trash2 className="w-4 h-4 mr-2" />
                       Delete
                     </Button>
                   </div>
