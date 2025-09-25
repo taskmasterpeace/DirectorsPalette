@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { GalleryImage } from './types'
 import { useToast } from '@/components/ui/use-toast'
+import { useGalleryLogic } from "./useGalleryLogic"
 
 interface ImageCardProps {
   image: GalleryImage
@@ -78,6 +79,7 @@ export function ImageCard({
   onAddToLibrary,
   showActions = true
 }: ImageCardProps) {
+  const { handleCopyImage } = useGalleryLogic()
   const { toast } = useToast()
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
@@ -91,13 +93,6 @@ export function ImageCard({
     }
   }
 
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(image.url)
-    toast({
-      title: "URL Copied",
-      description: "Image URL has been copied to your clipboard"
-    })
-  }
 
   return (
     <div className="relative group rounded-lg overflow-hidden bg-slate-800 border border-slate-700 transition-all hover:border-purple-600/50">
@@ -126,16 +121,16 @@ export function ImageCard({
 
       {/* Action menu button - always visible in bottom right */}
       {showActions && (
-        <div className="absolute bottom-2 right-2">
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
-                size="sm"
+                size="icon"
                 variant="secondary"
-                className="h-8 w-8 p-0 bg-slate-700/90 hover:bg-slate-600 border-slate-600"
+                className="h-6 w-6 p-0 bg-slate-700/90 hover:bg-slate-600 border-slate-600"
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreVertical className="h-4 w-4 text-white" />
+                <MoreVertical className="h-3 w-3 text-white" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-slate-800 border-slate-700 text-white" align="end">
@@ -147,11 +142,11 @@ export function ImageCard({
                 Copy Prompt
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleCopyUrl}
+                onClick={() => handleCopyImage(image.url)}
                 className="hover:bg-slate-700 cursor-pointer"
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy Image URL
+                Copy Image
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDownload}

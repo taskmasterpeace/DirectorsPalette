@@ -51,11 +51,15 @@ import {
 import { getModelConfig, type ModelId } from '@/lib/post-production/model-config'
 import { PromptLibrary } from '@/components/prompt-library/PromptLibrary'
 import { PromptSyntaxFeedback } from './PromptSyntaxFeedback'
-import type { Gen4Settings } from '@/lib/post-production/enhanced-types'
+import type { Gen4ReferenceImage, Gen4Settings } from '@/lib/post-production/enhanced-types'
+import { extractAtTags, urlToFile } from "@/lib/post-production/helpers"
+import { useUnifiedGalleryStore } from "@/stores/unified-gallery-store"
 
 interface Gen4PromptSettingsProps {
   gen4Prompt: string
   setGen4Prompt: (prompt: string) => void
+  gen4ReferenceImages: Gen4ReferenceImage[]
+  setGen4ReferenceImages: (images: Gen4ReferenceImage[]) => void
   gen4Settings: Gen4Settings
   setGen4Settings: (settings: Gen4Settings) => void
   gen4Processing: boolean
@@ -106,6 +110,8 @@ export function Gen4PromptSettings({
   canGenerate,
   referenceImagesCount,
   compact = false,
+  gen4ReferenceImages,
+  setGen4ReferenceImages,
   userId
 }: Gen4PromptSettingsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -169,9 +175,65 @@ export function Gen4PromptSettings({
   }, [gen4Prompt, setGen4Prompt])
 
   // Handle @ symbol for reference support
-  const handlePromptChange = useCallback((value: string) => {
-    setGen4Prompt(value)
-  }, [setGen4Prompt])
+  const handlePromptChange = useCallback(async (value: string) => {
+    setGen4Prompt(value);
+    // Extract @ references
+    const references = extractAtTags(value);
+    if (references.length === 0) {
+      return;
+    }
+
+    // Get all images from the gallery
+    const allImages = useUnifiedGalleryStore.getState().images;
+    // Create a Set to track which references we've already processed
+    const processedRefs = new Set();
+
+    // Process references one by one
+    for (const ref of references) {
+      const cleanRef = ref.startsWith('@') ? ref.substring(1) : ref;
+
+      // Skip if we've already processed this reference
+      if (processedRefs.has(cleanRef.toLowerCase())) {
+        continue;
+      }
+
+      processedRefs.add(cleanRef.toLowerCase());
+
+      const matchingImage = allImages.find(img => {
+        if (!img.reference) return false;
+
+        const imgRef = img.reference.toLowerCase();
+        const isMatch = imgRef === `@${cleanRef.toLowerCase()}`;
+        const isNotAdded = !gen4ReferenceImages.some(refImg => refImg.url === img.url);
+
+        return isMatch && isNotAdded;
+      });
+
+      if (matchingImage) {
+        try {
+          const file = await urlToFile(matchingImage.url, `reference-${cleanRef}.jpg`);
+          const newReference = {
+            id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            url: matchingImage.url,
+            preview: matchingImage.url,
+            file: file,
+            tags: [matchingImage.reference || `@${cleanRef}`],
+            detectedAspectRatio: matchingImage.settings?.aspectRatio || '16:9'
+          };
+          setGen4ReferenceImages(prev => {
+            // Check if this URL is already in the references
+            const exists = prev.some(ref => ref.url === newReference.url);
+            if (exists) {
+              return prev;
+            }
+            return [...prev, newReference];
+          });
+        } catch (error) {
+          console.error('Error creating file from URL:', error);
+        }
+      }
+    }
+  }, [setGen4Prompt, setGen4ReferenceImages, gen4ReferenceImages]);
 
   // Copy current settings
   const copySettings = useCallback(() => {
@@ -263,7 +325,9 @@ export function Gen4PromptSettings({
           <Textarea
             ref={textareaRef}
             value={gen4Prompt}
-            onChange={(e) => handlePromptChange(e.target.value)}
+            onChange={async (e) => {
+              await handlePromptChange(e.target.value);
+            }}
             placeholder={
               isEditingMode
                 ? "Describe how you want to edit the image (e.g., 'change the background to a sunset', 'add more lighting')"

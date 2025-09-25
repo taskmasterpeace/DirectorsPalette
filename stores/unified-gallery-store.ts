@@ -44,6 +44,7 @@ interface GeneratedImage {
 
 interface UnifiedGalleryState {
   images: GeneratedImage[]
+  recentImages: GeneratedImage[]
   selectedImage: string | null
   fullscreenImage: GeneratedImage | null
 
@@ -79,6 +80,7 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
   persist(
     (set, get) => ({
       images: [],
+      recentImages: [],
       selectedImage: null,
       fullscreenImage: null,
       
@@ -102,7 +104,8 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
         }
 
         set((state) => ({
-          images: [newImage, ...state.images] // Add to beginning for newest first
+          images: [newImage, ...state.images],
+          recentImages: [newImage, ...state.recentImages.slice(0, 9)]
         }))
 
         // Log persistence status for monitoring
@@ -127,7 +130,8 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
             img.id !== imageIdOrUrl && img.url !== imageIdOrUrl
           ),
           selectedImage: state.selectedImage === imageIdOrUrl ? null : state.selectedImage,
-          fullscreenImage: (state.fullscreenImage?.id === imageIdOrUrl || state.fullscreenImage?.url === imageIdOrUrl) ? null : state.fullscreenImage
+          fullscreenImage: (state.fullscreenImage?.id === imageIdOrUrl || state.fullscreenImage?.url === imageIdOrUrl) ? null : state.fullscreenImage,
+          recentImages: state.recentImages.filter(img => img.id !== imageIdOrUrl && img.url !== imageIdOrUrl)
         }))
       },
       
@@ -140,7 +144,7 @@ export const useUnifiedGalleryStore = create<UnifiedGalleryState>()(
       },
       
       clearAllImages: () => {
-        set({ images: [], selectedImage: null, fullscreenImage: null })
+        set({ images: [], selectedImage: null, fullscreenImage: null, recentImages: [] })
       },
 
       updateImageReference: (imageId, reference) => {

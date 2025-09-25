@@ -7,6 +7,8 @@ import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
 import { useCreditValidation, useRealTimeCostCalculator } from '@/lib/credits/credit-validation'
 import { VideoGeneration, VideoSettings } from './types'
 import { SEEDANCE_MODELS, RESOLUTION_OPTIONS } from './constants'
+import { supabase } from '@/lib/supabase'
+import { dataURLtoBlob } from "@/lib/post-production/helpers"
 
 export function useShotAnimator(
   referenceImages?: string[],
@@ -100,6 +102,23 @@ export function useShotAnimator(
       return
     }
 
+    // Create FormData for API call
+    const formData = new FormData()
+    formData.append('prompt', videoSettings.prompt)
+    formData.append('model', videoSettings.model)
+    formData.append('duration', videoSettings.duration.toString())
+    formData.append('resolution', videoSettings.resolution)
+    formData.append('aspect_ratio', videoSettings.aspectRatio)
+    formData.append('camera_fixed', 'false') // Default for now
+
+    // Add reference images
+    selectedImages.forEach((img, index) => {
+      if (img.startsWith('data:image')) {
+        const blob = dataURLtoBlob(img)
+        formData.append(`reference_image_${index}`, blob, `ref_${index}.png`)
+      }
+    })
+
     // Create generation entry
     const generation: VideoGeneration = {
       id: Date.now().toString(),
@@ -118,35 +137,56 @@ export function useShotAnimator(
     setGenerations(prev => [...prev, generation])
     setIsGenerating(true)
 
-    // Simulate generation (replace with actual API call)
     try {
-      // Simulate progress
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 500))
+      if (!supabase) {
+        throw new Error("Supabase client not initialized")
+      }
+      const { data, error } = await supabase.auth.getSession()
+
+      if (error || !data.session) {
+        throw new Error(error?.message || "User not authenticated")
+      }
+      const accessToken = data.session.access_token
+
+      const response = await fetch('/api/video/seedance', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY!,
+        }
+      })
+
+      const result = await response.json()
+      if (result.success) {
         setGenerations(prev => prev.map(g =>
           g.id === generation.id
-            ? { ...g, status: 'processing', progress: i }
-            : g
-        ))
-      }
-
-      // Mark as completed
-      setGenerations(prev => prev.map(g =>
-        g.id === generation.id
-          ? {
+            ? {
               ...g,
               status: 'completed',
-              videoUrl: 'https://example.com/video.mp4',
+              videoUrl: result.videoUrl,
               endTime: new Date(),
               creditsUsed: totalCredits
             }
-          : g
-      ))
+            : g
+        ))
 
-      toast({
-        title: "Video Generated",
-        description: "Your video has been successfully generated"
-      })
+        toast({
+          title: "Video Generated",
+          description: "Your video has been successfully generated"
+        })
+      } else {
+        setGenerations(prev => prev.map(g =>
+          g.id === generation.id
+            ? { ...g, status: 'failed', error: result.error }
+            : g
+        ))
+        toast({
+          title: "Generation Failed",
+          description: result.error || "Failed to generate video",
+          variant: "destructive"
+        })
+      }
     } catch (error) {
       setGenerations(prev => prev.map(g =>
         g.id === generation.id

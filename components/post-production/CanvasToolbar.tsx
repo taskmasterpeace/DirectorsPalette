@@ -17,7 +17,8 @@ import {
   ArrowRight,
   Type,
   Eraser,
-  Palette
+  Palette,
+  Crop
 } from 'lucide-react'
 import type { CanvasState, DrawingProperties } from './LayoutAnnotationTab'
 
@@ -46,7 +47,8 @@ export function CanvasToolbar({
     { id: 'line', icon: Minus, label: 'Line' },
     { id: 'arrow', icon: ArrowRight, label: 'Arrow' },
     { id: 'text', icon: Type, label: 'Text' },
-    { id: 'eraser', icon: Eraser, label: 'Eraser' }
+    { id: 'eraser', icon: Eraser, label: 'Eraser' },
+    { id: 'crop', icon: Crop, label: 'Crop' }
   ] as const
 
   const handleColorChange = (color: string) => {

@@ -104,14 +104,25 @@ export function useGalleryLogic(
     })
   }
 
-  const handleCopyImage = async (imageUrl: string) => {
+  const handleCopyImage = async (url: string) => {
     try {
-      const image = images.find(img => img.url === imageUrl)
-      if (image) {
-        await navigator.clipboard.writeText(image.prompt)
+      const response = await fetch(url)
+      const blob = await response.blob()
+      // Try to write image directly to clipboard
+      if (navigator.clipboard && (navigator.clipboard as any).write) {
+        await (navigator.clipboard as any).write([
+          new ClipboardItem({ [blob.type]: blob })
+        ])
         toast({
-          title: "Prompt Copied",
-          description: "Image prompt copied to clipboard"
+          title: "Copied",
+          description: "Image copied to clipboard"
+        })
+      } else {
+        // fallback: copy URL
+        await navigator.clipboard.writeText(url)
+        toast({
+          title: "Copied URL",
+          description: "Image URL copied to clipboard"
         })
       }
     } catch (error) {
@@ -123,11 +134,38 @@ export function useGalleryLogic(
     }
   }
 
-  const handleDownloadImage = (imageUrl: string) => {
-    const a = document.createElement('a')
-    a.href = imageUrl
-    a.download = `image_${Date.now()}.png`
-    a.click()
+  const handleDownloadImage = async (url: string) => {
+    try {
+      // Fetch the image as a blob
+      const response = await fetch(url, { mode: "cors" })
+      const blob = await response.blob()
+
+      // Create a local object URL for the blob
+      const objectUrl = URL.createObjectURL(blob)
+
+      // Create a hidden <a> tag and click it
+      const a = document.createElement("a")
+      a.href = objectUrl
+      a.download = `image_${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+
+      // Cleanup the object URL
+      URL.revokeObjectURL(objectUrl)
+
+      toast({
+        title: "Download started",
+        description: "Your image is downloading"
+      })
+    } catch (err) {
+      console.error("Download failed", err)
+      toast({
+        title: "Download failed",
+        description: "Could not download image",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleDeleteImage = (imageUrl: string) => {
@@ -140,10 +178,11 @@ export function useGalleryLogic(
   }
 
   const handleSendTo = (imageUrl: string, target: string) => {
-    if (onSendToTab) {
-      onSendToTab(imageUrl, target)
-    } else if (target === 'reference' && onUseAsReference) {
+    if ((target === 'reference' || target === 'shot-creator') && onUseAsReference) {
       onUseAsReference(imageUrl)
+      return
+    } else if (onSendToTab) {
+      onSendToTab(imageUrl, target)
     } else if (target === 'library' && onSendToLibrary) {
       onSendToLibrary(imageUrl)
     }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import type { Gen4ReferenceImage } from '@/lib/post-production/enhanced-types'
 import { getImageDimensions } from '@/lib/post-production/helpers'
+import { dbManager } from '@/lib/post-production/indexeddb'
 import InlineTagEditor from '@/app/post-production/components/InlineTagEditor'
 
 interface Gen4ReferenceManagerProps {
@@ -36,6 +37,46 @@ export function Gen4ReferenceManager({
   const { toast } = useToast()
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<Gen4ReferenceImage | null>(null)
+
+  useEffect(() => {
+    // Load saved images from IndexedDB on component mount
+    const loadImages = async () => {
+      try {
+        const savedImages = await dbManager.getReferenceImages();
+        if (savedImages && savedImages.length > 0) {
+          setGen4ReferenceImages(savedImages);
+        }
+      } catch (error) {
+        console.error('Failed to load reference images:', error);
+        toast({
+          title: 'Load Error',
+          description: 'Could not load saved reference images',
+          variant: 'destructive'
+        });
+      }
+    };
+    loadImages();
+  }, []);
+
+  useEffect(() => {
+    const saveImages = async () => {
+      try {
+        if (gen4ReferenceImages.length > 0) {
+          await dbManager.saveReferenceImages(gen4ReferenceImages);
+        } else {
+          await dbManager.clearReferenceImages();
+        }
+      } catch (error) {
+        console.error('Failed to save reference images:', error);
+        toast({
+          title: 'Save Error',
+          description: 'Could not save reference images',
+          variant: 'destructive'
+        });
+      }
+    };
+    saveImages();
+  }, [gen4ReferenceImages]);
 
   // Progressive disclosure: Start with 3, expand to 6, then 9, then max
   const getVisibleSlots = () => {

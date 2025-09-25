@@ -36,6 +36,7 @@ import { Gen4TabOptimized as Gen4Tab } from '@/components/post-production/Gen4Ta
 import { ShotAnimatorTab } from '@/components/post-production/shot-animator'
 import { ShotListTab } from './components/tabs/ShotListTab'
 import { UniversalCreditGuard } from '@/components/ui/UniversalCreditGuard'
+import { getImageDimensions } from "@/lib/post-production/helpers"
 
 export default function EnhancedPostProductionPage() {
   const { toast } = useToast()
@@ -285,6 +286,42 @@ export default function EnhancedPostProductionPage() {
     }
   }
   
+  const onUseAsReference = async (imageUrl: string) => {
+    try {
+      // Fetch the image
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'reference-image.png', { type: blob.type });
+
+      // Create a preview URL
+      const preview = URL.createObjectURL(blob);
+
+      // Get image dimensions
+      const dimensions = await getImageDimensions(file);
+
+      // Create new reference image
+      const newImage: Gen4ReferenceImage = {
+        id: `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        preview,
+        tags: [],
+        detectedAspectRatio: dimensions.aspectRatio
+      };
+      setGen4ReferenceImages(prev => [...prev, newImage]);
+      toast({
+        title: "Reference Added",
+        description: "Image added to reference slots"
+      });
+    } catch (error) {
+      console.error('Error adding reference image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add image as reference",
+        variant: "destructive"
+      });
+    }
+  }
+    
   return (
     <UniversalCreditGuard
       minCreditsRequired={15}
@@ -432,6 +469,7 @@ export default function EnhancedPostProductionPage() {
               onSendToWorkspace={sendGenerationToWorkspace}
               shotList={[...shotQueue, ...completedShots, ...failedShots]}
               generatedShotIds={generatedShotIds}
+              onUseAsReference={onUseAsReference}
               onShotGenerated={(shotId, imageUrl) => {
                 console.log('🔴 SHOT GENERATED:', shotId, imageUrl)
                 setGeneratedShotIds(prev => new Set([...prev, shotId]))

@@ -24,12 +24,12 @@ import {
 import * as fabric from 'fabric'
 
 interface FabricCanvasProps {
-  tool: 'select' | 'brush' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text' | 'eraser'
+  tool: 'select' | 'brush' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text' | 'eraser' | 'crop'
   brushSize: number
   color: string
   fillMode?: boolean
   onObjectsChange?: (count: number) => void
-  onToolChange?: (tool: 'select' | 'brush' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text' | 'eraser') => void
+  onToolChange?: (tool: 'select' | 'brush' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text' | 'eraser' | 'crop') => void
   canvasWidth?: number
   canvasHeight?: number
 }
@@ -89,7 +89,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
       height: canvasHeight,
       backgroundColor: '#ffffff', // Always white background
       selection: tool === 'select',
-      preserveObjectStacking: true
+      preserveObjectStacking: true,
+      targetFindTolerance: 0
     })
 
     fabricRef.current = canvas
@@ -161,6 +162,11 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
         eraserBrush.color = '#ffffff' // Always white for eraser
         canvas.freeDrawingBrush = eraserBrush
         break
+      case 'crop':
+        canvas.isDrawingMode = false
+        canvas.selection = false
+        canvas.defaultCursor = 'crosshair'
+        break
       default:
         canvas.selection = false
         canvas.defaultCursor = 'crosshair'
@@ -175,10 +181,20 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
     const handleMouseDown = (e: fabric.TPointerEventInfo<fabric.TPointerEvent>) => {
       if (tool === 'select' || tool === 'brush' || tool === 'eraser') return
 
+      const canvas = fabricRef.current!
       const pointer = canvas.getPointer(e.e)
       setIsDrawingShape(true)
       setShapeStartPoint({ x: pointer.x, y: pointer.y })
 
+      canvas.skipTargetFind = true;
+      canvas.discardActiveObject();
+      canvas.selection = false;
+
+      // Disable selecting objects while drawing
+      canvas.forEachObject(obj => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
       // Handle text tool separately - it doesn't use drag
       if (tool === 'text') {
         const text = new fabric.IText('Double-click to edit', {
@@ -195,7 +211,17 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
         return
       }
 
-      // Create initial shape at mouse down position
+      // Crop tool: disable all objects temporarily
+      if (tool === 'crop') {
+        canvas.discardActiveObject()
+        canvas.forEachObject(obj => {
+          obj.selectable = false
+          obj.evented = false
+        })
+        canvas.defaultCursor = 'crosshair'
+        canvas.selection = false
+      }
+
       let shape: fabric.Object | null = null
 
       switch (tool) {
@@ -237,11 +263,38 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
             selectable: false
           })
           break
+        case 'crop':
+          // Remove any existing crop rectangle
+          canvas.getObjects().forEach(obj => {
+            if (obj?.data?.isCropRect) {
+              canvas.remove(obj)
+            }
+          });
+
+          shape = new fabric.Rect({
+            left: pointer.x,
+            top: pointer.y,
+            width: 1,
+            height: 1,
+            fill: 'rgba(0, 0, 0, 0.3)',
+            stroke: '#ff4444',
+            strokeWidth: 1,
+            strokeDashArray: [5, 5],
+            selectable: false,
+            evented: false,
+            data: { isCropRect: true }
+          });
+          break;
       }
 
       if (shape) {
         canvas.add(shape)
         setCurrentShape(shape)
+        if (tool === 'crop') {
+          canvas.selection = false
+          canvas.defaultCursor = 'crosshair'
+          canvas.renderAll()
+        }
       }
     }
 
@@ -253,6 +306,30 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
       const height = Math.abs(pointer.y - shapeStartPoint.y)
       const left = Math.min(pointer.x, shapeStartPoint.x)
       const top = Math.min(pointer.y, shapeStartPoint.y)
+
+      // Crop tool updates
+      if (tool === 'crop') {
+        // Ensure minimum dimensions
+        const minSize = 10
+        const newWidth = Math.max(width, minSize)
+        const newHeight = Math.max(height, minSize)
+
+        // Ensure the crop rectangle stays within canvas bounds
+        const boundedLeft = Math.max(0, left)
+        const boundedTop = Math.max(0, top)
+        const boundedRight = Math.min(canvas.width || 0, left + width)
+        const boundedBottom = Math.min(canvas.height || 0, top + height)
+
+        currentShape.set({
+          left: boundedLeft,
+          top: boundedTop,
+          width: boundedRight - boundedLeft,
+          height: boundedBottom - boundedTop
+        });
+
+        canvas.renderAll();
+        return;
+      }
 
       switch (tool) {
         case 'rectangle':
@@ -286,10 +363,91 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
     const handleMouseUp = (e: fabric.TPointerEventInfo<fabric.TPointerEvent>) => {
       if (!isDrawingShape || !currentShape) return
 
-      // Make the shape selectable again
-      currentShape.set({ selectable: true })
+      // Restore interactions
+      canvas.skipTargetFind = false;
+      canvas.selection = true;
 
-      // For arrow, add the triangle head at the end
+      canvas.forEachObject(obj => {
+        obj.selectable = true;
+        obj.evented = true;
+      });
+
+      currentShape.set({ selectable: true, evented: true });
+
+
+      if (tool === 'crop') {
+        const rect = currentShape as fabric.Rect
+        const { left = 0, top = 0, width = 0, height = 0 } = rect
+
+        if (width > 10 && height > 10) {
+          // First remove all existing images
+          const objects = canvas.getObjects()
+          objects.forEach(obj => {
+            if (obj.type === 'image') {
+              canvas.remove(obj)
+            }
+          })
+
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          if (!tempCtx) return;
+
+          tempCanvas.width = width;
+          tempCanvas.height = height;
+
+          // Draw only the selected crop area
+          tempCtx.drawImage(
+            canvas.lowerCanvasEl,
+            left * canvas.getZoom(),
+            top * canvas.getZoom(),
+            width * canvas.getZoom(),
+            height * canvas.getZoom(),
+            0,
+            0,
+            width,
+            height
+          );
+
+          const croppedDataUrl = tempCanvas.toDataURL('image/png');
+
+          // Create a fabric.Image from the cropped area
+          fabric.FabricImage.fromURL(croppedDataUrl).then(img => {
+            img.set({
+              left,
+              top,
+              selectable: true,
+              hasControls: true, // Allows resize/rotate
+              evented: true
+            });
+            canvas.add(img);
+            canvas.setActiveObject(img);
+            canvas.renderAll();
+
+            // Save state after adding
+            saveState();
+          })
+        }
+
+        // Remove the crop rectangle
+        canvas.remove(currentShape)
+
+        // Restore interaction with other objects
+        canvas.forEachObject(obj => {
+          obj.selectable = true
+          obj.evented = true;
+        });
+
+        // Reset state
+        setIsDrawingShape(false);
+        setShapeStartPoint(null);
+        setCurrentShape(null)
+
+        // Switch back to select tool
+        onToolChange?.('select')
+        return
+      }
+
+      // Arrow handling (unchanged)
       if (tool === 'arrow' && currentShape instanceof fabric.Line) {
         const x1 = currentShape.x1 || 0
         const y1 = currentShape.y1 || 0
@@ -457,6 +615,23 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
     }
   }, [])
 
+  // Object manipulation functions
+  const deleteSelected = useCallback(() => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+
+    const activeObjects = canvas.getActiveObjects()
+    if (activeObjects.length === 0) return
+
+    // Remove all selected objects
+    canvas.remove(...activeObjects)
+    canvas.discardActiveObject()
+    canvas.renderAll()
+
+    // Save state for undo/redo
+    saveState()
+  }, [saveState])
+
   // Set up clipboard event listeners
   useEffect(() => {
     const handlePasteEvent = (e: ClipboardEvent) => handlePaste(e)
@@ -473,14 +648,23 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
     const handleKeyDown = (e: KeyboardEvent) => {
       const canvas = fabricRef.current
       if (!canvas) return
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        e.stopPropagation()        
+        const activeObjects = canvas.getActiveObjects()
+        if (activeObjects.length > 0) {
+          deleteSelected()
+          return
+        }
+      }
 
       // Check if canvas or its container has focus
       const canvasElement = canvasRef.current
       const containerElement = containerRef.current
       if (!canvasElement?.contains(document.activeElement) &&
-          !containerElement?.contains(document.activeElement) &&
-          document.activeElement !== canvasElement &&
-          document.activeElement !== containerElement) {
+        !containerElement?.contains(document.activeElement) &&
+        document.activeElement !== canvasElement &&
+        document.activeElement !== containerElement) {
         return
       }
 
@@ -536,7 +720,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
       document.removeEventListener('cut', handleCutEvent)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [handlePaste, handleCopy, color, importImage])
+  }, [handlePaste, handleCopy, color, importImage, deleteSelected])
 
   // Undo function
   const undo = useCallback(() => {
@@ -579,21 +763,10 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
     if (!canvas) return ''
 
     return canvas.toDataURL({
-      format: format,
+      format: format as fabric.ImageFormat,
       quality: 0.9,
       multiplier: 1
     })
-  }, [])
-
-  // Object manipulation functions
-  const deleteSelected = useCallback(() => {
-    const canvas = fabricRef.current
-    if (!canvas) return
-
-    const activeObjects = canvas.getActiveObjects()
-    activeObjects.forEach(obj => canvas.remove(obj))
-    canvas.discardActiveObject()
-    canvas.renderAll()
   }, [])
 
   const rotateSelected = useCallback((angle: number) => {
@@ -735,6 +908,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
         <div
           ref={containerRef}
           className="flex-1 bg-slate-900 rounded-lg p-4 relative flex items-center justify-center overflow-auto border-2 border-purple-500/50"
+          tabIndex={0}
         >
           <canvas
             ref={canvasRef}

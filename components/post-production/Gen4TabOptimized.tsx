@@ -47,6 +47,7 @@ interface Gen4TabOptimizedProps {
   onSendToImageEdit?: (imageUrl: string) => void
   onSendToLayoutAnnotation?: (imageUrl: string) => void
   onSendToReferenceLibrary?: (imageUrl: string) => void
+  onUseAsReference?: (imageUrl: string) => void
   onCategoryChange?: (itemId: string, newCategory: string) => void
 }
 
@@ -73,6 +74,7 @@ export function Gen4TabOptimized({
   onSendToImageEdit,
   onSendToLayoutAnnotation,
   onSendToReferenceLibrary,
+  onUseAsReference,
   onCategoryChange
 }: Gen4TabOptimizedProps) {
   const { toast } = useToast()
@@ -642,6 +644,8 @@ export function Gen4TabOptimized({
               gen4Settings={gen4Settings}
               setGen4Settings={setGen4Settings}
               gen4Processing={gen4Processing}
+              gen4ReferenceImages={gen4ReferenceImages}
+              setGen4ReferenceImages={setGen4ReferenceImages}
               hasNonPipelineImages={gen4ReferenceImages.some(img => img.url && !img.url.includes('pipeline'))} // Check if any reference image is from non-pipeline source
               onGenerate={handleGen4Generate}
               canGenerate={canGenerate}
@@ -675,10 +679,9 @@ export function Gen4TabOptimized({
                   }}
                   onSendToLibrary={onSendToReferenceLibrary}
                   onUseAsReference={(imageUrl) => {
-                    toast({
-                      title: "Added as Reference",
-                      description: "Image added to reference slots"
-                    })
+                    if (onUseAsReference) {
+                      onUseAsReference(imageUrl);
+                    }
                   }}
                   compact={true}
                 />
