@@ -1,4 +1,5 @@
 import { ImageData, Template } from "@/types";
+import { Gen4ReferenceImage } from "./enhanced-types";
 
 export interface JobData {
   jobId: string;
@@ -368,6 +369,50 @@ class IndexedDBManager {
         image.mode
       );
     }
+  }
+
+  // Reference Image Methods
+  async saveReferenceImages(images: Gen4ReferenceImage[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db!.transaction(["referenceLibrary"], "readwrite").objectStore("referenceLibrary").clear().onsuccess = () => {
+        const transaction = this.db!.transaction(["referenceLibrary"], "readwrite");
+        const store = transaction.objectStore("referenceLibrary");
+        
+        // Add new images
+        images.forEach(image => {
+          store.put({
+            id: image.id,
+            preview: image.preview,
+            tags: image.tags,
+            detectedAspectRatio: image.detectedAspectRatio,
+            timestamp: Date.now()
+          });
+        });
+        resolve();
+      };
+    });
+  }
+  
+  async getReferenceImages(): Promise<Gen4ReferenceImage[]> {
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction(["referenceLibrary"], "readonly");
+      const store = transaction.objectStore("referenceLibrary");
+      const request = store.getAll();
+      
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      
+      request.onerror = (event) => {
+        reject((event.target as IDBRequest).error);
+      };
+    });
+  }
+  
+  async clearReferenceImages(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db!.transaction(["referenceLibrary"], "readwrite").objectStore("referenceLibrary").clear().onsuccess = () => resolve();
+    });
   }
 }
 

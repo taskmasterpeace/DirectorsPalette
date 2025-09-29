@@ -37,6 +37,15 @@ export function PromptModal({ isOpen, config, onConfirm, onCancel }: PromptModal
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = ''
+    }
+    return () => {
+      document.body.style.pointerEvents = ''
+    }
+  }, [isOpen])
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {

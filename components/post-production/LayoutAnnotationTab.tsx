@@ -27,7 +27,7 @@ interface LayoutAnnotationTabProps {
 }
 
 export interface CanvasState {
-  tool: 'select' | 'brush' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text' | 'eraser'
+  tool: 'select' | 'brush' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'text' | 'eraser' | 'crop'
   brushSize: number
   color: string
   opacity: number
