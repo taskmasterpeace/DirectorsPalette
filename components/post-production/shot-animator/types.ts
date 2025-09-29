@@ -39,6 +39,7 @@ export interface ShotAnimatorTabProps {
   seed?: number
   onSeedChange?: (seed: number) => void
   lastFrameImages?: string[]
+  initialReferenceImage?: string | null
 }
 
 export interface VideoSettings {

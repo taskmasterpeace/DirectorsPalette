@@ -8,6 +8,7 @@ import { GalleryFilters, ViewMode } from './types'
 export function useGalleryLogic(
   onSendToTab?: (imageUrl: string, targetTab: string) => void,
   onUseAsReference?: (imageUrl: string) => void,
+  onSendToShotAnimator?: (imageUrl: string) => void,
   onSendToLibrary?: (imageUrl: string) => void,
   onImageSelect?: (imageUrl: string) => void
 ) {
@@ -180,6 +181,10 @@ export function useGalleryLogic(
   const handleSendTo = (imageUrl: string, target: string) => {
     if ((target === 'reference' || target === 'shot-creator') && onUseAsReference) {
       onUseAsReference(imageUrl)
+      return
+    }
+    else if (target === 'shot-animator' && onSendToShotAnimator) {
+      onSendToShotAnimator(imageUrl)
       return
     } else if (onSendToTab) {
       onSendToTab(imageUrl, target)

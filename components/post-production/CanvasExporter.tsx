@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import type { Gen4ReferenceImage } from '@/lib/post-production/enhanced-types'
+import { dbManager } from '@/lib/post-production/indexeddb'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -196,12 +198,66 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
 
     try {
       const dataUrl = canvasRef.current.exportCanvas('png')
+
+      if (targetTab === 'Shot Creator') {
+        const response = await fetch(dataUrl)
+        const blob = await response.blob()
+        const file = new File([blob], `canvas-${Date.now()}.png`, { type: 'image/png' })
+        const referenceId = `canvas_${Date.now()}`
+        const preview = URL.createObjectURL(blob)
+        const referenceImage: Gen4ReferenceImage = {
+          id: referenceId,
+          file: file,
+          preview: preview,
+          tags: ['canvas-export'],
+          detectedAspectRatio: '1:1',
+        }
+        const currentImages = await dbManager.getReferenceImages()
+        const updatedImages = [...currentImages, referenceImage]
+        await dbManager.saveReferenceImages(updatedImages)
+        if (onExport) {
+          onExport('png', dataUrl)
+        }
+        toast({
+          title: "Sent to Shot Creator",
+          description: "Canvas image added to Shot Creator references"
+        })
+      }
+      else if (targetTab === 'Shot Animator') {
+        const referenceId = `canvas_animator_${Date.now()}`
+        
+        const referenceImage: Gen4ReferenceImage = {
+          id: referenceId,
+          // Store the data URL directly for persistence
+          file: new File([], `canvas_export_${referenceId}.png`, { type: 'image/png' }),
+          preview: dataUrl,
+          tags: ['canvas-export'],
+          detectedAspectRatio: '1:1'
+        }
       
-      // Here you would integrate with your tab system
-      toast({
-        title: `Sent to ${targetTab}`,
-        description: "Canvas ready for use in target tab"
-      })
+        // Fetch existing animator refs
+        const currentImages = await dbManager.getAnimatorReferences()
+        const updatedImages = [...currentImages, referenceImage]
+      
+        await dbManager.saveAnimatorReferences(updatedImages)
+        
+        if (onExport) {
+          onExport('png', dataUrl);
+        }
+        toast({
+          title: "Sent to Shot Animator",
+          description: "Canvas image added to Shot Animator references"
+        });
+      } else {
+        if (onExport) {
+          onExport('png', dataUrl)
+        }
+         // Here you would integrate with your tab system
+        toast({
+          title: `Sent to ${targetTab}`,
+          description: "Canvas ready for use in target tab"
+        })
+      }
     } catch (error) {
       console.error('Send to tab failed:', error)
       toast({
@@ -400,16 +456,6 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
               <Sparkles className="w-3 h-3 mr-1" />
               Shot Creator
             </Button>
-            
-            <Button
-              size="sm"
-              onClick={() => sendToTab('Shot Editor')}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Edit className="w-3 h-3 mr-1" />
-              Shot Editor
-            </Button>
-            
             <Button
               size="sm"
               onClick={() => sendToTab('Shot Animator')}

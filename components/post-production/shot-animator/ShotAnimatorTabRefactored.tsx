@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useEffect } from 'react'
 import { Video, Zap, Play } from 'lucide-react'
 import { ModelSelector } from './ModelSelector'
 import { VideoSettings } from './VideoSettings'
@@ -15,17 +16,20 @@ import { useShotAnimator } from './useShotAnimator'
 import { ShotAnimatorTabProps } from './types'
 import { validateCreditsWithRedirect } from '@/lib/credits/credit-validation'
 import type { AlternativeOption } from '@/lib/credits/credit-validation'
+import { dbManager } from "@/lib/post-production/indexeddb"
 
 export function ShotAnimatorTabRefactored({
   className = '',
   galleryMode = 'minimal',
   onImageSelect,
-  referenceImages,
+  referenceImages = [],
+  initialReferenceImage,
   onReferenceImagesChange,
   seed,
   onSeedChange,
   lastFrameImages
 }: ShotAnimatorTabProps) {
+
   const {
     videoSettings,
     setVideoSettings,
@@ -45,8 +49,33 @@ export function ShotAnimatorTabRefactored({
     handleDownload,
     handleImageSelect,
     handleRemoveImage,
-    selectedModel
+    selectedModel,
+    setSelectedImages
   } = useShotAnimator(referenceImages, onReferenceImagesChange, seed, onSeedChange, lastFrameImages)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadAnimatorReferences() {
+      try {
+        const refs = await dbManager.getAnimatorReferences()
+        if (!cancelled && refs.length > 0) {
+          setSelectedImages(refs.map(r => r.preview)) // store previews
+          if (onReferenceImagesChange) {
+            onReferenceImagesChange(refs.map(r => r.preview))
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load animator references:", err)
+      }
+    }
+
+    loadAnimatorReferences()
+
+    return () => {
+      cancelled = true
+    }
+  }, [onReferenceImagesChange])
 
   return (
     <div className={`w-full space-y-6 ${className}`}>
@@ -96,7 +125,7 @@ export function ShotAnimatorTabRefactored({
             <div className="space-y-6">
               <ReferenceImages
                 selectedImages={selectedImages}
-                lastFrameImages={lastFrameImages}
+                lastFrameImages={lastFrameImages || []}
                 onFileUpload={() => fileInputRef.current?.click()}
                 onPasteFromClipboard={handlePasteFromClipboard}
                 onRemoveImage={handleRemoveImage}

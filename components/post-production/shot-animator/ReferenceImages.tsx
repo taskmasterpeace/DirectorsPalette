@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Upload, Clipboard, Image as ImageIcon, Trash2, Maximize2 } from 'lucide-react'
+import { useMemo } from "react"
 
 interface ReferenceImagesProps {
   selectedImages: string[]
@@ -18,7 +19,7 @@ interface ReferenceImagesProps {
 
 export function ReferenceImages({
   selectedImages,
-  lastFrameImages,
+  lastFrameImages = [],
   onFileUpload,
   onPasteFromClipboard,
   onRemoveImage,
@@ -26,7 +27,20 @@ export function ReferenceImages({
   fileInputRef,
   onFileChange
 }: ReferenceImagesProps) {
-  const allImages = [...selectedImages, ...(lastFrameImages || [])]
+
+  const allImages = useMemo(() => {
+    const uniqueImages = new Map<string, string>();    
+    selectedImages.forEach(img => {
+      if (img) uniqueImages.set(img, img);
+    });
+    lastFrameImages.forEach(img => {
+      if (img && !Array.from(uniqueImages.values()).includes(img)) {
+        uniqueImages.set(img, img);
+      }
+    });
+    
+    return Array.from(uniqueImages.values());
+  }, [selectedImages, lastFrameImages]);
 
   return (
     <Card className="border-slate-700">
@@ -85,13 +99,13 @@ export function ReferenceImages({
                   />
                   {idx < selectedImages.length && (
                     <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onRemoveImage(idx)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => onRemoveImage(img)} // pass the image string instead of idx
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                   )}
                   {idx >= selectedImages.length && (
                     <Badge className="absolute top-1 left-1 text-xs bg-blue-600/80">

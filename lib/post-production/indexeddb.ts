@@ -47,6 +47,12 @@ class IndexedDBManager {
           jobsStore.createIndex("startedAt", "startedAt", { unique: false });
         }
 
+        if (!db.objectStoreNames.contains("animatorReferences")) {
+          const animRefStore = db.createObjectStore("animatorReferences", { keyPath: "id" });
+          animRefStore.createIndex("tags", "tags", { unique: false, multiEntry: true });
+          animRefStore.createIndex("timestamp", "timestamp", { unique: false });
+        }
+
         // Create images store for caching uploaded images
         if (!db.objectStoreNames.contains("images")) {
           const imagesStore = db.createObjectStore("images", { keyPath: "id" });
@@ -213,9 +219,62 @@ class IndexedDBManager {
     });
   }
 
-    /* ------------------------------------------------------------------
-   * Reference Library helpers
-   * ------------------------------------------------------------------*/
+  /* ------------------------------------------------------------------
+ * Animator Reference helpers
+ * ------------------------------------------------------------------*/
+
+  async saveAnimatorReferences(images: Gen4ReferenceImage[]): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(["animatorReferences"], "readwrite");
+      const store = tx.objectStore("animatorReferences");
+
+      images.forEach((image) => {
+        store.put({
+          id: image.id || `ref_${Date.now()}`,
+          file: image.file,
+          preview: image.preview,
+          tags: image.tags,
+          detectedAspectRatio: image.detectedAspectRatio,
+          timestamp: Date.now(),
+        });
+      });
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getAnimatorReferences(): Promise<Gen4ReferenceImage[]> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(["animatorReferences"], "readonly");
+      const store = tx.objectStore("animatorReferences");
+      const req = store.getAll();
+
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async clearAnimatorReferences(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(["animatorReferences"], "readwrite");
+      const store = tx.objectStore("animatorReferences");
+      const req = store.clear();
+
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  /* ------------------------------------------------------------------
+ * Reference Library helpers
+ * ------------------------------------------------------------------*/
 
   async addReference(id: string, thumbBlob: Blob, fullBlob: Blob, tags: string[], category?: string): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");

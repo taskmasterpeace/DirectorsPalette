@@ -6,6 +6,7 @@ export interface UnifiedImageGalleryProps {
   onSendToTab?: (imageUrl: string, targetTab: string) => void
   onUseAsReference?: (imageUrl: string) => void
   onSendToLibrary?: (imageUrl: string) => void
+  onSendToShotAnimator?: (imageUrl: string) => void
   onImageSelect?: (imageUrl: string) => void
   className?: string
 }

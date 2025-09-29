@@ -36,6 +36,7 @@ import { CreditInsufficiencyModal } from '@/components/ui/CreditInsufficiencyMod
 import { useCreditValidation, useRealTimeCostCalculator, validateCreditsWithRedirect } from '@/lib/credits/credit-validation'
 import type { AlternativeOption } from '@/lib/credits/credit-validation'
 import { useRouter, usePathname } from 'next/navigation'
+import { dataURLtoFile } from "@/lib/post-production/helpers"
 
 // SeeeDance Model Configuration
 interface SeeeDanceModel {
@@ -121,6 +122,8 @@ interface ShotAnimatorTabProps {
   setLibraryCategory?: (category: string) => void
   libraryLoading?: boolean
   onFullscreenImage?: (image: any) => void
+  initialReferenceImage?: string | null
+  referenceImages?: string[]
 }
 
 export function ShotAnimatorTab({
@@ -130,7 +133,8 @@ export function ShotAnimatorTab({
   libraryCategory = 'all',
   setLibraryCategory = () => {},
   libraryLoading = false,
-  onFullscreenImage = () => {}
+  onFullscreenImage = () => {},
+  referenceImages: initialReferenceImages = []
 }: ShotAnimatorTabProps) {
   const { toast } = useToast()
   const { user, getToken } = useAuth()
@@ -141,7 +145,15 @@ export function ShotAnimatorTab({
   const [prompt, setPrompt] = useState('')
   const [inputImages, setInputImages] = useState<File[]>([])
   const [lastFrameImages, setLastFrameImages] = useState<File[]>([])
-  const [referenceImages, setReferenceImages] = useState<File[]>([])
+
+  const [referenceImages, setReferenceImages] = useState<File[]>(() => {
+    if (initialReferenceImages && initialReferenceImages.length > 0) {
+      return initialReferenceImages.map((img, index) =>
+        dataURLtoFile(img, `reference-${index}.png`)
+      );
+    }
+    return [];
+  });
   const [duration, setDuration] = useState(5)
   const [resolution, setResolution] = useState('720p')
   const [aspectRatio, setAspectRatio] = useState('16:9')

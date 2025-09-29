@@ -48,6 +48,7 @@ interface Gen4TabOptimizedProps {
   onSendToLayoutAnnotation?: (imageUrl: string) => void
   onSendToReferenceLibrary?: (imageUrl: string) => void
   onUseAsReference?: (imageUrl: string) => void
+  onSendToShotAnimator?: (imageUrl: string) => void
   onCategoryChange?: (itemId: string, newCategory: string) => void
 }
 
@@ -74,6 +75,7 @@ export function Gen4TabOptimized({
   onSendToImageEdit,
   onSendToLayoutAnnotation,
   onSendToReferenceLibrary,
+  onSendToShotAnimator,
   onUseAsReference,
   onCategoryChange
 }: Gen4TabOptimizedProps) {
@@ -678,6 +680,11 @@ export function Gen4TabOptimized({
                     }
                   }}
                   onSendToLibrary={onSendToReferenceLibrary}
+                  onSendToShotAnimator={(imageUrl) => {
+                    if (onSendToShotAnimator) {
+                      onSendToShotAnimator(imageUrl);
+                    }
+                  }}
                   onUseAsReference={(imageUrl) => {
                     if (onUseAsReference) {
                       onUseAsReference(imageUrl);

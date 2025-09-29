@@ -37,6 +37,7 @@ import { ShotAnimatorTab } from '@/components/post-production/shot-animator'
 import { ShotListTab } from './components/tabs/ShotListTab'
 import { UniversalCreditGuard } from '@/components/ui/UniversalCreditGuard'
 import { getImageDimensions } from "@/lib/post-production/helpers"
+import { dbManager } from "@/lib/post-production/indexeddb"
 
 export default function EnhancedPostProductionPage() {
   const { toast } = useToast()
@@ -83,7 +84,7 @@ export default function EnhancedPostProductionPage() {
   
   // Track generated shot IDs
   const [generatedShotIds, setGeneratedShotIds] = useState<Set<string>>(new Set())
-
+  const [shotAnimatorReferenceImage, setShotAnimatorReferenceImage] = useState<string | null>(null)
   // Load library items from IndexedDB
   const loadLibraryItems = useCallback(async () => {
     setLibraryLoading(true)
@@ -321,7 +322,61 @@ export default function EnhancedPostProductionPage() {
       });
     }
   }
-    
+
+  const onSendToShotAnimator = async (imageUrl: string) => {
+    if (!imageUrl) return;
+  
+    try {
+      // First check if this exact URL already exists in references
+      const existingRefs = await dbManager.getAnimatorReferences();
+      
+      // Convert the image URL to base64
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const base64data = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+  
+      // Check for duplicates by comparing the base64 data
+      const isDuplicate = await (async () => {
+        for (const ref of existingRefs) {
+          if (!ref.preview || typeof ref.preview !== 'string') continue;
+          
+          if (ref.preview.startsWith('data:image')) {
+            // If the stored preview is already a data URL, compare directly
+            if (ref.preview === base64data) return true;
+          } else if (ref.preview.startsWith('blob:')) {
+            // If it's a blob URL, we can't compare directly, so skip
+            continue;
+          }
+        }
+        return false;
+      })();
+  
+      if (isDuplicate) {
+        console.log('This image is already in the reference library');
+        return;
+      }
+  
+      const file = new File([blob], `shotAnimator-${Date.now()}.png`, { type: 'image/png' });
+      const referenceId = `shotAnimator_${Date.now()}`;
+  
+      const newRef: Gen4ReferenceImage = {
+        id: referenceId,
+        file: null, // We don't store the File object as it's not serializable
+        preview: base64data, // Store the base64 data URL
+        tags: [],
+        detectedAspectRatio: '1:1'
+      };
+  
+      await dbManager.saveAnimatorReferences([...existingRefs, newRef]);
+    } catch (error) {
+      console.error('Failed to save animator reference:', error);
+    }
+  };
+
   return (
     <UniversalCreditGuard
       minCreditsRequired={15}
@@ -421,6 +476,7 @@ export default function EnhancedPostProductionPage() {
           {/* Shot Animator Tab - SeeeDance Video Generation */}
           <TabsContent value="workspace" className="space-y-4">
             <ShotAnimatorTab
+              initialReferenceImage={shotAnimatorReferenceImage}
               onSendToLibrary={handleSendToLibrary}
               onSendToImageEdit={(imageUrl) => {
                 // Convert video frame to image for editing
@@ -470,6 +526,7 @@ export default function EnhancedPostProductionPage() {
               shotList={[...shotQueue, ...completedShots, ...failedShots]}
               generatedShotIds={generatedShotIds}
               onUseAsReference={onUseAsReference}
+              onSendToShotAnimator={onSendToShotAnimator}
               onShotGenerated={(shotId, imageUrl) => {
                 console.log('🔴 SHOT GENERATED:', shotId, imageUrl)
                 setGeneratedShotIds(prev => new Set([...prev, shotId]))

@@ -20,6 +20,7 @@ export function UnifiedImageGalleryRefactored({
   mode = 'full',
   onSendToTab,
   onUseAsReference,
+  onSendToShotAnimator,
   onSendToLibrary,
   onImageSelect,
   className
@@ -47,7 +48,7 @@ export function UnifiedImageGalleryRefactored({
     handlePageChange,
     setFullscreenImage,
     updateImageReference
-  } = useGalleryLogic(onSendToTab, onUseAsReference, onSendToLibrary, onImageSelect)
+  } = useGalleryLogic(onSendToTab, onUseAsReference, onSendToShotAnimator, onSendToLibrary, onImageSelect)
 
   const showReferenceNamePrompt = useReferenceNamePrompt()
 
