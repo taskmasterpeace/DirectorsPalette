@@ -1,20 +1,32 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
-import { useCreditValidation, useRealTimeCostCalculator } from '@/lib/credits/credit-validation'
-import { VideoGeneration, VideoSettings } from './types'
-import { SEEDANCE_MODELS, RESOLUTION_OPTIONS } from './constants'
-import { supabase } from '@/lib/supabase'
-import { dataURLtoBlob } from "@/lib/post-production/helpers"
+import { ImageData, VideoGeneration, VideoSettings } from './types'
+import { SEEDANCE_MODELS } from './constants'
+import { convertToBase64, dataURLtoFile, generateId } from "@/lib/post-production/helpers"
 import { dbManager } from "@/lib/post-production/indexeddb"
-import { Gen4ReferenceImage } from "@/lib/post-production/enhanced-types"
+
+export interface JobStatus {
+  jobId: string;
+  status: "processing" | "completed" | "failed" | "merging";
+  total: number;
+  completed: number;
+  tasks: Array<{
+    filename: string;
+    prompt: string;
+    status: string;
+    outputUrl?: string;
+    error?: string;
+  }>;
+  mergedOutputUrl?: string;
+}
 
 export function useShotAnimator(
-  referenceImages?: string[],
-  onReferenceImagesChange?: (images: string[]) => void,
+  referenceImages?: (string | File)[],
+  onReferenceImagesChange?: (images: (string | File)[]) => void,
   seed?: number,
   onSeedChange?: (seed: number) => void,
   lastFrameImages?: string[]
@@ -32,297 +44,618 @@ export function useShotAnimator(
     duration: 5,
     aspectRatio: '16:9',
     seed: seed || Math.floor(Math.random() * 1000000),
-    motionIntensity: 50
+    motionIntensity: 50,
+    cameraFixed: false,
   })
-
+  const [mode, setMode] = useState<"seedance" | "kontext">("seedance");
   const [generations, setGenerations] = useState<VideoGeneration[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
-  const [selectedImages, setSelectedImages] = useState<string[]>(referenceImages || []);
-  const [showGallery, setShowGallery] = useState(false);
-  const prevReferenceImages = useRef<string[]>(referenceImages || []);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null)
+  const [generatedVideos, setGeneratedVideos] = useState<VideoGeneration[]>([]);
+  const [filteredImages, setFilteredImages] = useState<ImageData[]>([])
+  const [showOnlySelected, setShowOnlySelected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "date" | "status">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => {
-    dbManager.getAnimatorReferences().then((refs) => {
-      if (refs && refs.length > 0) {
-        setSelectedImages(refs.map(r => r.preview))
-      }
-    })
-  }, [])
+  const [selectedImages, setSelectedImages] = useState<ImageData[]>([])
+  const [showGallery, setShowGallery] = useState(false)
 
-  const persistReferences = async (images: string[]) => {
-    // Get existing references to preserve their metadata
-    const existingRefs = await dbManager.getAnimatorReferences();
+  const updateImagesWithResults = async (status: JobStatus) => {
+    setSelectedImages((prev) =>
+      prev.map((img) => {
+        const task = status.tasks.find((t) => t.filename === img.file?.name);
+        if (task) {
+          const updatedVideos = task.outputUrl
+            ? [...(img.videos || []), task.outputUrl]
+            : img.videos;
 
-    // Create a map of existing previews to their reference data
-    const existingPreviews = new Map(
-      existingRefs.map(ref => [ref.preview, ref])
+          // Save updated video to IndexedDB
+          if (task.outputUrl) {
+            saveVideoToIndexedDB(img.id, task.outputUrl, img);
+          }
+
+          return {
+            ...img,
+            status: task.status as any,
+            outputUrl: task.outputUrl ? task.outputUrl : img.outputUrl,
+            videos: updatedVideos,
+            error: task.error,
+          };
+        }
+        return img;
+      })
     );
+  };
 
-    // Create or update references
-    const updatedRefs = images.map((img, i) => {
-      const preview = Array.isArray(img) ? img[0] : img;
-      const existingRef = existingPreviews.get(preview);
-
-      if (existingRef) return existingRef;
-      return {
-        id: `ref-${i}-${Date.now()}`,
-        file: null,
-        preview,
-        tags: [],
-        detectedAspectRatio: '1:1',
-      };
-    });
-
+  // Helper function to save video to IndexedDB
+  const saveVideoToIndexedDB = async (imageId: string, videoUrl: string, imageData: ImageData) => {
     try {
-      await dbManager.saveAnimatorReferences(updatedRefs);
+      const dbImage = await dbManager.getImage(imageId);
+      if (!dbImage) return;
 
-      // Update local state
-      setSelectedImages(images);
-      if (onReferenceImagesChange) {
-        onReferenceImagesChange(images);
+      const existingVideos = Array.isArray(dbImage.videos) ? [...dbImage.videos] : [];
+
+      // Add new video URL if it doesn't exist
+      if (!existingVideos.includes(videoUrl)) {
+        existingVideos.push(videoUrl);
+
+        const updatedImageData = {
+          name: imageData.file?.name ?? dbImage.filename ?? "Unnamed Image",
+          type: imageData.file?.type ?? dbImage.type ?? "image/png",
+          size: imageData.file?.size ?? dbImage.size ?? 0,
+        };
+
+        await dbManager.saveImage(
+          imageId,
+          updatedImageData,
+          dbImage.fileUrl || "",
+          imageData.preview || dbImage.preview || dbImage.fileUrl,
+          imageData.prompt ?? dbImage.prompt,
+          imageData.selected ?? dbImage.selected,
+          imageData.status ?? dbImage.status,
+          existingVideos,
+          imageData.mode ?? dbImage.mode,
+          imageData.referenceImages ?? dbImage.referenceImages ?? [],
+          imageData.lastFramePreview ?? dbImage.lastFramePreview ?? ""
+        );
       }
     } catch (error) {
-      console.error('Error saving references:', error);
-      throw error;
+      console.error(`❌ Error saving video to IndexedDB for image ${imageId}:`, error);
     }
   };
 
   useEffect(() => {
-    const loadReferences = async () => {
-      try {
-        const refs = await dbManager.getAnimatorReferences();
-        // Convert any blob URLs to data URLs if needed
-        const updatedRefs = await Promise.all(
-          refs.map(async (ref) => {
-            // Ensure preview is a string
-            let preview = ref.preview;
-            if (Array.isArray(preview)) {
-              preview = preview[0] || '';
+    let interval: NodeJS.Timeout;
+    if (jobStatus && jobStatus.status === "processing") {
+      interval = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/job-status/${jobStatus.jobId}`);
+          if (response.ok) {
+            const updatedStatus = await response.json();
+            setJobStatus(updatedStatus);
+
+            if (
+              updatedStatus.status === "completed" ||
+              updatedStatus.status === "failed"
+            ) {
+              await updateImagesWithResults(updatedStatus);
             }
-
-            // Handle blob URLs
-            if (typeof preview === 'string' && preview.startsWith('blob:')) {
-              try {
-                const response = await fetch(preview);
-                const blob = await response.blob();
-                preview = await new Promise<string>((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result as string);
-                  reader.readAsDataURL(blob);
-                });
-              } catch (e) {
-                console.error('Failed to process image:', e);
-                preview = '';
-              }
-            }
-
-            return {
-              ...ref,
-              preview
-            };
-          })
-        );
-
-        // Filter out invalid references
-        const validRefs = updatedRefs.filter(ref =>
-          ref.preview &&
-          (typeof ref.preview === 'string') &&
-          (ref.preview.startsWith('data:image') || ref.preview.startsWith('blob:'))
-        );
-
-        // Save the fixed references back to the database if needed
-        if (validRefs.length !== refs.length) {
-          await dbManager.saveAnimatorReferences(validRefs);
+          }
+        } catch (error) {
+          console.error("Error polling job status:", error);
         }
+      }, 2000);
+    }
 
-        // Update the UI with the valid previews
-        const previews = validRefs.map(ref => ref.preview).filter(Boolean);
-        setSelectedImages(previews);
-      } catch (error) {
-        console.error('Failed to load animator references:', error);
-      }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [jobStatus]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      await loadFromIndexedDB();
     };
 
-    loadReferences();
+    initializeData();
   }, []);
+
+  // Helper functions
+  const loadFromIndexedDB = async () => {
+    try {
+      const [images, animatorReferences] = await Promise.all([
+        dbManager.getImages(),
+        dbManager.getAnimatorReferences()
+      ]);
+      const mergedImages = [...images];
+      animatorReferences.forEach(ref => {
+        const existingIndex = mergedImages.findIndex(img => img.id === ref.id);
+        if (existingIndex >= 0) {
+          mergedImages[existingIndex] = { ...mergedImages[existingIndex], ...ref };
+        } else {
+          mergedImages.push(ref);
+        }
+      });
+      setSelectedImages(mergedImages);
+      setFilteredImages(mergedImages);
+      return mergedImages;
+    } catch (error) {
+      console.error("Error loading from IndexedDB:", error);
+      return [];
+    }
+  };
+
+  // Function to manually save a video URL to an image
+  const addVideoToImage = async (imageId: string, videoUrl: string) => {
+    try {
+      // Update state
+      setSelectedImages(prev => prev.map(img => {
+        if (img.id === imageId) {
+          const existingVideos = Array.isArray(img.videos) ? [...img.videos] : [];
+          if (!existingVideos.includes(videoUrl)) {
+            existingVideos.push(videoUrl);
+            return { ...img, videos: existingVideos };
+          }
+        }
+        return img;
+      }));
+
+      // Update IndexedDB
+      const dbImage = await dbManager.getImage(imageId);
+      if (dbImage) {
+        const existingVideos = Array.isArray(dbImage.videos) ? [...dbImage.videos] : [];
+        if (!existingVideos.includes(videoUrl)) {
+          existingVideos.push(videoUrl);
+          const updatedImageData = {
+            name: dbImage.filename ?? "Unnamed Image",
+            type: dbImage.type ?? "image/png",
+            size: dbImage.size ?? 0,
+          };
+
+          await dbManager.saveImage(
+            imageId,
+            updatedImageData,
+            dbImage.fileUrl || "",
+            dbImage.preview,
+            dbImage.prompt,
+            dbImage.selected,
+            dbImage.status,
+            existingVideos,
+            dbImage.mode
+          );
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error manually adding video to image ${imageId}:`, error);
+    }
+  };
 
   // Credit calculation
   const selectedModel = SEEDANCE_MODELS.find(m => m.id === videoSettings.model)!
   const totalCredits = videoSettings.duration * selectedModel.creditsPerSecond
 
   // Handlers
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files) return
+  const handleFileUpload = async (files: FileList | null) => {
+    try {
+      if (!files) return;
 
-    const newImages = Array.from(files).map(file => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = (e) => resolve(e.target?.result as string)
-        reader.readAsDataURL(file)
-      })
-    });
+      const newImages: ImageData[] = [];
+      const filesArray = Array.from(files);
 
-    Promise.all(newImages)
-      .then(async (images) => {
-        const validImages = images.filter(img => img)
-        const existingImages = new Set(selectedImages);
-        const newUniqueImages = validImages.filter(img => !existingImages.has(img));
-
-        if (newUniqueImages.length === 0) return
-
-        const updated = [...selectedImages, ...newUniqueImages];
-        await persistReferences(updated);
-      })
-      .catch(error => {
-        console.error('Error processing files:', error)
-      })
+      for await (const file of filesArray) {
+        if (file.type.startsWith("image/")) {
+          const id = generateId();
+          const base64Data = await convertToBase64(file);
+          newImages.push({
+            id,
+            file,
+            fileUrl: "",
+            preview: base64Data,
+            prompt: "",
+            selected: false,
+            status: "idle",
+            mode: mode,
+            referenceImages: [],
+            lastFramePreview: "",
+          });
+          // Save uploaded image to IndexedDB
+          await dbManager.saveImage(
+            id,
+            file,
+            "",
+            base64Data || file?.name || "",
+            "",
+            false,
+            "idle",
+            [],
+            mode,
+            [],       // referenceImages
+            ""        // lastFramePreview
+          );
+        }
+      }
+      setSelectedImages((prev) => [...prev, ...newImages]);
+      toast({
+        title: "Images uploaded",
+        description: `${newImages.length} image(s) uploaded successfully`,
+      });
+    } catch (error) {
+      console.error("Error uploading images:", error);
+    }
   };
 
   const handlePasteFromClipboard = async () => {
     try {
-      const clipboardItems = await navigator.clipboard.read()
-      const newImages = await Promise.all(
-        clipboardItems.map(async (item) => {
-          for (const type of item.types) {
-            if (type.startsWith('image/')) {
-              const blob = await item.getType(type)
-              return new Promise<string>((resolve) => {
-                const reader = new FileReader()
-                reader.onload = (e) => resolve(e.target?.result as string)
-                reader.readAsDataURL(blob)
-              })
-            }
-          }
-          return null
-        })
-      )
+      const clipboardItems = await navigator.clipboard.read();
+      const newImages: ImageData[] = [];
 
-      const valid = newImages.filter(Boolean) as string[]
-      if (valid.length > 0) {
-        const updated = [...selectedImages, ...valid]
-        await persistReferences(updated)
-        toast({ title: "Image Pasted", description: "Image from clipboard added" })
+      for (const item of clipboardItems) {
+        for (const type of item.types) {
+          if (type.startsWith("image/")) {
+            const blob = await item.getType(type);
+            const base64 = await convertToBase64(blob as File);
+            newImages.push({
+              id: generateId(),
+              file: new File([blob], `pasted_${Date.now()}.png`, { type }),
+              fileUrl: "",
+              preview: base64,
+              prompt: "",
+              selected: false,
+              status: "idle",
+              mode,
+              referenceImages: [],
+              lastFramePreview: "",
+            });
+          }
+        }
       }
-    } catch {
+
+      if (newImages.length > 0) {
+        await dbManager.saveImages(newImages);
+        setSelectedImages(prev => [...prev, ...newImages]);
+        toast({ title: "Image Pasted", description: "Image from clipboard added" });
+      }
+    } catch (err) {
       toast({
         title: "Paste Failed",
         description: "Unable to paste image",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  const handleGenerate = useCallback(async () => {
-    if (!videoSettings.prompt.trim()) {
-      toast({
-        title: "Prompt Required",
-        description: "Please enter a video prompt",
-        variant: "destructive"
-      })
-      return
-    }
+  const uploadFile = async (fileOrUrl: File | string | File[] | string[]): Promise<string | string[]> => {
+    if (!fileOrUrl) return [];
 
-    // Create FormData for API call
-    const formData = new FormData()
-    formData.append('prompt', videoSettings.prompt)
-    formData.append('model', videoSettings.model)
-    formData.append('duration', videoSettings.duration.toString())
-    formData.append('resolution', videoSettings.resolution)
-    formData.append('aspect_ratio', videoSettings.aspectRatio)
-    formData.append('camera_fixed', 'false') // Default for now
-
-    // Add reference images
-    selectedImages.forEach((img, index) => {
-      if (img.startsWith('data:image')) {
-        const blob = dataURLtoBlob(img)
-        formData.append(`reference_image_${index}`, blob, `ref_${index}.png`)
+    // Handle array of files or URLs
+    if (Array.isArray(fileOrUrl)) {
+      // If it's an array of URLs, return them as is
+      if (fileOrUrl.every(item => typeof item === 'string')) {
+        return fileOrUrl as string[];
       }
-    })
 
-    // Create generation entry
-    const generation: VideoGeneration = {
-      id: Date.now().toString(),
-      prompt: videoSettings.prompt,
-      model: videoSettings.model,
-      resolution: videoSettings.resolution,
-      duration: videoSettings.duration,
-      aspectRatio: videoSettings.aspectRatio,
-      status: 'pending',
-      progress: 0,
-      referenceImages: selectedImages,
-      seed: videoSettings.seed,
-      startTime: new Date()
+      // Process files sequentially to avoid rate limiting
+      const results = [];
+      for (const file of fileOrUrl as File[]) {
+        try {
+          const formData = new FormData();
+          formData.append('media', file);
+
+          const response = await fetch('/api/upload-file-media', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to upload file');
+          }
+
+          const result = await response.json();
+          if (result.urls?.get) {
+            results.push(result.urls.get);
+          }
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          // Continue with other files even if one fails
+        }
+      }
+      return results;
     }
 
-    setGenerations(prev => [...prev, generation])
-    setIsGenerating(true)
+    // Handle single file or URL
+    if (typeof fileOrUrl === 'string') {
+      return fileOrUrl;
+    }
+
+    // Single file upload
+    try {
+      const formData = new FormData();
+      formData.append('media', fileOrUrl);
+
+      const response = await fetch('/api/upload-file-media', {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to upload file");
+      }
+
+      const result = await response.json();
+      if (!result.urls?.get) {
+        throw new Error('Invalid response from upload API');
+      }
+
+      return result.urls.get;
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const startGeneration = async (
+    mode: "seedance",
+    images: ImageData[]
+  ) => {
+    const modeImages = images.filter((img) => img?.mode === mode);
+    const selectedImages = modeImages.filter(
+      (img) => img?.selected && img?.prompt?.trim()
+    );
+
+    if (selectedImages.length === 0) {
+      toast({
+        title: "No images selected",
+        description: "Please select images with prompts to generate videos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Mark selected images as processing
+    setSelectedImages((prev) =>
+      prev.map((img) =>
+        img.selected && img.mode === mode
+          ? { ...img, status: "processing" }
+          : img
+      )
+    );
 
     try {
-      if (!supabase) {
-        throw new Error("Supabase client not initialized")
-      }
-      const { data, error } = await supabase.auth.getSession()
+      setIsGenerating(true);
 
-      if (error || !data.session) {
-        throw new Error(error?.message || "User not authenticated")
-      }
-      const accessToken = data.session.access_token
+      // Create initial VideoGeneration objects with pending status
+      const initialGenerations: VideoGeneration[] = selectedImages.map((img) => ({
+        id: img.id,
+        prompt: img.prompt || '',
+        model: videoSettings.model,
+        resolution: videoSettings.resolution,
+        duration: videoSettings.duration,
+        aspectRatio: videoSettings.aspectRatio,
+        status: 'pending' as const,
+        progress: 0,
+        startTime: new Date(),
+        referenceImages: img.referenceImages,
+        seed: videoSettings.seed
+      }));
 
-      const response = await fetch('/api/video/seedance', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'x-api-key': process.env.NEXT_PUBLIC_API_KEY!,
-        }
-      })
+      // Add to generations state immediately
+      setGenerations(prev => [...prev, ...initialGenerations]);
+      const fileUrls = await Promise.all(
+        selectedImages.map(async (img) => {
+          if (img.file) {
+            const uploadResult = await uploadFile(img.file);
+            return { id: img.id, url: uploadResult };
+          }
 
-      const result = await response.json()
-      if (result.success) {
-        setGenerations(prev => prev.map(g =>
-          g.id === generation.id
-            ? {
-              ...g,
-              status: 'completed',
-              videoUrl: result.videoUrl,
-              endTime: new Date(),
-              creditsUsed: totalCredits
+          const dbImg = await dbManager.getImage(img.id);
+          if (dbImg?.fileUrl) return { id: img.id, url: dbImg.fileUrl };
+
+          if (dbImg?.preview) {
+            try {
+              const file = dataURLtoFile(dbImg.preview, `image-${img.id}.png`);
+              const uploadResult = await uploadFile(file);
+              return { id: img.id, url: uploadResult };
+            } catch (error) {
+              console.error("Error converting base64 to blob:", error);
             }
-            : g
-        ))
+          }
 
-        toast({
-          title: "Video Generated",
-          description: "Your video has been successfully generated"
+          return { id: img.id, url: null };
         })
-      } else {
-        setGenerations(prev => prev.map(g =>
-          g.id === generation.id
-            ? { ...g, status: 'failed', error: result.error }
-            : g
-        ))
-        toast({
-          title: "Generation Failed",
-          description: result.error || "Failed to generate video",
-          variant: "destructive"
-        })
+      );
+
+      // Create Promise.all for the generate-media API calls
+      const generationPromises = selectedImages.map(async (img, index) => {
+        const fileUrl = fileUrls[index];
+
+        if (!fileUrl || !fileUrl.url) {
+          return {
+            filename: img.id,
+            prompt: img.prompt || "",
+            status: "failed",
+            error: "Failed to get image URL",
+          };
+        }
+
+        // Upload reference images if they exist
+        let referenceUrls: string[] = [];
+        if (img.referenceImages && img.referenceImages.length > 0) {
+          // Separate files and URLs
+          const refFiles = img.referenceImages.filter((ref): ref is File => ref instanceof File);
+          const existingUrls = img.referenceImages
+            .filter((ref): ref is string => typeof ref === 'string');
+
+          // Upload files if any
+          if (refFiles.length > 0) {
+            const uploadedRefs = await uploadFile(refFiles);
+            referenceUrls = Array.isArray(uploadedRefs) ? uploadedRefs : [uploadedRefs];
+          }
+
+          // Add existing URLs
+          referenceUrls = [...referenceUrls, ...existingUrls];
+        }
+        // Upload last frame if exists
+        const lastFrameUrl = img.lastFrameFile
+          ? await uploadFile(img.lastFrameFile)
+          : undefined;
+
+        // Create payload for this specific image
+        const payload = {
+          fileUrl: typeof fileUrl.url === "string" ? fileUrl.url : (Array.isArray(fileUrl.url) ? fileUrl.url[0] : ""),
+          lastFrameUrl,
+          prompt: img.prompt,
+          resolution: videoSettings?.resolution,
+          duration: videoSettings?.duration,
+          camera_fixed: videoSettings?.cameraFixed || false,
+          mode,
+          seedanceModel: videoSettings?.model,
+          filename: img.id,
+          referenceImages: referenceUrls,
+        };
+        try {
+          const response = await fetch("/api/generate-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const result = await response.json();
+          return result.generatedResponse;
+        } catch (error) {
+          console.error(`Error generating video for image ${img.id}:`, error);
+          return {
+            filename: img.id,
+            prompt: img.prompt || "",
+            status: "failed",
+            error: error instanceof Error ? error.message : "Unknown error occurred",
+          };
+        }
+      });
+
+      // Wait for all generation API calls to complete
+      const generated = await Promise.all(generationPromises);
+
+      // Update existing generations with results
+      setGenerations(prev => prev.map(gen => {
+        const selectedImg = selectedImages.find(img => img.id === gen.id);
+        if (!selectedImg) return gen;
+
+        const resultIndex = selectedImages.findIndex(img => img.id === gen.id);
+        const result = generated[resultIndex];
+        // Try multiple possible field names for video URL
+        const videoUrl = result.outputUrl || result.videoUrl || result.url || result.output_url || result.video_url || null;
+
+        return {
+          ...gen,
+          status: result.status === 'completed' ? 'completed' :
+            result.status === 'failed' ? 'failed' : 'processing',
+          progress: result.status === 'completed' ? 100 : 0,
+          videoUrl: videoUrl,
+          error: result.error,
+          endTime: result.status === 'completed' ? new Date() : undefined,
+        };
+      }));
+      console.log("generated", generated)
+      setGeneratedVideos(generated);
+      setJobStatus({
+        jobId: `batch-${Date.now()}`, // Adding the required jobId field
+        status: "completed",
+        total: selectedImages.length,
+        completed: generated.filter(g => g.status === "completed").length,
+        tasks: generated
+      });
+
+      // Update selectedImages with completed status and new videos
+      setSelectedImages((prev) => {
+        const updated = prev.map((img) => {
+          if (img.selected && img.mode === mode) {
+            // Find the generated result for this image
+            const genResult = generated.find(g => g.filename === img.id);
+            if (genResult && genResult.outputUrl) {
+              const existingVideos = Array.isArray(img.videos) ? [...img.videos] : [];
+              if (!existingVideos.includes(genResult.outputUrl)) {
+                existingVideos.push(genResult.outputUrl);
+              }
+              return {
+                ...img,
+                status: "completed",
+                videos: existingVideos,
+                outputUrl: genResult.outputUrl
+              };
+            }
+            return { ...img, status: "completed" };
+          }
+          return img;
+        });
+        return updated;
+      });
+
+      // Update indexed DB with new videos
+      for (const image of modeImages) {
+        const dbImage = await dbManager.getImage(image.id);
+        if (!dbImage) continue;
+
+        // Find the generated result for this image
+        const genResult = generated.find(g => g.filename === image.id);
+        if (!genResult) continue;
+
+        const newVideoUrl = genResult?.outputUrl;
+        const fileUrl = genResult?.fileUrl || dbImage.fileUrl || "";
+
+        const existingVideos = Array.isArray(dbImage.videos)
+          ? [...dbImage.videos]
+          : [];
+
+        if (newVideoUrl && !existingVideos.includes(newVideoUrl)) {
+          existingVideos.push(newVideoUrl);
+        }
+
+        const updatedImageData = {
+          name: image.file?.name ?? dbImage.filename ?? "Unnamed Image",
+          type: image.file?.type ?? dbImage.type ?? "image/png",
+          size: image.file?.size ?? dbImage.size ?? 0,
+        };
+
+        await dbManager.saveImage(
+          image.id,
+          updatedImageData,
+          fileUrl,
+          image.preview ?? dbImage.preview,
+          image.prompt ?? dbImage.prompt,
+          image.selected ?? dbImage.selected,
+          image.status ?? dbImage.status,
+          existingVideos,
+          image.mode ?? dbImage.mode
+        );
       }
-    } catch (error) {
-      setGenerations(prev => prev.map(g =>
-        g.id === generation.id
-          ? { ...g, status: 'failed', error: 'Generation failed' }
-          : g
-      ))
       toast({
-        title: "Generation Failed",
-        description: "Failed to generate video",
-        variant: "destructive"
-      })
+        title: "Generation started",
+        description: `Processing ${selectedImages.length} image(s)`,
+      });
+    } catch (error) {
+      console.error("Generation error:", error);
+      toast({
+        title: "Generation failed",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }, [videoSettings, selectedImages, totalCredits, toast])
+  };
 
   const handlePause = () => {
     setIsGenerating(false)
@@ -332,49 +665,230 @@ export function useShotAnimator(
     setIsGenerating(true)
   }
 
-  const handleRemove = (id: string) => {
-    setGenerations(prev => prev.filter(g => g.id !== id))
-  }
-
-  const handleDownload = (videoUrl: string) => {
-    const a = document.createElement('a')
-    a.href = videoUrl
-    a.download = `video_${Date.now()}.mp4`
-    a.click()
-  }
-
-  const handleImageSelect = (imageUrl: string) => {
-    setSelectedImages(prev => {
-      const newImages = prev.includes(imageUrl)
-        ? prev.filter(img => img !== imageUrl)
-        : [...prev, imageUrl]
-
-      if (onReferenceImagesChange) {
-        onReferenceImagesChange(newImages)
-      }
-      return newImages
-    })
-  }
-
-  const handleRemoveImage = useCallback(async (previewToRemove: string) => {
+  const handleRemove = async (id: string) => {
+    const imageToRemove = selectedImages.find(img => img.id === id);
+    setSelectedImages((prev) => prev.filter((img) => img.id !== id));
     try {
-      const existingRefs = await dbManager.getAnimatorReferences();
-      const refToRemove = existingRefs.find(r => r.preview === previewToRemove);
-      if (!refToRemove) return;
-      const tx = dbManager.db!.transaction("animatorReferences", "readwrite");
-      tx.objectStore("animatorReferences").delete(refToRemove.id);
-      tx.oncomplete = () => console.log('[DB] Image deleted from IndexedDB');
-      tx.onerror = () => console.error('[DB] Failed to delete image:', tx.error);
-
-      const updatedRefs = existingRefs.filter(r => r.preview !== previewToRemove);
-      setSelectedImages(updatedRefs.map(r => r.preview));
-      if (onReferenceImagesChange) onReferenceImagesChange(updatedRefs.map(r => r.preview));
-    } catch (error) {
-      console.error('[UI] Failed to remove image:', error);
+      await dbManager.removeImage(id);
+      const refs = await dbManager.getAnimatorReferences();
+      const updatedRefs = refs.filter(ref => {
+        if (ref.id !== id) {
+          if (imageToRemove && ref.fileUrl === imageToRemove.fileUrl) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      });
+      await dbManager.saveAnimatorReferences(updatedRefs);
+    } catch (err) {
+      console.warn(`Failed to remove image from stores: ${id}`, err);
     }
-  }, [onReferenceImagesChange]);
+  };
+
+  const handleDownload = async (videoUrl: string) => {
+    try {
+      // Fetch the video as a blob to force download
+      const response = await fetch(videoUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch video');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `video_${Date.now()}.mp4`;
+
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Started",
+        description: "Your video download should begin shortly.",
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast({
+        title: "Download Failed",
+        description: "Could not download the video. You can try right-clicking the video and selecting 'Save video as...'",
+        variant: "destructive",
+      });
+
+      // Fallback: open in new tab if download fails
+      window.open(videoUrl, '_blank');
+    }
+  }
+
+  const handleImageSelect = (imageId: string) => {
+    setSelectedImages(prev => {
+      const isSelected = prev.some(img => img.id === imageId);
+      if (isSelected) {
+        // If image is already selected, remove it
+        const newImages = prev.filter(img => img.id !== imageId);
+        if (onReferenceImagesChange) {
+          onReferenceImagesChange(newImages.map(img => img.preview).filter(Boolean));
+        }
+        return newImages;
+      } else {
+        // If image is not selected, add it with selected: true
+        const newImage: ImageData = {
+          id: imageId,
+          preview: '',
+          prompt: '',
+          selected: true,
+          status: 'idle' as const,
+          mode: 'seedance' as const,
+          file: undefined,
+          fileUrl: '',
+          videos: []
+        };
+        const newImages = [...prev, newImage];
+        if (onReferenceImagesChange) {
+          onReferenceImagesChange(newImages.map(img => img.preview).filter(Boolean));
+        }
+        return newImages;
+      }
+    });
+  };
+
+  const toggleImageSelection = (id: string) => {
+    setSelectedImages((prev) => {
+      const updatedImages = prev.map((img) =>
+        img.id === id ? { ...img, selected: !img.selected } : img
+      );
+
+      // Save updated selection state to IndexedDB
+      const updatedImage = updatedImages.find(img => img.id === id);
+      if (updatedImage) {
+        dbManager.saveImage(
+          updatedImage.id,
+          updatedImage.file || { name: updatedImage.filename || "Unknown", type: updatedImage.type, size: updatedImage.size },
+          updatedImage.fileUrl,
+          updatedImage.preview,
+          updatedImage.prompt,
+          updatedImage.selected, // This is the updated selection state
+          updatedImage.status,
+          updatedImage.videos || [],
+          updatedImage.mode
+        ).then(() => {
+          console.log(`✅ Successfully saved selection state for image ${id}`);
+        }).catch(error => {
+          console.error("Failed to save image selection state:", error);
+        });
+      }
+
+      return updatedImages;
+    });
+  };
+
+  const selectedCount = selectedImages.filter((img) => img.selected).length;
+
+  const filteredImagesData = useMemo(
+    () => {
+      const filtered = selectedImages
+        .filter((img) => {
+          // Always show images with generated videos
+          if (img.videos && Array.isArray(img.videos) && img.videos.length > 0) {
+            return true;
+          }
+
+          if (showOnlySelected && !img.selected) {
+            return false;
+          }
+          if (
+            searchQuery &&
+            !img.file?.name?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            !img.prompt.toLowerCase().includes(searchQuery.toLowerCase())
+          ) {
+            return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          let comparison = 0;
+          switch (sortBy) {
+            case "name":
+              comparison = (a.file?.name || '').localeCompare(b.file?.name || '');
+              break;
+            case "date":
+              comparison = a.id.localeCompare(b.id);
+              break;
+            case "status":
+              comparison = a.status.localeCompare(b.status);
+              break;
+          }
+          return sortOrder === "asc" ? comparison : -comparison;
+        });
+      return filtered;
+    },
+    [selectedImages, showOnlySelected, searchQuery, sortBy, sortOrder]
+  );
+
+  // Update filtered images when filteredImagesData changes
+  useEffect(() => {
+    setFilteredImages(filteredImagesData);
+    if (filteredImagesData.length === 0 && selectedImages.length > 0) {
+      setFilteredImages(selectedImages);
+    }
+  }, [filteredImagesData, selectedImages]);
+
+  const selectAllImages = () => {
+    const allSelected = selectedImages.every((img) => img.selected);
+    setSelectedImages((prev) => {
+      const updatedImages = prev.map((img) => ({ ...img, selected: !allSelected }));
+
+      // Save all updated selection states to IndexedDB
+      updatedImages.forEach(img => {
+        dbManager.saveImage(
+          img.id,
+          img.file || { name: img.filename || "Unknown", type: img.type, size: img.size },
+          img.fileUrl,
+          img.preview,
+          img.prompt,
+          img.selected, // This is the updated selection state
+          img.status,
+          img.videos || [],
+          img.mode
+        ).catch(error => {
+          console.error("Failed to save image selection state:", error);
+        });
+      });
+
+      return updatedImages;
+    });
+  };
+
+  const handleResumeGeneration = (id: string) => {
+    setGenerations(prev => prev.map(gen =>
+      gen.id === id ? { ...gen, status: 'processing' as const } : gen
+    ));
+  };
+
+  const handleRemoveGeneration = (id: string) => {
+    setGenerations(prev => prev.filter(gen => gen.id !== id));
+  };
 
   return {
+    startGeneration,
+    selectedCount,
+    filteredImages,
+    filteredImagesData,
+    mode,
+    setMode,
+    sortOrder,
+    sortBy,
+    setSortBy,
+    showOnlySelected,
+    selectAllImages,
+    setShowOnlySelected,
+    setSortOrder,
     // State
     videoSettings,
     setVideoSettings,
@@ -384,20 +898,26 @@ export function useShotAnimator(
     showGallery,
     setShowGallery,
     setSelectedImages,
+    setSearchQuery,
+    setFilteredImages,
     fileInputRef,
     totalCredits,
-
+    jobStatus,
+    searchQuery,
+    generatedVideos,
+    toggleImageSelection,
     // Handlers
     handleFileUpload,
     handlePasteFromClipboard,
-    handleGenerate,
+    updateImagesWithResults,
     handlePause,
     handleResume,
+    handleResumeGeneration,
     handleRemove,
+    handleRemoveGeneration,
     handleDownload,
     handleImageSelect,
-    handleRemoveImage,
-
+    addVideoToImage,
     // Data
     selectedModel,
     recentImages

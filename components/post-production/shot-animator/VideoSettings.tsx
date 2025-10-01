@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
@@ -27,17 +26,6 @@ export function VideoSettings({ settings, onSettingsChange, isProModel }: VideoS
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Prompt Input */}
-        <div className="space-y-2">
-          <Label htmlFor="prompt">Video Prompt</Label>
-          <Textarea
-            id="prompt"
-            value={settings.prompt}
-            onChange={(e) => onSettingsChange({ ...settings, prompt: e.target.value })}
-            placeholder="Describe your video scene..."
-            className="min-h-[100px] bg-slate-900/50 border-slate-700"
-          />
-        </div>
 
         {/* Resolution Selection */}
         <div className="space-y-2">

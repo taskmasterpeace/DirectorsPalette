@@ -24,6 +24,8 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import type { CanvasEditorRef } from './CanvasEditor'
 import { useUnifiedGalleryStore } from '@/stores/unified-gallery-store'
+import { ImageData } from "./shot-animator"
+import { dataURLtoFile, generateId } from "@/lib/post-production/helpers"
 
 interface CanvasExporterProps {
   canvasRef: React.RefObject<CanvasEditorRef>
@@ -224,23 +226,27 @@ export function CanvasExporter({ canvasRef, onExport }: CanvasExporterProps) {
         })
       }
       else if (targetTab === 'Shot Animator') {
-        const referenceId = `canvas_animator_${Date.now()}`
-        
-        const referenceImage: Gen4ReferenceImage = {
+        const referenceId = generateId();
+        const filename = `canvas-${Date.now()}.png`;
+
+        // Convert base64 data URL to File
+        const file = dataURLtoFile(dataUrl, filename);
+        const referenceImage: ImageData = {
           id: referenceId,
-          // Store the data URL directly for persistence
-          file: new File([], `canvas_export_${referenceId}.png`, { type: 'image/png' }),
+          fileUrl: dataUrl,
           preview: dataUrl,
-          tags: ['canvas-export'],
-          detectedAspectRatio: '1:1'
-        }
-      
-        // Fetch existing animator refs
-        const currentImages = await dbManager.getAnimatorReferences()
-        const updatedImages = [...currentImages, referenceImage]
-      
-        await dbManager.saveAnimatorReferences(updatedImages)
-        
+          prompt: '',
+          selected: false,
+          status: 'idle',
+          mode: 'seedance',
+          referenceImages: [],
+          lastFramePreview: '',
+        };
+
+        // Save to animator references
+        const existingRefs = await dbManager.getAnimatorReferences();
+        const updatedRefs = [...existingRefs, referenceImage]
+        await dbManager.saveAnimatorReferences(updatedRefs)
         if (onExport) {
           onExport('png', dataUrl);
         }

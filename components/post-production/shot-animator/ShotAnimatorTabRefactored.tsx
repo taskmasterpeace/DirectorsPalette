@@ -3,27 +3,21 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useEffect } from 'react'
-import { Video, Zap, Play } from 'lucide-react'
-import { ModelSelector } from './ModelSelector'
+import { Video, Zap, Play, Settings, Loader } from 'lucide-react'
 import { VideoSettings } from './VideoSettings'
 import { ReferenceImages } from './ReferenceImages'
-import { VideoGenerationQueue } from './VideoGenerationQueue'
 import { UnifiedImageGallery } from '../image-gallery'
 import { Gen4ReferenceLibrary } from '../Gen4ReferenceLibrary'
-import { CreditInsufficiencyModal } from '@/components/ui/CreditInsufficiencyModal'
 import { useShotAnimator } from './useShotAnimator'
 import { ShotAnimatorTabProps } from './types'
-import { validateCreditsWithRedirect } from '@/lib/credits/credit-validation'
-import type { AlternativeOption } from '@/lib/credits/credit-validation'
-import { dbManager } from "@/lib/post-production/indexeddb"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useLoading } from "@/hooks"
 
 export function ShotAnimatorTabRefactored({
   className = '',
   galleryMode = 'minimal',
   onImageSelect,
   referenceImages = [],
-  initialReferenceImage,
   onReferenceImagesChange,
   seed,
   onSeedChange,
@@ -40,42 +34,33 @@ export function ShotAnimatorTabRefactored({
     setShowGallery,
     fileInputRef,
     totalCredits,
-    handleFileUpload,
-    handlePasteFromClipboard,
-    handleGenerate,
-    handlePause,
-    handleResume,
+    startGeneration,
     handleRemove,
+    selectedCount,
     handleDownload,
     handleImageSelect,
-    handleRemoveImage,
-    selectedModel,
-    setSelectedImages
+    // Additional state for ReferenceImages
+    setSortOrder,
+    toggleImageSelection,
+    jobStatus,
+    handlePasteFromClipboard,
+    handleFileUpload,
+    filteredImages,
+    setFilteredImages,
+    searchQuery,
+    selectAllImages,
+    sortOrder,
+    sortBy,
+    setSortBy,
+    showOnlySelected,
+    setShowOnlySelected,
+    setSearchQuery,
+    setSelectedImages,
+    mode,
   } = useShotAnimator(referenceImages, onReferenceImagesChange, seed, onSeedChange, lastFrameImages)
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadAnimatorReferences() {
-      try {
-        const refs = await dbManager.getAnimatorReferences()
-        if (!cancelled && refs.length > 0) {
-          setSelectedImages(refs.map(r => r.preview)) // store previews
-          if (onReferenceImagesChange) {
-            onReferenceImagesChange(refs.map(r => r.preview))
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load animator references:", err)
-      }
-    }
-
-    loadAnimatorReferences()
-
-    return () => {
-      cancelled = true
-    }
-  }, [onReferenceImagesChange])
+  
+  const { onSubmit: startSeedanceGeneration, processing: seedanceProcessing } =
+    useLoading(() => startGeneration("seedance", selectedImages));
 
   return (
     <div className={`w-full space-y-6 ${className}`}>
@@ -89,6 +74,24 @@ export function ShotAnimatorTabRefactored({
           </Badge>
         </div>
         <div className="flex items-center gap-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="flex items-center gap-2 text-sm hover:text-blue-300">
+                <Settings className="w-4 h-4 text-blue-400" />
+                <span>Settings</span>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Video Settings</DialogTitle>
+              </DialogHeader>
+              <VideoSettings
+                settings={videoSettings}
+                onSettingsChange={setVideoSettings}
+                isProModel={videoSettings.model === 'seedance-pro'}
+              />
+            </DialogContent>
+          </Dialog>
           <div className="flex items-center gap-2 text-sm">
             <Zap className="w-4 h-4 text-yellow-500" />
             <span>Estimated: {totalCredits} credits</span>
@@ -105,55 +108,56 @@ export function ShotAnimatorTabRefactored({
         </TabsList>
 
         <TabsContent value="generate" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column */}
-            <div className="space-y-6">
-              <ModelSelector
-                selectedModel={videoSettings.model}
-                onModelSelect={(model) => setVideoSettings({ ...videoSettings, model })}
-                creditsPerSecond={selectedModel.creditsPerSecond}
-              />
+          <div className="grid grid-cols-1 gap-6">
+            <ReferenceImages
+              lastFrameImages={lastFrameImages || []}
+              onFileUpload={() => fileInputRef.current?.click()}
+              onShowGallery={() => setShowGallery(true)}
+              fileInputRef={fileInputRef}
+              // State and handlers from parent
+              selectedImages={selectedImages}
+              setSelectedImages={setSelectedImages}
+              generatedVideos={generations}
+              jobStatus={jobStatus}
+              handleRemove={handleRemove}
+              handlePasteFromClipboard={handlePasteFromClipboard}
+              handleFileUpload={handleFileUpload}
+              handleDownload={handleDownload}
+              filteredImages={filteredImages}
+              setFilteredImages={setFilteredImages}
+              searchQuery={searchQuery}
+              sortOrder={sortOrder}
+              sortBy={sortBy}
+              setSortOrder={setSortOrder}
+              setSearchQuery={setSearchQuery}
+              toggleImageSelection={toggleImageSelection}
+              setSortBy={setSortBy}
+              showOnlySelected={showOnlySelected}
+              setShowOnlySelected={setShowOnlySelected}
+              selectAllImages={selectAllImages}
+              mode={mode}
+            />
 
-              <VideoSettings
-                settings={videoSettings}
-                onSettingsChange={setVideoSettings}
-                isProModel={videoSettings.model === 'seedance-pro'}
-              />
-            </div>
+            {/* Generate Button */}
+            <Button
+              onClick={() => startSeedanceGeneration()}
+              disabled={seedanceProcessing || selectedCount === 0 || isGenerating}
+              className="w-full h-12 text-lg"
+              size="lg"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader className="w-5 h-5 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Play className="w-5 h-5 mr-2" />
+                  Generate Video ({totalCredits} credits)
+                </>
+              )}
+            </Button>
 
-            {/* Right Column */}
-            <div className="space-y-6">
-              <ReferenceImages
-                selectedImages={selectedImages}
-                lastFrameImages={lastFrameImages || []}
-                onFileUpload={() => fileInputRef.current?.click()}
-                onPasteFromClipboard={handlePasteFromClipboard}
-                onRemoveImage={handleRemoveImage}
-                onShowGallery={() => setShowGallery(true)}
-                fileInputRef={fileInputRef}
-                onFileChange={handleFileUpload}
-              />
-
-              {/* Generate Button */}
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating || !videoSettings.prompt.trim()}
-                className="w-full h-12 text-lg"
-                size="lg"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Generate Video ({totalCredits} credits)
-              </Button>
-
-              <VideoGenerationQueue
-                generations={generations}
-                isGenerating={isGenerating}
-                onPause={handlePause}
-                onResume={handleResume}
-                onRemove={handleRemove}
-                onDownload={handleDownload}
-              />
-            </div>
           </div>
         </TabsContent>
 

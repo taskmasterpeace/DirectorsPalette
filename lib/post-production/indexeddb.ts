@@ -1,5 +1,5 @@
-import { ImageData, Template } from "@/types";
-import { Gen4ReferenceImage } from "./enhanced-types";
+import { ImageData } from "@/components/post-production/shot-animator";
+import { Gen4ReferenceImage, Template } from "./enhanced-types";
 
 export interface JobData {
   jobId: string;
@@ -138,29 +138,33 @@ class IndexedDBManager {
 
   async saveImage(
     id: string,
-    file: { name: string; type: string; size: number },
-    fileUrl: string,
-    preview: string,
+    file?: { name: string; type?: string; size?: number },
+    fileUrl?: string,
+    preview?: string,
     prompt: string,
     selected: boolean,
     status: string,
     videos: string[],
-    mode: "seedance" | "kontext"
+    mode: "seedance" | "kontext",
+    referenceImages: (string | File)[] = [],
+    lastFramePreview: string = ""
   ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
-    const imageData = {
+    const imageData: ImageData = {
       id,
-      filename: file.name,
-      type: file.type,
-      size: file.size,
-      fileUrl,
-      preview,
-      prompt,
+      filename: file?.name,
+      type: file?.type,
+      size: file?.size,
+      fileUrl: fileUrl || "",
+      preview: preview || fileUrl || "",
+      lastFramePreview,
+      prompt: prompt || "",
       selected,
-      status,
+      status: status || "idle",
       videos,
       mode,
+      referenceImages
     };
 
     return new Promise((resolve, reject) => {
@@ -223,7 +227,7 @@ class IndexedDBManager {
  * Animator Reference helpers
  * ------------------------------------------------------------------*/
 
-  async saveAnimatorReferences(images: Gen4ReferenceImage[]): Promise<void> {
+  async saveAnimatorReferences(images: ImageData[]): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
     return new Promise((resolve, reject) => {
@@ -232,11 +236,23 @@ class IndexedDBManager {
 
       images.forEach((image) => {
         store.put({
-          id: image.id || `ref_${Date.now()}`,
-          file: image.file,
+          id: image.id,
+          fileUrl: image.fileUrl,
           preview: image.preview,
-          tags: image.tags,
-          detectedAspectRatio: image.detectedAspectRatio,
+          prompt: image.prompt,
+          selected: image.selected,
+          status: image.status,
+          videos: image.videos,
+          filename: image.filename,
+          type: image.type,
+          size: image.size,
+          file: image.file,
+          lastFrame: image.lastFrame,
+          lastFrameFile: image.lastFrameFile,
+          lastFramePreview: image.lastFramePreview,
+          mode: image.mode,
+          referenceImages: image.referenceImages,
+          editHistory: image.editHistory,
           timestamp: Date.now(),
         });
       });
@@ -246,7 +262,7 @@ class IndexedDBManager {
     });
   }
 
-  async getAnimatorReferences(): Promise<Gen4ReferenceImage[]> {
+  async getAnimatorReferences(): Promise<ImageData[]> {
     if (!this.db) throw new Error("Database not initialized");
 
     return new Promise((resolve, reject) => {
@@ -340,7 +356,7 @@ class IndexedDBManager {
         putReq.onerror = () => reject(putReq.error);
         putReq.onsuccess = () => resolve();
       };
-      
+
       getReq.onerror = () => reject(getReq.error);
     });
   }
@@ -436,7 +452,7 @@ class IndexedDBManager {
       this.db!.transaction(["referenceLibrary"], "readwrite").objectStore("referenceLibrary").clear().onsuccess = () => {
         const transaction = this.db!.transaction(["referenceLibrary"], "readwrite");
         const store = transaction.objectStore("referenceLibrary");
-        
+
         // Add new images
         images.forEach(image => {
           store.put({
@@ -451,23 +467,23 @@ class IndexedDBManager {
       };
     });
   }
-  
+
   async getReferenceImages(): Promise<Gen4ReferenceImage[]> {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(["referenceLibrary"], "readonly");
       const store = transaction.objectStore("referenceLibrary");
       const request = store.getAll();
-      
+
       request.onsuccess = () => {
         resolve(request.result);
       };
-      
+
       request.onerror = (event) => {
         reject((event.target as IDBRequest).error);
       };
     });
   }
-  
+
   async clearReferenceImages(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db!.transaction(["referenceLibrary"], "readwrite").objectStore("referenceLibrary").clear().onsuccess = () => resolve();

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,15 @@ export default function CategorySelectionDialog({
     unorganized: ['generated', 'art', 'design', 'concept', 'abstract']
   }
 
+  useEffect(() => {
+    if (!open) {
+      document.body.style.pointerEvents = ''
+    }
+    return () => {
+      document.body.style.pointerEvents = ''
+    }
+  }, [open])
+
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()])
@@ -84,14 +93,14 @@ export default function CategorySelectionDialog({
             Choose a category and add tags to organize your generated image
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {/* Image Preview */}
           {imageUrl && (
             <div className="flex justify-center">
-              <img 
-                src={imageUrl} 
-                alt="Generated" 
+              <img
+                src={imageUrl}
+                alt="Generated"
                 className="w-32 h-32 object-cover rounded-lg border"
               />
             </div>
@@ -140,15 +149,15 @@ export default function CategorySelectionDialog({
               />
               <Button type="button" onClick={handleAddTag}>Add</Button>
             </div>
-            
+
             {/* Current Tags */}
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {tags.map(tag => (
                   <Badge key={tag} variant="secondary" className="gap-1">
                     {tag}
-                    <X 
-                      className="w-3 h-3 cursor-pointer hover:text-destructive" 
+                    <X
+                      className="w-3 h-3 cursor-pointer hover:text-destructive"
                       onClick={() => handleRemoveTag(tag)}
                     />
                   </Badge>
@@ -161,7 +170,7 @@ export default function CategorySelectionDialog({
               <p className="text-xs text-muted-foreground mb-1">Suggestions:</p>
               <div className="flex flex-wrap gap-1">
                 {suggestedTags[category].map(tag => (
-                  <Badge 
+                  <Badge
                     key={tag}
                     variant="outline"
                     className="cursor-pointer hover:bg-accent text-xs"

@@ -96,6 +96,17 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
   const canvasRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    if (initialImage) {
+      setIncomingImages(prev => {
+        if (prev.includes(initialImage)) {
+          return prev
+        }
+        return [...prev, initialImage]
+      })
+    }
+  }, [initialImage])
+
   const handleImportClick = useCallback(() => {
     const node = fileInputRef.current
     if (!node) return
@@ -158,16 +169,18 @@ export function LayoutAnnotationTab({ initialImage, className }: LayoutAnnotatio
     if (incomingImages.length === 0) {
       return
     }
-
-    const canvasApi = canvasRef.current
-    if (!canvasApi?.importImage) {
-      return
+    const processImages = () => {
+      const canvasApi = canvasRef.current
+      if (!canvasApi?.importImage) {
+        setTimeout(processImages, 100)
+        return
+      }
+      incomingImages.forEach((url, index) => {
+        canvasApi.importImage(url)
+      })
+      setIncomingImages([])
     }
-
-    incomingImages.forEach((url) => {
-      canvasApi.importImage(url)
-    })
-    setIncomingImages([])
+    setTimeout(processImages, 100)
   }, [incomingImages])
 
   const handleFileUpload = useCallback((event: ChangeEvent<HTMLInputElement>) => {

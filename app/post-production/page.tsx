@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,8 +18,6 @@ import {
 import { usePostProductionStore } from '@/stores/post-production-store'
 import { retrieveTransferredShots } from '@/lib/post-production/transfer'
 import { useToast } from '@/components/ui/use-toast'
-import LayoutPlanner from './components/layout-planner/LayoutPlanner'
-import { LayoutEditorRefactored as CompleteLayoutEditor } from '@/components/layout/LayoutEditorRefactored'
 import { LayoutAnnotationWrapper } from '@/components/post-production/LayoutAnnotationWrapper'
 import type { 
   ImageData,
@@ -29,6 +26,7 @@ import type {
   Gen4Settings,
   LibraryImageReference
 } from '@/lib/post-production/enhanced-types'
+import { ImageData as AnimatorImageData } from "@/components/post-production/shot-animator";
 import { referenceLibraryDB, saveImageToLibrary } from '@/lib/post-production/referenceLibrary'
 import CategorySelectionDialog from './components/CategorySelectionDialog'
 import FullscreenImageModal from './components/FullscreenImageModal'
@@ -36,7 +34,7 @@ import { Gen4TabOptimized as Gen4Tab } from '@/components/post-production/Gen4Ta
 import { ShotAnimatorTab } from '@/components/post-production/shot-animator'
 import { ShotListTab } from './components/tabs/ShotListTab'
 import { UniversalCreditGuard } from '@/components/ui/UniversalCreditGuard'
-import { getImageDimensions } from "@/lib/post-production/helpers"
+import { getImageDimensions, generateId } from "@/lib/post-production/helpers"
 import { dbManager } from "@/lib/post-production/indexeddb"
 
 export default function EnhancedPostProductionPage() {
@@ -84,7 +82,6 @@ export default function EnhancedPostProductionPage() {
   
   // Track generated shot IDs
   const [generatedShotIds, setGeneratedShotIds] = useState<Set<string>>(new Set())
-  const [shotAnimatorReferenceImage, setShotAnimatorReferenceImage] = useState<string | null>(null)
   // Load library items from IndexedDB
   const loadLibraryItems = useCallback(async () => {
     setLibraryLoading(true)
@@ -329,51 +326,84 @@ export default function EnhancedPostProductionPage() {
     try {
       // First check if this exact URL already exists in references
       const existingRefs = await dbManager.getAnimatorReferences();
-      
-      // Convert the image URL to base64
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const base64data = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-  
-      // Check for duplicates by comparing the base64 data
-      const isDuplicate = await (async () => {
-        for (const ref of existingRefs) {
-          if (!ref.preview || typeof ref.preview !== 'string') continue;
-          
-          if (ref.preview.startsWith('data:image')) {
-            // If the stored preview is already a data URL, compare directly
-            if (ref.preview === base64data) return true;
-          } else if (ref.preview.startsWith('blob:')) {
-            // If it's a blob URL, we can't compare directly, so skip
-            continue;
-          }
-        }
-        return false;
-      })();
-  
+      // Check if URL already exists in references
+      const isDuplicate = existingRefs.some(ref => ref.fileUrl === imageUrl);
       if (isDuplicate) {
-        console.log('This image is already in the reference library');
+        toast({
+          title: "Duplicate Image",
+          description: "This image is already in the Shot Animator",
+          variant: "default"
+        });
         return;
       }
-  
+
+      // Convert the image URL to base64
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const base64data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
       const file = new File([blob], `shotAnimator-${Date.now()}.png`, { type: 'image/png' });
-      const referenceId = `shotAnimator_${Date.now()}`;
-  
-      const newRef: Gen4ReferenceImage = {
+      const referenceId = generateId();
+
+      // Create a complete ImageData object
+      const newRef: AnimatorImageData = {
         id: referenceId,
-        file: null, // We don't store the File object as it's not serializable
-        preview: base64data, // Store the base64 data URL
-        tags: [],
-        detectedAspectRatio: '1:1'
+        fileUrl: imageUrl,
+        preview: base64data,
+        prompt: '',
+        selected: false,
+        status: 'idle',
+        videos: [],
+        filename: file.name,
+        type: file.type,
+        size: file.size,
+        file: file,
+        lastFrame: null,
+        lastFrameFile: undefined,
+        lastFramePreview: null,
+        mode: 'seedance',
+        referenceImages: [],
+        editHistory: []
       };
-  
-      await dbManager.saveAnimatorReferences([...existingRefs, newRef]);
+      const updatedRefs = [...existingRefs, newRef];
+      await dbManager.saveAnimatorReferences(updatedRefs);
+      await dbManager.saveImage(
+        referenceId,
+        {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        },
+        imageUrl,
+        base64data,
+        '',
+        true,
+        'idle',
+        [],
+        'seedance',
+        [],
+        ''
+      );
+      toast({
+        title: "Image Sent to Animator",
+        description: "The image has been added to the Shot Animator",
+      });
+      setTimeout(() => setActiveTab('workspace'), 100);
     } catch (error) {
       console.error('Failed to save animator reference:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send image to Shot Animator",
+        variant: "destructive",
+      });
     }
   };
 
@@ -476,7 +506,6 @@ export default function EnhancedPostProductionPage() {
           {/* Shot Animator Tab - SeeeDance Video Generation */}
           <TabsContent value="workspace" className="space-y-4">
             <ShotAnimatorTab
-              initialReferenceImage={shotAnimatorReferenceImage}
               onSendToLibrary={handleSendToLibrary}
               onSendToImageEdit={(imageUrl) => {
                 // Convert video frame to image for editing

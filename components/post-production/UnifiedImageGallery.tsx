@@ -42,6 +42,8 @@ interface UnifiedImageGalleryProps {
   currentTab: 'shot-editor' | 'shot-creator' | 'shot-animator'
   onSendToTab?: (imageUrl: string, targetTab: string) => void
   onUseAsReference?: (imageUrl: string) => void
+  onSendToShotAnimator?: (imageUrl: string) => void
+  onSendToLayoutAnnotation?: (imageUrl: string) => void
   onSendToLibrary?: (imageUrl: string) => void
   className?: string
 }

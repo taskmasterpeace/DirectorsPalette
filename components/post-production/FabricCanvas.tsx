@@ -526,7 +526,18 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
     const canvas = fabricRef.current
     if (!canvas) return
 
-    fabric.FabricImage.fromURL(imageUrl).then((img) => {
+    // Validate URL format
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      return
+    }
+
+    fabric.FabricImage.fromURL(imageUrl, {
+      crossOrigin: 'anonymous'
+    }).then((img) => {
+      if (!img || !img.width || !img.height) {
+        return
+      }
+
       const maxWidth = canvas.width! * 0.8
       const maxHeight = canvas.height! * 0.8
 
@@ -545,8 +556,11 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>((props, ref)
       canvas.add(img)
       canvas.setActiveObject(img)
       canvas.renderAll()
+      saveState()
+    }).catch((error) => {
+      console.error('Failed to load image:', error)
     })
-  }, [])
+  }, [saveState])
 
   // Handle paste from clipboard
   const handlePaste = useCallback(async (e: ClipboardEvent) => {
